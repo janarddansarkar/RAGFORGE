@@ -21,9 +21,9 @@ sys.path.insert(0, str(PROJECT_DIR / "src"))
 sys.path.insert(0, str(PROJECT_DIR))
 
 from langchain_core.documents import Document
-from langchain_ollama import ChatOllama
 
 from metrics.retriever_metrics import RetrieverMetrics
+from models import make_llm
 from retriever import Retriever
 from vectorstore import VectorStore, load_config
 
@@ -43,12 +43,7 @@ class RelevanceJudge:
     """Asks the local LLM (llm_model in config.toml) if a chunk answers the question."""
 
     def __init__(self, config: dict):
-        self.llm = ChatOllama(
-            model=config["llm_model"],
-            base_url=config["ollama_base_url"],
-            temperature=0,
-            reasoning=False,
-        )
+        self.llm = make_llm(config)
         self.cache: dict[str, tuple[bool, str]] = {}  # chunk id -> (relevant, reason)
 
     def judge(self, question: str, chunk: Document) -> tuple[bool, str]:

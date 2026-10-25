@@ -8,3 +8,4 @@ __pycache__/
 .deepeval/
 vs/
 .DS_Store
+vs_ollama_backup/

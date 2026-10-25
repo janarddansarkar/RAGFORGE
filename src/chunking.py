@@ -21,8 +21,10 @@ from pathlib import Path
 import numpy as np
 import pymupdf
 from langchain_core.documents import Document
-from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from models import Llm, make_embeddings, make_llm
 
 
 class Chunker(ABC):
@@ -93,7 +95,7 @@ class TokenChunker(Chunker):
 class SemanticChunker(Chunker):
     """Start a new chunk where the meaning changes between neighbouring sentences."""
 
-    def __init__(self, embeddings: OllamaEmbeddings, percentile: int, max_chars: int):
+    def __init__(self, embeddings: Embeddings, percentile: int, max_chars: int):
         self.embeddings = embeddings
         self.percentile = percentile
         self.max_chars = max_chars
@@ -144,7 +146,7 @@ Reply with those sentences only."""
 class ContextualChunker(Chunker):
     """Wraps another chunker and puts an LLM-written context note in front of each chunk."""
 
-    def __init__(self, base: Chunker, llm: ChatOllama, cache_file: Path):
+    def __init__(self, base: Chunker, llm: Llm, cache_file: Path):
         self.base = base
         self.llm = llm
         self.cache_file = cache_file
@@ -203,11 +205,8 @@ class ChunkingPipeline:
                 config["tokenizer_model"],
             )
         elif strategy == "semantic":
-            embeddings = OllamaEmbeddings(
-                model=config["embedding_model"], base_url=config["ollama_base_url"]
-            )
             chunker = SemanticChunker(
-                embeddings, config["semantic_percentile"], config["semantic_max_chars"]
+                make_embeddings(config), config["semantic_percentile"], config["semantic_max_chars"]
             )
         else:
             raise ValueError(
@@ -215,12 +214,7 @@ class ChunkingPipeline:
             )
 
         if config["contextual"]:
-            llm = ChatOllama(
-                model=config["llm_model"],
-                base_url=config["ollama_base_url"],
-                temperature=0,
-                reasoning=False,
-            )
+            llm = make_llm(config)
             cache_file = config["vs_dir"] / "context_cache.json"
             chunker = ContextualChunker(chunker, llm, cache_file)
         return cls(chunker, config["data_dir"])

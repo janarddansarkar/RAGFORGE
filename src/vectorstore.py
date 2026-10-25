@@ -10,9 +10,9 @@ import tomllib
 from pathlib import Path
 
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
 
 from chunking import ChunkingPipeline
+from models import make_embeddings
 
 # The project folder (RAGForge/), so paths work from any working directory.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -36,10 +36,7 @@ class VectorStore:
         collection = f"{self.config['collection_name']}_{self.pipeline.name}"
 
         # The embedding model comes from config.toml.
-        embeddings = OllamaEmbeddings(
-            model=self.config["embedding_model"],
-            base_url=self.config["ollama_base_url"],
-        )
+        embeddings = make_embeddings(self.config)
         # Opening Chroma with persist_directory reads/writes ./vs on disk.
         # The model name is saved with the collection when it is first created,
         # so the Retriever can check it later.

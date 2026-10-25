@@ -5,7 +5,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT = Path("/Users/janarddan/1.jana files/3.MyMacProjects/10.RAGForge")
+PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT / "src"))
 sys.path.insert(0, str(PROJECT))
 
@@ -32,7 +32,7 @@ for name in RERANKERS:
         for method in METHODS:
             results[f"{method} | {name}"] = evaluation.run_method(method)
         print(f"done {name} ({time.time() - start:.0f}s)", file=sys.stderr)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - keep going if one model fails to download
         print(f"FAILED {name}: {type(e).__name__}: {str(e)[:150]}", file=sys.stderr)
 
 out = Path(__file__).parent / "reranker_results.json"
