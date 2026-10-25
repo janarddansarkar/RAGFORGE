@@ -1,0 +1,326 @@
+{
+  "retrieval": "kept current settings",
+  "settings": {
+    "chunking_strategy": "recursive",
+    "contextual": false,
+    "embedding_model": "BAAI/bge-m3",
+    "default_method": "hybrid_rerank",
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "llm_model": "Qwen/Qwen2.5-3B-Instruct",
+    "top_k": 5,
+    "max_new_tokens": 256
+  },
+  "held_out": {
+    "best": {
+      "Recall@1": 0.6666666666666666,
+      "Recall@3": 0.7666666666666667,
+      "Recall@5": 0.9,
+      "Recall@10": 1.0,
+      "Precision@5": 0.3733333333333334,
+      "MRR": 0.8188888888888889,
+      "HitRate@1": 0.7333333333333333,
+      "HitRate@3": 0.8666666666666667,
+      "HitRate@5": 1.0,
+      "HitRate@10": 1.0,
+      "sec/query": 0.01598293893330265
+    },
+    "current": {
+      "Recall@1": 0.6666666666666666,
+      "Recall@3": 0.9,
+      "Recall@5": 0.9666666666666667,
+      "Recall@10": 0.9666666666666667,
+      "Precision@5": 0.37333333333333335,
+      "MRR": 0.8555555555555555,
+      "HitRate@1": 0.7333333333333333,
+      "HitRate@3": 1.0,
+      "HitRate@5": 1.0,
+      "HitRate@10": 1.0,
+      "sec/query": 0.8818068721996194
+    }
+  },
+  "stages": {
+    "1. chunking (hybrid_rerank)": {
+      "winner": "contextual_recursive_1000_150",
+      "results": {
+        "recursive_1000_150": {
+          "Recall@1": 0.65,
+          "Recall@3": 0.9,
+          "Recall@5": 0.9166666666666666,
+          "Recall@10": 0.95,
+          "Precision@5": 0.4066666666666666,
+          "MRR": 0.8436507936507937,
+          "HitRate@1": 0.7666666666666667,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 0.9666666666666667,
+          "sec/query": 0.9387777208331196
+        },
+        "tokens_500_100": {
+          "Recall@1": 0.7166666666666667,
+          "Recall@3": 0.8333333333333334,
+          "Recall@5": 0.8833333333333333,
+          "Recall@10": 0.9833333333333333,
+          "Precision@5": 0.3666666666666666,
+          "MRR": 0.8742063492063493,
+          "HitRate@1": 0.8333333333333334,
+          "HitRate@3": 0.8666666666666667,
+          "HitRate@5": 0.9,
+          "HitRate@10": 1.0,
+          "sec/query": 1.3530017735999234
+        },
+        "semantic_p90": {
+          "Recall@1": 0.6,
+          "Recall@3": 0.9,
+          "Recall@5": 0.9333333333333333,
+          "Recall@10": 1.0,
+          "Precision@5": 0.3200000000000001,
+          "MRR": 0.8353174603174603,
+          "HitRate@1": 0.7333333333333333,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9666666666666667,
+          "HitRate@10": 1.0,
+          "sec/query": 1.2560942111000866
+        },
+        "contextual_recursive_1000_150": {
+          "Recall@1": 0.7333333333333333,
+          "Recall@3": 0.8833333333333333,
+          "Recall@5": 0.9,
+          "Recall@10": 0.9833333333333333,
+          "Precision@5": 0.4666666666666668,
+          "MRR": 0.8806878306878306,
+          "HitRate@1": 0.8333333333333334,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 1.0,
+          "sec/query": 0.9949467486000988
+        }
+      }
+    },
+    "2. embedding model": {
+      "winner": "BAAI/bge-m3",
+      "results": {
+        "BAAI/bge-m3": {
+          "Recall@1": 0.7333333333333333,
+          "Recall@3": 0.8833333333333333,
+          "Recall@5": 0.9,
+          "Recall@10": 0.9833333333333333,
+          "Precision@5": 0.4666666666666668,
+          "MRR": 0.8806878306878306,
+          "HitRate@1": 0.8333333333333334,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 1.0,
+          "sec/query": 0.9912662472333371
+        },
+        "BAAI/bge-base-en-v1.5": {
+          "Recall@1": 0.7,
+          "Recall@3": 0.9,
+          "Recall@5": 0.9166666666666666,
+          "Recall@10": 0.9833333333333333,
+          "Precision@5": 0.48000000000000015,
+          "MRR": 0.8640211640211639,
+          "HitRate@1": 0.8,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 1.0,
+          "sec/query": 1.0258689041666609
+        },
+        "sentence-transformers/all-mpnet-base-v2": {
+          "Recall@1": 0.7,
+          "Recall@3": 0.8166666666666667,
+          "Recall@5": 0.8333333333333334,
+          "Recall@10": 0.95,
+          "Precision@5": 0.4466666666666668,
+          "MRR": 0.8445370370370371,
+          "HitRate@1": 0.8,
+          "HitRate@3": 0.8666666666666667,
+          "HitRate@5": 0.8666666666666667,
+          "HitRate@10": 0.9666666666666667,
+          "sec/query": 1.1040979194665852
+        },
+        "sentence-transformers/all-MiniLM-L12-v2": {
+          "Recall@1": 0.7,
+          "Recall@3": 0.85,
+          "Recall@5": 0.8666666666666667,
+          "Recall@10": 0.9333333333333333,
+          "Precision@5": 0.4600000000000001,
+          "MRR": 0.8529100529100528,
+          "HitRate@1": 0.8,
+          "HitRate@3": 0.9,
+          "HitRate@5": 0.9,
+          "HitRate@10": 0.9666666666666667,
+          "sec/query": 1.0415037236331652
+        }
+      }
+    },
+    "3. retrieval method": {
+      "winner": "hybrid",
+      "results": {
+        "dense": {
+          "Recall@1": 0.5666666666666667,
+          "Recall@3": 0.7833333333333333,
+          "Recall@5": 0.8666666666666667,
+          "Recall@10": 0.8833333333333333,
+          "Precision@5": 0.4266666666666667,
+          "MRR": 0.7694444444444445,
+          "HitRate@1": 0.6666666666666666,
+          "HitRate@3": 0.8666666666666667,
+          "HitRate@5": 0.9,
+          "HitRate@10": 0.9,
+          "sec/query": 0.01572298056659444
+        },
+        "bm25": {
+          "Recall@1": 0.48333333333333334,
+          "Recall@3": 0.8,
+          "Recall@5": 0.85,
+          "Recall@10": 0.9,
+          "Precision@5": 0.36666666666666675,
+          "MRR": 0.74,
+          "HitRate@1": 0.6,
+          "HitRate@3": 0.8666666666666667,
+          "HitRate@5": 0.9,
+          "HitRate@10": 0.9333333333333333,
+          "sec/query": 0.00020585693321966875
+        },
+        "hybrid": {
+          "Recall@1": 0.7333333333333333,
+          "Recall@3": 0.8333333333333334,
+          "Recall@5": 0.9333333333333333,
+          "Recall@10": 0.95,
+          "Precision@5": 0.4066666666666666,
+          "MRR": 0.8983333333333333,
+          "HitRate@1": 0.8666666666666667,
+          "HitRate@3": 0.9,
+          "HitRate@5": 0.9666666666666667,
+          "HitRate@10": 0.9666666666666667,
+          "sec/query": 0.01597302363322039
+        },
+        "dense_rerank": {
+          "Recall@1": 0.7,
+          "Recall@3": 0.85,
+          "Recall@5": 0.8833333333333333,
+          "Recall@10": 0.95,
+          "Precision@5": 0.46,
+          "MRR": 0.8505555555555555,
+          "HitRate@1": 0.8,
+          "HitRate@3": 0.9,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 0.9666666666666667,
+          "sec/query": 1.0587411944334841
+        },
+        "hybrid_rerank": {
+          "Recall@1": 0.7333333333333333,
+          "Recall@3": 0.8833333333333333,
+          "Recall@5": 0.9,
+          "Recall@10": 0.9833333333333333,
+          "Precision@5": 0.4666666666666668,
+          "MRR": 0.8806878306878306,
+          "HitRate@1": 0.8333333333333334,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 1.0,
+          "sec/query": 0.9943393611002345
+        },
+        "rewrite_hybrid_rerank": {
+          "Recall@1": 0.7166666666666667,
+          "Recall@3": 0.9166666666666666,
+          "Recall@5": 0.9166666666666666,
+          "Recall@10": 0.9833333333333333,
+          "Precision@5": 0.46666666666666673,
+          "MRR": 0.8800925925925925,
+          "HitRate@1": 0.8333333333333334,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 1.0,
+          "sec/query": 1.3452883083332077
+        },
+        "multi_query_hybrid_rerank": {
+          "Recall@1": 0.7,
+          "Recall@3": 0.8833333333333333,
+          "Recall@5": 0.9,
+          "Recall@10": 0.9833333333333333,
+          "Precision@5": 0.4600000000000001,
+          "MRR": 0.8636507936507936,
+          "HitRate@1": 0.8,
+          "HitRate@3": 0.9333333333333333,
+          "HitRate@5": 0.9333333333333333,
+          "HitRate@10": 1.0,
+          "sec/query": 2.13068193333335
+        },
+        "hyde_hybrid_rerank": {
+          "Recall@1": 0.7,
+          "Recall@3": 0.8333333333333334,
+          "Recall@5": 0.8666666666666667,
+          "Recall@10": 0.95,
+          "Precision@5": 0.46000000000000013,
+          "MRR": 0.8445767195767195,
+          "HitRate@1": 0.8,
+          "HitRate@3": 0.8666666666666667,
+          "HitRate@5": 0.9,
+          "HitRate@10": 0.9666666666666667,
+          "sec/query": 2.7647827096998907
+        }
+      }
+    },
+    "held-out queries: current settings vs. the pick": {
+      "winner": "best found",
+      "results": {
+        "current settings": {
+          "Recall@1": 0.6666666666666666,
+          "Recall@3": 0.9,
+          "Recall@5": 0.9666666666666667,
+          "Recall@10": 0.9666666666666667,
+          "Precision@5": 0.37333333333333335,
+          "MRR": 0.8555555555555555,
+          "HitRate@1": 0.7333333333333333,
+          "HitRate@3": 1.0,
+          "HitRate@5": 1.0,
+          "HitRate@10": 1.0,
+          "sec/query": 0.8818068721996194
+        },
+        "best found": {
+          "Recall@1": 0.6666666666666666,
+          "Recall@3": 0.7666666666666667,
+          "Recall@5": 0.9,
+          "Recall@10": 1.0,
+          "Precision@5": 0.3733333333333334,
+          "MRR": 0.8188888888888889,
+          "HitRate@1": 0.7333333333333333,
+          "HitRate@3": 0.8666666666666667,
+          "HitRate@5": 1.0,
+          "HitRate@10": 1.0,
+          "sec/query": 0.01598293893330265
+        }
+      }
+    },
+    "5. generator (judge: mistralai/Mistral-7B-Instruct-v0.3)": {
+      "winner": "Qwen/Qwen2.5-3B-Instruct",
+      "results": {
+        "unsloth/gemma-3-1b-it": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7680055427653365,
+          "answer_correctness": 0.9111111111111111,
+          "semantic_similarity": 0.755069933733042,
+          "context_recall": 1.0,
+          "seconds_per_answer": 1.1593760693780495
+        },
+        "Qwen/Qwen2.5-3B-Instruct": {
+          "faithfulness": 0.9925925925925926,
+          "answer_relevancy": 0.8087447460916155,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7913597256208971,
+          "context_recall": 1.0,
+          "seconds_per_answer": 3.3048148759116884
+        },
+        "microsoft/Phi-3.5-mini-instruct": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8278960902329676,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7760301211642673,
+          "context_recall": 1.0,
+          "seconds_per_answer": 6.128171249112347
+        }
+      }
+    }
+  }
+}

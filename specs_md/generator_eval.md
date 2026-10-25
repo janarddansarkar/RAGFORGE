@@ -52,6 +52,10 @@ Three of the metrics need a model to judge answers. This is the **judge**
 - The judge must be **a different model, ideally a different family, from the generator**,
   so a model does not grade its own answers.
 - It is a local Hugging Face model, so nothing leaves your machine and there is no cost.
+  The current judge is `mistralai/Mistral-7B-Instruct-v0.3` (about 14.5 GB).
+- Each run has **two phases**: the generator answers every question, is then freed from
+  memory, and only then is the judge loaded. That is what lets a 7B judge fit next to a
+  generator on a 24 GB machine.
 - Judge replies are one word (`YES`, `NO`, `CORRECT`, `PARTLY`, `WRONG`). If the reply
   is unclear, it counts as the worst option for that question.
 - Small judges are **noisy**. Compare runs that used the **same judge**; scores from
@@ -178,8 +182,27 @@ In `config.toml`:
   the judge is right.
 - **Compare only runs with the same judge and the same settings.**
 
-## 8. Limitations
+## 8. Run history and what to trust
 
+Absolute scores depend heavily on the judge, so only compare runs with the same judge.
+The same 45 `gemma-3-1b` answers scored very differently under different judges:
+
+| judge | answer correctness | note |
+|---|---|---|
+| Qwen2.5-3B-Instruct | 0.62 | strict; but it refused to say "relevant" (old relevancy method) |
+| Granite-3.3-2B-Instruct | 0.94 | too lenient: accepted a wrong answer, gave Phi 45/45 |
+| Mistral-7B-Instruct-v0.3 | 0.91 | current judge; still lenient on faithfulness and context recall |
+
+So the valid generator comparison is the one in `eval/find_best_report.json` (all three
+generators, same judge). The files in `eval/generator_runs/` from the Qwen and Granite judges
+are kept as history, not as the basis for a decision. Across both Granite and Mistral the
+order is consistent: `gemma-3-1b` < `Qwen2.5-3B` ≈ `Phi-3.5-mini`.
+
+## 9. Limitations
+
+- **Judges are lenient on easy questions.** Faithfulness and context recall come out near
+  1.00 for every generator, so they separate weak models from strong ones poorly. Correctness
+  and the judge-free semantic similarity are the more useful columns.
 - **A small judge makes mistakes.** Early on, a 3B judge always answered "NO" for
   relevancy, which is why relevancy uses the question-rewriting method instead of a
   yes/no verdict.
@@ -191,7 +214,7 @@ In `config.toml`:
 - **Refusal handling.** A refusal gets faithfulness 1.0 but low correctness and
   relevancy, which is intended.
 
-## 9. Related files
+## 10. Related files
 
 | file | role |
 |---|---|

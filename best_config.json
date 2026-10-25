@@ -1,0 +1,41 @@
+{
+  "retrieval": "kept current settings",
+  "settings": {
+    "chunking_strategy": "recursive",
+    "contextual": false,
+    "embedding_model": "BAAI/bge-m3",
+    "default_method": "hybrid_rerank",
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "llm_model": "Qwen/Qwen2.5-3B-Instruct",
+    "top_k": 5,
+    "max_new_tokens": 256
+  },
+  "held_out": {
+    "best": {
+      "Recall@1": 0.6666666666666666,
+      "Recall@3": 0.7666666666666667,
+      "Recall@5": 0.9,
+      "Recall@10": 1.0,
+      "Precision@5": 0.3733333333333334,
+      "MRR": 0.8188888888888889,
+      "HitRate@1": 0.7333333333333333,
+      "HitRate@3": 0.8666666666666667,
+      "HitRate@5": 1.0,
+      "HitRate@10": 1.0,
+      "sec/query": 0.01598293893330265
+    },
+    "current": {
+      "Recall@1": 0.6666666666666666,
+      "Recall@3": 0.9,
+      "Recall@5": 0.9666666666666667,
+      "Recall@10": 0.9666666666666667,
+      "Precision@5": 0.37333333333333335,
+      "MRR": 0.8555555555555555,
+      "HitRate@1": 0.7333333333333333,
+      "HitRate@3": 1.0,
+      "HitRate@5": 1.0,
+      "HitRate@10": 1.0,
+      "sec/query": 0.8818068721996194
+    }
+  }
+}
