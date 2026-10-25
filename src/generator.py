@@ -30,8 +30,13 @@ class Generator:
         return f"{chunk.metadata['source'].removesuffix('.pdf')} p.{chunk.metadata['page']}"
 
     def answer(self, question: str) -> tuple[str, list[Document]]:
-        """The answer text and the chunks it was based on."""
-        chunks = self.retriever.retrieve(question)
+        """Retrieve chunks, then answer from them. Returns the answer and the chunks."""
+        return self.answer_from(question, self.retriever.retrieve(question))
+
+    def answer_from(
+        self, question: str, chunks: list[Document]
+    ) -> tuple[str, list[Document]]:
+        """Answer from the given chunks (lets the eval test the generator on its own)."""
         passages = "\n\n".join(f"[{self.label(c)}]\n{c.page_content}" for c in chunks)
         prompt = ANSWER_PROMPT.format(passages=passages, question=question)
         reply = str(self.retriever.llm.invoke(prompt).content).strip()

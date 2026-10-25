@@ -13,7 +13,9 @@ A judge LLM (judge_model in config.toml, not the generator) answers short YES/NO
 questions; nothing leaves your machine. Small judges are noisy, so read the scores as a
 comparison between setups, not as absolute truth.
 
-Run:  uv run python eval/generator_eval.py [--limit 10]
+Run:  uv run python eval/generator_eval.py [--limit 10] [--oracle]
+--oracle gives the generator the golden pages instead of retrieved chunks, so you see
+the generator on its own (compare with a normal run to see what retrieval costs).
 """
 
 import argparse
@@ -145,8 +147,11 @@ class GeneratorMetrics:
 
 
 class GeneratorEval:
-    def __init__(self, config: dict | None = None, limit: int | None = None):
+    def __init__(
+        self, config: dict | None = None, limit: int | None = None, oracle: bool = False
+    ):
         self.config = config or load_config()
+        self.oracle = oracle
         with open(PROJECT_ROOT / self.config["golden_file"], encoding="utf-8") as f:
             items = json.load(f)[:limit]
         self.queries = [(GoldenQuery(item), item["golden_ans"]) for item in items]
@@ -157,7 +162,14 @@ class GeneratorEval:
         rows = []
         for i, (golden, reference) in enumerate(self.queries, start=1):
             start = time.perf_counter()
-            answer, chunks = self.generator.answer(golden.query)
+            if self.oracle:
+                # The golden pages themselves, so the retriever can't be the cause of a bad answer.
+                gold = [c for c in self.generator.retriever.chunks if golden.match(c)]
+                answer, chunks = self.generator.answer_from(
+                    golden.query, gold[: self.config["top_k"]]
+                )
+            else:
+                answer, chunks = self.generator.answer(golden.query)
             seconds = time.perf_counter() - start
             passages = "\n\n".join(c.page_content for c in chunks)
             scores = self.metrics.score(golden, reference, answer, passages)
@@ -188,6 +200,7 @@ class GeneratorEval:
         return {
             "generator": self.config["llm_model"],
             "judge": self.config["judge_model"],
+            "context": "oracle (golden pages)" if self.oracle else "retrieved",
             "settings": {  # what produced these numbers, so runs can be compared later
                 key: self.config[key]
                 for key in (
@@ -209,7 +222,8 @@ class GeneratorEval:
     def save(results: dict) -> Path:
         """Write this run to eval/generator_runs/<date>_<time>.json (never overwrites)."""
         RUNS_DIR.mkdir(exist_ok=True)
-        file = RUNS_DIR / f"{time.strftime('%Y-%m-%d_%H%M%S')}.json"
+        suffix = "_oracle" if results["context"].startswith("oracle") else ""
+        file = RUNS_DIR / f"{time.strftime('%Y-%m-%d_%H%M%S')}{suffix}.json"
         file.write_text(json.dumps(results, indent=2))
         return file
 
@@ -217,6 +231,7 @@ class GeneratorEval:
     def print_summary(results: dict) -> None:
         print(
             f"\ngenerator: {results['generator']}   judge: {results['judge']}   "
+            f"context: {results['context']}   "
             f"questions: {results['questions']}\n"
         )
         for name, value in results["average"].items():
@@ -227,9 +242,12 @@ class GeneratorEval:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--limit", type=int, help="only the first N golden questions")
+    parser.add_argument(
+        "--oracle", action="store_true", help="give the generator the golden pages"
+    )
     args = parser.parse_args()
 
-    evaluation = GeneratorEval(limit=args.limit)
+    evaluation = GeneratorEval(limit=args.limit, oracle=args.oracle)
     results = evaluation.run()
     evaluation.print_summary(results)
     print(f"\nSaved to {evaluation.save(results).relative_to(PROJECT_DIR)}")
