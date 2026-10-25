@@ -74,6 +74,11 @@ primary_metric = "MRR"        # candidates are ranked by this
 tie_break_metric = "Recall@5"
 tie_margin = 0.01             # within this of the best counts as a tie; the faster one wins
 
+# ---- eval/generator_eval.py ----
+# The judge should be a different, stronger model than the generator (llm_model).
+judge_provider = "ollama"  # mistral:7b is already installed in Ollama
+judge_model = "mistral:7b"
+
 # Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
 # Keep this at the end of the file (a TOML array of tables).
 [[chunking_variants]]

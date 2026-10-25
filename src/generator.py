@@ -29,17 +29,19 @@ class Generator:
     def label(chunk: Document) -> str:
         return f"{chunk.metadata['source'].removesuffix('.pdf')} p.{chunk.metadata['page']}"
 
-    def answer(self, question: str) -> tuple[str, list[str]]:
-        """The answer text and the pages it was based on."""
+    def answer(self, question: str) -> tuple[str, list[Document]]:
+        """The answer text and the chunks it was based on."""
         chunks = self.retriever.retrieve(question)
         passages = "\n\n".join(f"[{self.label(c)}]\n{c.page_content}" for c in chunks)
         prompt = ANSWER_PROMPT.format(passages=passages, question=question)
         reply = str(self.retriever.llm.invoke(prompt).content).strip()
-        return reply, [self.label(c) for c in chunks]
+        return reply, chunks
 
 
 # TRY IT ---- python src/generator.py "your question"
 if __name__ == "__main__":
     question = " ".join(sys.argv[1:]) or "What rank r does LoRA use?"
-    text, sources = Generator().answer(question)
-    print(f"Q: {question}\n\n{text}\n\nSources: {', '.join(sources)}")
+    generator = Generator()
+    text, chunks = generator.answer(question)
+    sources = ", ".join(generator.label(c) for c in chunks)
+    print(f"Q: {question}\n\n{text}\n\nSources: {sources}")
