@@ -5,6 +5,8 @@ Run once (and again after adding PDFs or changing the embedding model):
     uv run python src/vectorstore.py --rebuild  # wipe and build again
 """
 
+import json
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -18,10 +20,16 @@ from models import make_embeddings
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+BEST_CONFIG_FILE = PROJECT_ROOT / "best_config.json"
+
+
 def load_config() -> dict:
-    """Read config.toml. Folder paths become absolute, relative to the project."""
+    """Read config.toml, then lay the settings eval/find_best.py found best on top of it.
+    Folder paths become absolute, relative to the project."""
     with open(PROJECT_ROOT / "config.toml", "rb") as f:
         config = tomllib.load(f)
+    if BEST_CONFIG_FILE.exists():
+        config.update(json.loads(BEST_CONFIG_FILE.read_text())["settings"])
     config["data_dir"] = PROJECT_ROOT / config["data_dir"]
     config["vs_dir"] = PROJECT_ROOT / config["vs_dir"]
     return config
@@ -33,7 +41,11 @@ class VectorStore:
 
         # The chunking strategy decides which collection (and so which chunks) we use.
         self.pipeline = ChunkingPipeline.from_config(self.config)
-        collection = f"{self.config['collection_name']}_{self.pipeline.name}"
+        # and the embedding model, because vectors from different models can't be mixed.
+        embedder = re.sub(r"[^A-Za-z0-9]+", "-", self.config["embedding_model"]).strip(
+            "-"
+        )
+        collection = f"{self.config['collection_name']}_{self.pipeline.name}_{embedder}"
 
         # The embedding model comes from config.toml.
         embeddings = make_embeddings(self.config)

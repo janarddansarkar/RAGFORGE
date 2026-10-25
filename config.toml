@@ -65,13 +65,26 @@ rerankers = [                    # stage 3: Hugging Face cross-encoders to compa
     "cross-encoder/ms-marco-MiniLM-L-12-v2",
     "cross-encoder/ms-marco-MiniLM-L-6-v2",
 ]
+embedders = [                    # stage 2: Hugging Face embedding models (no query prefix needed)
+    "BAAI/bge-m3",
+    "BAAI/bge-base-en-v1.5",
+    "sentence-transformers/all-mpnet-base-v2",
+    "sentence-transformers/all-MiniLM-L12-v2",
+]
+generators = [                   # stage 5: answer models, scored on the golden pages
+    "unsloth/gemma-3-1b-it",
+    "Qwen/Qwen2.5-3B-Instruct",
+    "microsoft/Phi-3.5-mini-instruct",
+]
+generator_metric = "answer_correctness"  # generators are ranked by this
+generator_margin = 0.03                  # within this of the best counts as a tie; the faster one wins
 primary_metric = "MRR"        # candidates are ranked by this
 tie_break_metric = "Recall@5"
 tie_margin = 0.01             # within this of the best counts as a tie; the faster one wins
 
 # ---- eval/generator_eval.py ----
 # The judge should be a different, stronger model than the generator (llm_model).
-judge_model = "Qwen/Qwen2.5-3B-Instruct"
+judge_model = "mistralai/Mistral-7B-Instruct-v0.3"
 
 # Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
 # Keep this at the end of the file (a TOML array of tables).

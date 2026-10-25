@@ -19,6 +19,7 @@ the generator on its own (compare with a normal run to see what retrieval costs)
 """
 
 import argparse
+import gc
 import json
 import re
 import sys
@@ -147,6 +148,14 @@ class GeneratorMetrics:
 
 
 class GeneratorEval:
+    SCORES = (
+        "faithfulness",
+        "answer_relevancy",
+        "answer_correctness",
+        "semantic_similarity",
+        "context_recall",
+    )
+
     def __init__(
         self, config: dict | None = None, limit: int | None = None, oracle: bool = False
     ):
@@ -156,10 +165,10 @@ class GeneratorEval:
             items = json.load(f)[:limit]
         self.queries = [(GoldenQuery(item), item["golden_ans"]) for item in items]
         self.generator = Generator(self.config)
-        self.metrics = GeneratorMetrics(self.config)
 
-    def run(self) -> dict:
-        rows = []
+    # PHASE 1 ---- the generator answers every question (only the generator is loaded)
+    def generate(self) -> list[dict]:
+        samples = []
         for i, (golden, reference) in enumerate(self.queries, start=1):
             start = time.perf_counter()
             if self.oracle:
@@ -170,32 +179,58 @@ class GeneratorEval:
                 )
             else:
                 answer, chunks = self.generator.answer(golden.query)
-            seconds = time.perf_counter() - start
-            passages = "\n\n".join(c.page_content for c in chunks)
-            scores = self.metrics.score(golden, reference, answer, passages)
+            samples.append(
+                {
+                    "golden": golden,
+                    "reference": reference,
+                    "answer": answer,
+                    "passages": "\n\n".join(c.page_content for c in chunks),
+                    "seconds": time.perf_counter() - start,
+                }
+            )
+            print(f"generated {i}/{len(self.queries)}", file=sys.stderr)
+        return samples
+
+    def release_generator(self) -> None:
+        """Free the generator's memory, so a large judge fits next to it."""
+        self.generator.retriever.__dict__.pop("llm", None)
+        gc.collect()
+        import torch
+
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+
+    # PHASE 2 ---- the judge scores the answers
+    def judge(self, samples: list[dict]) -> list[dict]:
+        metrics = GeneratorMetrics(self.config)
+        rows = []
+        for i, sample in enumerate(samples, start=1):
+            golden = sample["golden"]
+            scores = metrics.score(
+                golden, sample["reference"], sample["answer"], sample["passages"]
+            )
             rows.append(
                 {
                     "id": golden.id,
                     "question": golden.query,
-                    "answer": answer,
-                    "reference": reference,
-                    "seconds": seconds,
+                    "answer": sample["answer"],
+                    "reference": sample["reference"],
+                    "seconds": sample["seconds"],
                     **scores,
                 }
             )
             print(
-                f"{i}/{len(self.queries)} {golden.id}: "
+                f"judged {i}/{len(samples)} {golden.id}: "
                 + " ".join(f"{k.split('_')[-1]}={v:.2f}" for k, v in scores.items()),
                 file=sys.stderr,
             )
-        names = [
-            "faithfulness",
-            "answer_relevancy",
-            "answer_correctness",
-            "semantic_similarity",
-            "context_recall",
-        ]
-        average = {n: sum(r[n] for r in rows) / len(rows) for n in names}
+        return rows
+
+    def run(self) -> dict:
+        samples = self.generate()
+        self.release_generator()
+        rows = self.judge(samples)
+        average = {n: sum(r[n] for r in rows) / len(rows) for n in self.SCORES}
         average["seconds_per_answer"] = sum(r["seconds"] for r in rows) / len(rows)
         return {
             "generator": self.config["llm_model"],
