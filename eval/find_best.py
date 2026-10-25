@@ -36,7 +36,9 @@ class BestConfigSearch:
         self.margin = self.config["tie_margin"]
 
     # SCORING ---- one config + one method -> metrics and seconds per query
-    def evaluate(self, config: dict, method: str, holdout: bool = False) -> dict[str, float]:
+    def evaluate(
+        self, config: dict, method: str, holdout: bool = False
+    ) -> dict[str, float]:
         evaluation = RetrieverEval(config)
         queries = [
             q
@@ -55,9 +57,13 @@ class BestConfigSearch:
     def pick(self, results: dict[str, dict[str, float]]) -> str:
         top = max(r[self.primary] for r in results.values())
         close = [n for n, r in results.items() if r[self.primary] >= top - self.margin]
-        return min(close, key=lambda n: (results[n]["sec/query"], -results[n][self.tie_break]))
+        return min(
+            close, key=lambda n: (results[n]["sec/query"], -results[n][self.tie_break])
+        )
 
-    def show(self, title: str, results: dict[str, dict[str, float]], winner: str) -> None:
+    def show(
+        self, title: str, results: dict[str, dict[str, float]], winner: str
+    ) -> None:
         columns = [self.primary, self.tie_break, "Recall@1", "Precision@5", "sec/query"]
         columns = list(dict.fromkeys(columns))
         print(f"\n##### {title}")
@@ -78,7 +84,9 @@ class BestConfigSearch:
             results[name] = self.evaluate(config, self.config["default_method"])
             configs[name] = {"variant": variant, "config": config}
         winner = self.pick(results)
-        self.show(f"1. chunking (method: {self.config['default_method']})", results, winner)
+        self.show(
+            f"1. chunking (method: {self.config['default_method']})", results, winner
+        )
         return configs[winner], results[winner]
 
     def stage_method(self, config: dict) -> str:
@@ -107,7 +115,9 @@ class BestConfigSearch:
         if method.endswith("rerank"):
             config = {**config, "reranker_model": self.stage_reranker(config, method)}
 
-        baseline = self.evaluate(self.config, self.config["default_method"], holdout=True)
+        baseline = self.evaluate(
+            self.config, self.config["default_method"], holdout=True
+        )
         best = self.evaluate(config, method, holdout=True)
         self.show(
             "held-out queries: current config.toml vs. the pick",
@@ -116,10 +126,14 @@ class BestConfigSearch:
         )
         keep_current = best[self.primary] < baseline[self.primary]
         if keep_current:
-            print(f"\nWARNING: the pick scores lower on {self.primary} than the current "
-                  "config.toml on held-out queries. Keep the current settings.")
+            print(
+                f"\nWARNING: the pick scores lower on {self.primary} than the current "
+                "config.toml on held-out queries. Keep the current settings."
+            )
         return {
-            "recommendation": "keep current config.toml" if keep_current else "apply this",
+            "recommendation": "keep current config.toml"
+            if keep_current
+            else "apply this",
             "chunking": chosen["variant"],
             "default_method": method,
             "reranker_model": config["reranker_model"],

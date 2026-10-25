@@ -87,7 +87,9 @@ class DocumentRetrievalCheck:
             relevant, reason = self.judge.judge(question, chunk)
             matches.append(str(chunk.id) if relevant else None)
             preview = " ".join(chunk.page_content.split())[:150]
-            print(f"{rank}. [{'RELEVANT' if relevant else 'not relevant':12}] p.{chunk.metadata['page']}")
+            print(
+                f"{rank}. [{'RELEVANT' if relevant else 'not relevant':12}] p.{chunk.metadata['page']}"
+            )
             print(f"   {preview}...")
             print(f"   why: {reason}")
 
@@ -106,7 +108,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("pdf", type=Path, help="path to the PDF")
     parser.add_argument("question")
-    parser.add_argument("--method", help="a method from config.toml, or 'all' (default: default_method)")
+    parser.add_argument(
+        "--method", help="a method from config.toml, or 'all' (default: default_method)"
+    )
     parser.add_argument("--k", type=int, help="chunks to judge (default: top_k)")
     args = parser.parse_args()
 

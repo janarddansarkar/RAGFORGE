@@ -25,7 +25,9 @@ RESULTS_FILE = Path(__file__).parent / "chunking_results.json"
 class ChunkingComparison:
     def __init__(self, config: dict | None = None):
         self.config = config or load_config()
-        self.evaluation: RetrieverEval | None = None  # the last one, used to print tables
+        self.evaluation: RetrieverEval | None = (
+            None  # the last one, used to print tables
+        )
 
     def variant_config(self, variant: dict) -> dict:
         return {**self.config, **variant}

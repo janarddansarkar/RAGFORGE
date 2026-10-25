@@ -51,10 +51,10 @@ class HuggingFaceChat:
             device, dtype = "cpu", torch.float32
         return pipeline("text-generation", model=self.model, dtype=dtype, device=device)
 
-    def invoke(self, prompt: str) -> AIMessage:
+    def invoke(self, prompt: str, max_new_tokens: int | None = None) -> AIMessage:
         reply = self.generator(
             [{"role": "user", "content": prompt}],
-            max_new_tokens=self.max_new_tokens,
+            max_new_tokens=max_new_tokens or self.max_new_tokens,
             do_sample=False,
             return_full_text=False,
         )

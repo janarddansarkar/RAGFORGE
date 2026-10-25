@@ -2,7 +2,8 @@
 
   Faithfulness        - are the answer's statements supported by the retrieved passages?
                         (low = the model made things up)
-  Answer relevancy    - does the answer address the question that was asked?
+  Answer relevancy    - the judge writes the question the answer responds to; how close
+                        is it (embedding cosine) to the real question?
   Answer correctness  - does the answer agree with the golden answer?
   Semantic similarity - embedding cosine between the answer and the golden answer
   Context recall      - are the golden answer's statements found in the retrieved passages?
@@ -33,7 +34,7 @@ from generator import Generator
 from models import make_embeddings, make_llm
 from vectorstore import PROJECT_ROOT, load_config
 
-RESULTS_FILE = Path(__file__).parent / "generator_results.json"
+RUNS_DIR = Path(__file__).parent / "generator_runs"  # one JSON file per run
 REFUSAL = (
     "can't find that in the documents"  # what the generator says when it has no answer
 )
@@ -47,10 +48,11 @@ Statement: {statement}
 
 Is the statement supported by the passages? Reply with one word: YES or NO."""
 
-RELEVANCY_PROMPT = """Question: {question}
-Answer: {answer}
+QUESTION_PROMPT = """Here is an answer from a question-answering system:
 
-Does the answer address the question that was asked? Reply with one word: YES, PARTLY or NO."""
+{answer}
+
+Write the one question this answer responds to. Reply with the question only."""
 
 CORRECTNESS_PROMPT = """Question: {question}
 Reference answer: {reference}
@@ -77,6 +79,13 @@ class Judge:
             if word in options:
                 return word
         return options[-1]
+
+    def write_question(self, answer: str) -> str:
+        """The question the judge thinks this answer responds to."""
+        reply = self.llm.invoke(
+            QUESTION_PROMPT.format(answer=answer), max_new_tokens=40
+        )
+        return str(reply.content).strip()
 
 
 class GeneratorMetrics:
@@ -106,19 +115,19 @@ class GeneratorMetrics:
             return 1.0  # it claimed nothing, so nothing is unsupported
         return self.share_supported(answer, passages)
 
+    def cosine(self, text_a: str, text_b: str) -> float:
+        a, b = np.array(self.embeddings.embed_documents([text_a, text_b]))
+        return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
     def relevancy(self, question: str, answer: str) -> float:
-        prompt = RELEVANCY_PROMPT.format(question=question, answer=answer)
-        return VERDICT_SCORE[self.judge.ask(prompt, ("YES", "PARTLY", "NO"))]
+        """RAGAS-style: how close is the question the answer *seems* to answer to the real one?"""
+        return max(0.0, self.cosine(question, self.judge.write_question(answer)))
 
     def correctness(self, question: str, answer: str, reference: str) -> float:
         prompt = CORRECTNESS_PROMPT.format(
             question=question, answer=answer, reference=reference
         )
         return VERDICT_SCORE[self.judge.ask(prompt, ("CORRECT", "PARTLY", "WRONG"))]
-
-    def similarity(self, answer: str, reference: str) -> float:
-        a, b = np.array(self.embeddings.embed_documents([answer, reference]))
-        return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
 
     def context_recall(self, reference: str, passages: str) -> float:
         return self.share_supported(reference, passages)
@@ -130,7 +139,7 @@ class GeneratorMetrics:
             "faithfulness": self.faithfulness(answer, passages),
             "answer_relevancy": self.relevancy(golden.query, answer),
             "answer_correctness": self.correctness(golden.query, answer, reference),
-            "semantic_similarity": self.similarity(answer, reference),
+            "semantic_similarity": self.cosine(answer, reference),
             "context_recall": self.context_recall(reference, passages),
         }
 
@@ -179,10 +188,30 @@ class GeneratorEval:
         return {
             "generator": self.config["llm_model"],
             "judge": self.config["judge_model"],
+            "settings": {  # what produced these numbers, so runs can be compared later
+                key: self.config[key]
+                for key in (
+                    "embedding_model",
+                    "reranker_model",
+                    "default_method",
+                    "top_k",
+                    "chunking_strategy",
+                    "contextual",
+                    "max_new_tokens",
+                )
+            },
             "questions": len(rows),
             "average": average,
             "rows": rows,
         }
+
+    @staticmethod
+    def save(results: dict) -> Path:
+        """Write this run to eval/generator_runs/<date>_<time>.json (never overwrites)."""
+        RUNS_DIR.mkdir(exist_ok=True)
+        file = RUNS_DIR / f"{time.strftime('%Y-%m-%d_%H%M%S')}.json"
+        file.write_text(json.dumps(results, indent=2))
+        return file
 
     @staticmethod
     def print_summary(results: dict) -> None:
@@ -203,5 +232,4 @@ if __name__ == "__main__":
     evaluation = GeneratorEval(limit=args.limit)
     results = evaluation.run()
     evaluation.print_summary(results)
-    RESULTS_FILE.write_text(json.dumps(results, indent=2))
-    print(f"\nSaved to {RESULTS_FILE.relative_to(PROJECT_DIR)}")
+    print(f"\nSaved to {evaluation.save(results).relative_to(PROJECT_DIR)}")

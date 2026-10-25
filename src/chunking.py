@@ -206,7 +206,9 @@ class ChunkingPipeline:
             )
         elif strategy == "semantic":
             chunker = SemanticChunker(
-                make_embeddings(config), config["semantic_percentile"], config["semantic_max_chars"]
+                make_embeddings(config),
+                config["semantic_percentile"],
+                config["semantic_max_chars"],
             )
         else:
             raise ValueError(

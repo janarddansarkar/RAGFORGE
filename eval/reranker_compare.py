@@ -28,7 +28,9 @@ results = {}
 for name in RERANKERS:
     try:
         start = time.time()
-        evaluation.retriever.__dict__["reranker"] = CrossEncoder(name)  # replaces cached_property
+        evaluation.retriever.__dict__["reranker"] = CrossEncoder(
+            name
+        )  # replaces cached_property
         for method in METHODS:
             results[f"{method} | {name}"] = evaluation.run_method(method)
         print(f"done {name} ({time.time() - start:.0f}s)", file=sys.stderr)
