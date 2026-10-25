@@ -13,7 +13,7 @@ A judge LLM (judge_model in config.toml, not the generator) answers short YES/NO
 questions; nothing leaves your machine. Small judges are noisy, so read the scores as a
 comparison between setups, not as absolute truth.
 
-Run:  uv run python eval/generator_eval.py [--limit 10] [--oracle]
+Run:  uv run python eval/generator_eval.py [--limit 10] [--oracle] [--generator ID] [--judge ID]
 --oracle gives the generator the golden pages instead of retrieved chunks, so you see
 the generator on its own (compare with a normal run to see what retrieval costs).
 """
@@ -245,9 +245,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--oracle", action="store_true", help="give the generator the golden pages"
     )
+    parser.add_argument(
+        "--generator", help="Hugging Face id to use instead of llm_model"
+    )
+    parser.add_argument("--judge", help="Hugging Face id to use instead of judge_model")
     args = parser.parse_args()
 
-    evaluation = GeneratorEval(limit=args.limit, oracle=args.oracle)
+    config = load_config()
+    if args.generator:
+        config["llm_model"] = args.generator
+    if args.judge:
+        config["judge_model"] = args.judge
+
+    evaluation = GeneratorEval(config, limit=args.limit, oracle=args.oracle)
     results = evaluation.run()
     evaluation.print_summary(results)
     print(f"\nSaved to {evaluation.save(results).relative_to(PROJECT_DIR)}")
