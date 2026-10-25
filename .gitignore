@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.deepeval/
+vs/
+.DS_Store

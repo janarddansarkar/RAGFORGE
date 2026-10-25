@@ -1,0 +1,62 @@
+# RAGForge settings - the single place for all project configuration.
+
+# ---- Folders (relative to the project folder) ----
+data_dir = "documents"  # source PDFs
+vs_dir = "vs"           # Chroma vector store
+
+# ---- Models (all local) ----
+ollama_base_url = "http://localhost:11434"
+embedding_model = "bge-m3"  # changing it requires: uv run python src/vectorstore.py --rebuild
+llm_model = "mistral:7b"    # contextual chunking notes
+reranker_model = "BAAI/bge-reranker-v2-m3"
+
+# ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
+# Each strategy gets its own collection in ./vs, so several can exist side by side.
+collection_name = "ragforge"    # the strategy name is added to it
+chunking_strategy = "recursive"  # recursive | tokens | semantic
+contextual = false               # true: an LLM adds a context note to every chunk (slow to build)
+chunk_size = 1000                # recursive: characters
+chunk_overlap = 150
+token_chunk_size = 500           # tokens: size and overlap in tokens
+token_overlap = 100
+tokenizer_model = "BAAI/bge-m3"  # tokenizer used to count tokens
+semantic_percentile = 90         # semantic: break where the similarity drop is in the top 10%
+semantic_max_chars = 1500        # semantic: hard limit on chunk length
+
+# ---- Retrieval ----
+# Methods: dense, bm25, hybrid, dense_rerank, hybrid_rerank
+default_method = "hybrid_rerank"  # used by retrieve() when no method is given
+methods = [                       # pipelines the eval / demo run
+    "dense",
+    "bm25",
+    "hybrid",
+    "dense_rerank",
+    "hybrid_rerank",
+]
+top_k = 5        # results returned to the caller
+fetch_k = 20     # candidates gathered before fusion / reranking
+rrf_k = 60       # RRF constant: score = 1 / (rrf_k + rank)
+
+# ---- Retriever eval ----
+golden_file = "golden_data/rag_retriever_golden_dataset_45.json"
+eval_ks = [1, 3, 5, 10]  # Recall@K and HitRate@K
+precision_k = 5          # Precision@K
+compare_methods = ["dense", "bm25", "hybrid_rerank"]  # retrieval methods used to compare chunking
+
+# Chunking variants for eval/chunking_compare.py. Each one overrides the chunking settings above.
+# Keep this at the end of the file (a TOML array of tables).
+[[chunking_variants]]
+chunking_strategy = "recursive"
+contextual = false
+
+[[chunking_variants]]
+chunking_strategy = "tokens"
+contextual = false
+
+[[chunking_variants]]
+chunking_strategy = "semantic"
+contextual = false
+
+[[chunking_variants]]
+chunking_strategy = "recursive"
+contextual = true
