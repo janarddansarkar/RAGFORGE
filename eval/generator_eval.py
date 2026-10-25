@@ -65,7 +65,6 @@ class Judge:
     def __init__(self, config: dict):
         judge_config = {
             **config,
-            "provider": config["judge_provider"],
             "llm_model": config["judge_model"],
             "max_new_tokens": 8,  # a verdict is one word
         }

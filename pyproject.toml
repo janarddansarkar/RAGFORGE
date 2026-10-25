@@ -7,7 +7,6 @@ dependencies = [
     "langchain>=1.4.3",
     "langchain-chroma>=1.1.0",
     "langchain-core>=1.6.6",
-    "langchain-ollama>=1.1.0",
     "langchain-text-splitters>=1.1.2",
     "langgraph>=1.2.12",
     "pymupdf>=1.28.2",

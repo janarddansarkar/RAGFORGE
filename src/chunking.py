@@ -24,7 +24,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from models import Llm, make_embeddings, make_llm
+from models import HuggingFaceChat, make_embeddings, make_llm
 
 
 class Chunker(ABC):
@@ -146,7 +146,7 @@ Reply with those sentences only."""
 class ContextualChunker(Chunker):
     """Wraps another chunker and puts an LLM-written context note in front of each chunk."""
 
-    def __init__(self, base: Chunker, llm: Llm, cache_file: Path):
+    def __init__(self, base: Chunker, llm: HuggingFaceChat, cache_file: Path):
         self.base = base
         self.llm = llm
         self.cache_file = cache_file

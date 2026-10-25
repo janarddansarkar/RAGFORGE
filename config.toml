@@ -4,15 +4,10 @@
 data_dir = "documents"  # source PDFs
 vs_dir = "vs"           # Chroma vector store
 
-# ---- Models (all free and local) ----
-# provider = "huggingface": models run inside Python, no server; names are Hugging Face ids.
-# provider = "ollama": models come from a running Ollama; names are Ollama tags
-#   (e.g. embedding_model = "bge-m3", llm_model = "mistral:7b").
-provider = "huggingface"
+# ---- Models (Hugging Face ids; free, run inside Python, offline once downloaded) ----
 embedding_model = "BAAI/bge-m3"  # changing it requires: uv run python src/vectorstore.py --rebuild
 llm_model = "unsloth/gemma-3-1b-it"  # contextual notes, query transforms, answers
 max_new_tokens = 256                 # longest reply the huggingface LLM writes
-ollama_base_url = "http://localhost:11434"  # only used when provider = "ollama"
 reranker_model = "BAAI/bge-reranker-v2-m3"
 
 # ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
@@ -76,8 +71,7 @@ tie_margin = 0.01             # within this of the best counts as a tie; the fas
 
 # ---- eval/generator_eval.py ----
 # The judge should be a different, stronger model than the generator (llm_model).
-judge_provider = "ollama"  # mistral:7b is already installed in Ollama
-judge_model = "mistral:7b"
+judge_model = "Qwen/Qwen2.5-3B-Instruct"
 
 # Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
 # Keep this at the end of the file (a TOML array of tables).

@@ -15,7 +15,7 @@ from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 
-from models import Llm, make_llm
+from models import HuggingFaceChat, make_llm
 from vectorstore import VectorStore, load_config
 
 REWRITE_PROMPT = """Rewrite the question below into a clear, specific search query \
@@ -86,7 +86,7 @@ class Retriever:
 
     # The LLM and reranker are loaded only the first time a pipeline needs them.
     @cached_property
-    def llm(self) -> Llm:
+    def llm(self) -> HuggingFaceChat:
         return make_llm(self.config)
 
     @cached_property

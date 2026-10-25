@@ -1,18 +1,16 @@
 """Models: the embedder and the LLM that config.toml asks for.
 
-provider = "huggingface"  models run inside this Python process (no server, free, offline
-                          once downloaded); names are Hugging Face ids, e.g. "BAAI/bge-m3"
-provider = "ollama"       models are served by a running Ollama; names are Ollama tags
+Both are Hugging Face models that run inside this Python process: no server, free,
+and offline once downloaded (the first use downloads them to ~/.cache/huggingface).
 
-Everything else calls make_embeddings(config) / make_llm(config) and never names a provider.
-An LLM has .model (its name) and .invoke(prompt).content (the reply), like ChatOllama.
+Everything else calls make_embeddings(config) / make_llm(config).
+An LLM has .model (its name) and .invoke(prompt).content (the reply).
 """
 
 from functools import cached_property
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage
-from langchain_ollama import ChatOllama, OllamaEmbeddings
 
 
 class HuggingFaceEmbeddings(Embeddings):
@@ -63,23 +61,9 @@ class HuggingFaceChat:
         return AIMessage(content=str(reply[0]["generated_text"]).strip())
 
 
-def make_embeddings(config: dict) -> Embeddings:
-    if config["provider"] == "ollama":
-        return OllamaEmbeddings(
-            model=config["embedding_model"], base_url=config["ollama_base_url"]
-        )
+def make_embeddings(config: dict) -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(config["embedding_model"])
 
 
-Llm = HuggingFaceChat | ChatOllama
-
-
-def make_llm(config: dict) -> Llm:
-    if config["provider"] == "ollama":
-        return ChatOllama(
-            model=config["llm_model"],
-            base_url=config["ollama_base_url"],
-            temperature=0,
-            reasoning=False,  # no "thinking" output from qwen3
-        )
+def make_llm(config: dict) -> HuggingFaceChat:
     return HuggingFaceChat(config["llm_model"], config["max_new_tokens"])
