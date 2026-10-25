@@ -1,0 +1,117 @@
+"""RAG: ask questions about one PDF. Retrieves the best chunks, answers from them,
+and shows the citations and the top-k chunks.
+
+    uv run python src/rag.py paper.pdf "What rank r does LoRA use?"
+    uv run python src/rag.py paper.pdf                  # no question: ask several, empty line quits
+    uv run python src/rag.py paper.pdf "..." --k 3 --full
+
+The PDF is indexed the first time (a minute or so) and reused afterwards: each document
+gets its own store in ./vs_docs, named by a hash of the file, so editing the PDF re-indexes it.
+"""
+
+import argparse
+import hashlib
+import shutil
+import sys
+import textwrap
+from pathlib import Path
+
+from langchain_core.documents import Document
+
+from generator import Generator
+from vectorstore import PROJECT_ROOT, VectorStore, load_config
+
+DOCS_DIR = PROJECT_ROOT / "vs_docs"
+REFUSAL = (
+    "can't find that in the documents"  # what the generator says when it has no answer
+)
+
+
+class DocumentRAG:
+    def __init__(self, pdf: Path, k: int | None = None, method: str | None = None):
+        if pdf.suffix.lower() != ".pdf" or not pdf.is_file():
+            raise SystemExit(f"Not a PDF file: {pdf}")
+        base = load_config()
+        self.pdf = pdf
+        self.k = k or base["top_k"]
+        self.method = method or base["default_method"]
+        self.config = self.config_for(pdf, base)
+
+        store = VectorStore(self.config)
+        if store.count() == 0:
+            print(f"Indexing {pdf.name} (first time only)...", file=sys.stderr)
+            store.build()
+        if store.count() == 0:
+            raise SystemExit(f"No text found in {pdf.name} (is it a scanned PDF?)")
+        self.generator = Generator(self.config)
+
+    @staticmethod
+    def config_for(pdf: Path, base: dict) -> dict:
+        """A config whose data and store folders belong to this one document."""
+        digest = hashlib.sha1(pdf.read_bytes()).hexdigest()[:12]
+        folder = DOCS_DIR / digest
+        (folder / "pdf").mkdir(parents=True, exist_ok=True)
+        staged = folder / "pdf" / pdf.name
+        if not staged.exists():
+            shutil.copy2(pdf, staged)  # the pipeline reads every PDF in data_dir
+        return {**base, "data_dir": folder / "pdf", "vs_dir": folder / "vs"}
+
+    def ask(self, question: str) -> tuple[str, list[Document]]:
+        """The answer and the top-k chunks it was written from."""
+        chunks = self.generator.retriever.retrieve(question, self.method, self.k)
+        return self.generator.answer_from(question, chunks)
+
+
+class Report:
+    """Prints an answer, its citations and the chunks behind it."""
+
+    def __init__(self, full: bool = False):
+        self.full = full
+
+    @staticmethod
+    def label(chunk: Document) -> str:
+        return f"{chunk.metadata['source']} p.{chunk.metadata['page']}"
+
+    def show(self, question: str, answer: str, chunks: list[Document]) -> None:
+        print(f"\nQ: {question}\n\nAnswer:\n{textwrap.indent(answer, '  ')}")
+
+        print("\nCitations (the pages the answer was written from):")
+        if REFUSAL in answer.lower().replace("\u2019", "'"):
+            print("  none - the document does not answer this question")
+        else:
+            for label in dict.fromkeys(
+                self.label(c) for c in chunks
+            ):  # unique, in rank order
+                print(f"  - {label}")
+
+        print(f"\nTop {len(chunks)} chunks:")
+        for rank, chunk in enumerate(chunks, start=1):
+            score = chunk.metadata.get("rerank_score")
+            score_text = f"   rerank score {score:.2f}" if score is not None else ""
+            print(f"\n  [{rank}] {self.label(chunk)}{score_text}")
+            text = " ".join(chunk.page_content.split())
+            text = text if self.full or len(text) <= 400 else text[:400] + " ..."
+            print(textwrap.indent(textwrap.fill(text, width=88), "      "))
+        print()
+
+
+# RUN IT ---- python src/rag.py paper.pdf "your question"
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("pdf", type=Path, help="path to the PDF")
+    parser.add_argument(
+        "question", nargs="*", help="leave empty to ask several questions"
+    )
+    parser.add_argument("--k", type=int, help="chunks to retrieve (default: top_k)")
+    parser.add_argument("--method", help="retrieval method (default: default_method)")
+    parser.add_argument("--full", action="store_true", help="show whole chunks")
+    args = parser.parse_args()
+
+    rag = DocumentRAG(args.pdf, k=args.k, method=args.method)
+    report = Report(full=args.full)
+    if args.question:
+        question = " ".join(args.question)
+        report.show(question, *rag.ask(question))
+    else:
+        while question := input("Question (empty to quit): ").strip():
+            report.show(question, *rag.ask(question))

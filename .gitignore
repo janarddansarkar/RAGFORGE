@@ -9,3 +9,4 @@ __pycache__/
 vs/
 .DS_Store
 vs_ollama_backup/
+vs_docs/
