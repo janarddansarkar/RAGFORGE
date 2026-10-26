@@ -117,7 +117,14 @@ if question and question.strip():
             "chunks": chunks,
             "query": rag.last_query,
         }
-        turn["triad"] = score_turn(question.strip(), answer, chunks)
+        entry = rag.generator.cache_entry  # the cache keeps the scores with the answer
+        if entry and entry["triad"]:
+            turn["triad"] = entry["triad"]
+        else:
+            turn["triad"] = score_turn(question.strip(), answer, chunks)
+            if entry:
+                entry["triad"] = turn["triad"]
+                rag.generator.cache.save()
         messages.append(turn)
 
 
@@ -131,6 +138,24 @@ def show_triad(triad: dict) -> None:
     with st.expander("Why these scores"):
         for name, result in triad.items():
             st.markdown(f"**{name}:** {result['reason']}")
+
+
+SCORES = (  # (metadata key, label, what it means)
+    ("dense_distance", "vector distance", "lower = closer"),
+    ("bm25_score", "keyword (BM25)", "higher = more shared rare words"),
+    ("rrf_score", "fused (RRF)", "higher = ranked well by the searches"),
+    ("rerank_score", "reranker", "0-1, higher = better match"),
+)
+
+
+def score_line(chunk) -> str:
+    """The scores the chunk got on its way here (a search that did not find it adds none)."""
+    parts = [
+        f"{label} {chunk.metadata[key]:.4f}"
+        for key, label, _ in SCORES
+        if key in chunk.metadata
+    ]
+    return " | ".join(parts) or "no scores"
 
 
 def show_answer(message: dict, index: int) -> None:
@@ -149,10 +174,10 @@ def show_answer(message: dict, index: int) -> None:
         message["triad"] = score_turn(message["question"], answer, chunks)
         st.rerun()
     with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
+        st.caption(" · ".join(f"{label}: {note}" for _, label, note in SCORES))
         for rank, chunk in enumerate(chunks, start=1):
-            score = chunk.metadata.get("rerank_score")
-            score_text = f" - rerank score {score:.4f}" if score is not None else ""
-            st.markdown(f"**[{rank}] {Report.label(chunk)}{score_text}**")
+            st.markdown(f"**[{rank}] {Report.label(chunk)}**")
+            st.caption(score_line(chunk))
             st.write(chunk.page_content)
 
 

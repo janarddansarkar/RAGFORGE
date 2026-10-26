@@ -111,13 +111,28 @@ class Retriever:
     # 1. SEARCH ---- the two basic ways to find chunks
     def dense(self, query: str, k: int) -> list[Document]:
         """Vector search: finds chunks with similar meaning."""
-        return self.store.similarity_search(query, k=k)
+        found = self.store.similarity_search_with_score(query, k=k)
+        # The distance (lower = closer) goes on the chunk so the UI can show it.
+        return [self.with_scores(doc, dense_distance=float(d)) for doc, d in found]
 
     def bm25(self, query: str, k: int) -> list[Document]:
         """Keyword search: finds chunks sharing the query's (rare) words."""
         scores = self.bm25_index.get_scores(self._tokenize(query))
         best = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
-        return [self.chunks[i] for i in best if scores[i] > 0]
+        return [
+            self.with_scores(self.chunks[i], bm25_score=float(scores[i]))
+            for i in best
+            if scores[i] > 0
+        ]
+
+    @staticmethod
+    def with_scores(doc: Document, **scores: float) -> Document:
+        """A copy of the chunk with scores added to its metadata (the shared chunk is untouched)."""
+        return Document(
+            id=doc.id,
+            page_content=doc.page_content,
+            metadata={**doc.metadata, **scores},
+        )
 
     @staticmethod
     def _tokenize(text: str) -> list[str]:
@@ -132,8 +147,11 @@ class Retriever:
             for rank, doc in enumerate(results, start=1):
                 key = str(doc.id)
                 scores[key] = scores.get(key, 0.0) + 1 / (self.config["rrf_k"] + rank)
+                if key in docs:  # found by both searches: keep the scores from both
+                    doc = self.with_scores(doc, **docs[key].metadata)
                 docs[key] = doc
-        return sorted(docs.values(), key=lambda d: scores[str(d.id)], reverse=True)
+        ranked = sorted(docs, key=lambda key: scores[key], reverse=True)
+        return [self.with_scores(docs[key], rrf_score=scores[key]) for key in ranked]
 
     def rerank(self, query: str, docs: list[Document], k: int) -> list[Document]:
         """An LLM reads (question, chunk) together and scores the match from 0 to 1.

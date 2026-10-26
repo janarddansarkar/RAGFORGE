@@ -72,7 +72,9 @@ class InputGuard:
         ("a bank account (IBAN)", re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b")),
         (
             "an API key or token",
-            re.compile(r"\b(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,})"),
+            re.compile(
+                r"\b(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,})"
+            ),
         ),
         (
             "a password or secret",
@@ -129,7 +131,9 @@ class InputGuard:
         try:
             verdict = Verdict.model_validate_json(str(reply))
         except ValueError:
-            return "the safety check could not read it"  # unsure -> do not let it through
+            return (
+                "the safety check could not read it"  # unsure -> do not let it through
+            )
         if verdict.malicious:
             return verdict.reason or "it looks malicious"
         return None

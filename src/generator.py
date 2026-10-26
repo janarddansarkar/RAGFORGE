@@ -8,6 +8,7 @@ import sys
 
 from langchain_core.documents import Document
 
+from cache import SessionCache
 from guardrails import InputGuard
 from memory import ConversationMemory
 from retriever import Retriever
@@ -15,7 +16,8 @@ from vectorstore import load_config
 
 ANSWER_PROMPT = """Answer the question using ONLY the passages below. \
 If they do not contain the answer, say "I can't find that in the documents." \
-Be brief and cite the passages you used like [LoRA p.4].
+Be brief. Cite each passage you used by copying the label in square brackets above it, \
+exactly as written, and never cite a label that is not above a passage.
 
 {passages}{history}
 
@@ -27,6 +29,8 @@ class Generator:
         self.config = config or load_config()
         self.retriever = Retriever(self.config)
         self.guard = InputGuard(self.config) if self.config["input_guard"] else None
+        self.cache = SessionCache(self.config) if self.config["use_cache"] else None
+        self.cache_entry: dict | None = None  # the cache entry behind the last answer
 
     @staticmethod
     def label(chunk: Document) -> str:
@@ -44,14 +48,23 @@ class Generator:
         k: int | None = None,
     ) -> tuple[str, list[Document], str]:
         """One turn of a conversation. Returns the answer, the chunks and the query searched.
-        Raises InputBlocked (before anything is searched or remembered) for a bad question."""
+        Raises InputBlocked (before anything is searched or remembered) for a bad question.
+        A question like an earlier one in this session is answered from the cache."""
         if self.guard:
             self.guard.check(question)
         search_query = memory.standalone(question, self.retriever.llm)
-        chunks = self.retriever.retrieve(
-            search_query, method or self.config["default_method"], k
-        )
-        answer, chunks = self.answer_from(question, chunks, memory.history())
+        hit = self.cache.find(search_query) if self.cache else None
+        if hit:  # a similar question was answered earlier in this session
+            self.cache_entry = hit
+            answer, chunks = hit["answer"], self.cache.chunks_of(hit)
+        else:
+            chunks = self.retriever.retrieve(
+                search_query, method or self.config["default_method"], k
+            )
+            answer, chunks = self.answer_from(question, chunks, memory.history())
+            self.cache_entry = (
+                self.cache.add(search_query, answer, chunks) if self.cache else None
+            )
         memory.add(question, answer)
         return answer, chunks, search_query
 

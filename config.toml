@@ -48,6 +48,10 @@ compare_methods = ["dense", "bm25", "hybrid_rerank"]  # retrieval methods used t
 input_guard = true      # false: skip the check (the eval never uses it)
 guard_max_chars = 1000  # longer questions are blocked
 
+# ---- Session cache (src/cache.py) ----
+use_cache = true         # a question similar to an earlier one in this session reuses its answer
+cache_threshold = 0.95   # how alike two questions must be (cosine, 0-1); higher = fewer reuses
+
 memory_turns = 3  # chat: how many past question/answer pairs the model remembers
 num_queries = 3  # multi_query: extra phrasings the LLM writes per question
 

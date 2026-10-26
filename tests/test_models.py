@@ -124,3 +124,25 @@ def test_digit_score_ignores_non_digit_tokens():
     assert digit_chat([("The", 0.6), (" 9", 0.4)]).digit_score("x") == 1.0
     assert digit_chat([("The", 1.0)]).digit_score("x") == 0.0
     assert digit_chat([("₀", 0.5), ("４", 0.3), ("9", 0.2)]).digit_score("x") == 1.0
+
+
+def test_rrf_keeps_the_scores_of_every_search_that_found_a_chunk():
+    from langchain_core.documents import Document
+
+    retriever = Retriever.__new__(Retriever)
+    retriever.config = {"rrf_k": 60}
+    both = Document(
+        id="1", page_content="a", metadata={"page": 1, "dense_distance": 0.4}
+    )
+    only_bm25 = Document(
+        id="2", page_content="b", metadata={"page": 2, "bm25_score": 3.0}
+    )
+    found_by_bm25 = Document(
+        id="1", page_content="a", metadata={"page": 1, "bm25_score": 5.0}
+    )
+    ranked = retriever.rrf([[both], [found_by_bm25, only_bm25]])
+    assert ranked[0].id == "1"
+    assert ranked[0].metadata["dense_distance"] == 0.4
+    assert ranked[0].metadata["bm25_score"] == 5.0
+    assert ranked[0].metadata["rrf_score"] > ranked[1].metadata["rrf_score"]
+    assert "rrf_score" not in both.metadata  # the original chunk is untouched
