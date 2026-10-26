@@ -6,7 +6,7 @@
     "chunk_size": 600,
     "chunk_overlap": 90,
     "embedding_model": "all-minilm",
-    "default_method": "hybrid",
+    "default_method": "hybrid_rerank",
     "reranker_model": "qwen2.5:3b",
     "llm_model": "gemma3:4b",
     "top_k": 5,

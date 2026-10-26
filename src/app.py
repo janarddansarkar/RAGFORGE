@@ -140,21 +140,25 @@ def show_triad(triad: dict) -> None:
             st.markdown(f"**{name}:** {result['reason']}")
 
 
-SCORES = (  # (metadata key, label, what it means)
-    ("dense_distance", "vector distance", "lower = closer"),
-    ("bm25_score", "keyword (BM25)", "higher = more shared rare words"),
-    ("rrf_score", "fused (RRF)", "higher = ranked well by the searches"),
-    ("rerank_score", "reranker", "0-1, higher = better match"),
+# The retriever's own score for a chunk, from whichever search put it in the results.
+RETRIEVER_SCORES = (  # (metadata key, what it is)
+    ("rrf_score", "fused rank score, higher = better"),
+    ("dense_distance", "vector distance, lower = closer"),
+    ("bm25_score", "keyword score, higher = better"),
 )
 
 
 def score_line(chunk) -> str:
-    """The scores the chunk got on its way here (a search that did not find it adds none)."""
-    parts = [
-        f"{label} {chunk.metadata[key]:.4f}"
-        for key, label, _ in SCORES
-        if key in chunk.metadata
-    ]
+    """The retriever score, and the reranker score when a reranker ran."""
+    parts = []
+    for key, note in RETRIEVER_SCORES:
+        if key in chunk.metadata:
+            parts.append(f"retriever score {chunk.metadata[key]:.4f} ({note})")
+            break
+    if "rerank_score" in chunk.metadata:
+        parts.append(
+            f"reranker score {chunk.metadata['rerank_score']:.4f} (0-1, higher = better)"
+        )
     return " | ".join(parts) or "no scores"
 
 
@@ -174,7 +178,6 @@ def show_answer(message: dict, index: int) -> None:
         message["triad"] = score_turn(message["question"], answer, chunks)
         st.rerun()
     with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
-        st.caption(" · ".join(f"{label}: {note}" for _, label, note in SCORES))
         for rank, chunk in enumerate(chunks, start=1):
             st.markdown(f"**[{rank}] {Report.label(chunk)}**")
             st.caption(score_line(chunk))
@@ -225,3 +228,20 @@ with st.sidebar:
         st.caption(
             "0 = bad, 1 = good. A small local judge is noisy: use it as a guide."
         )
+
+    # The session's chat history: every question asked since the last Ingest, newest last.
+    st.divider()
+    st.subheader("Chat history")
+    answered = [m for m in messages if m["role"] == "assistant"]
+    if not answered:
+        st.caption("No questions asked in this session yet.")
+    for number, turn in enumerate(answered, start=1):
+        with st.expander(f"{number}. {turn['question']}"):
+            st.write(turn["text"])
+            if "triad" in turn:
+                st.caption(
+                    " | ".join(
+                        f"{name} {'n/a' if r['score'] is None else format(r['score'], '.2f')}"
+                        for name, r in turn["triad"].items()
+                    )
+                )
