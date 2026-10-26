@@ -33,6 +33,7 @@ question -> hybrid search (dense + BM25, fused) -> reranker -> top-k chunks -> a
 | `src/generator.py` | answers a question from chunks |
 | `src/rag.py` | puts it together for one PDF |
 | `src/rag_pipeline.py` | the full pipeline over `documents/`, using the best settings from `best_config.json` |
+| `src/app.py` | Streamlit UI: upload a PDF, Ingest, ask, see answer + citations + reranked chunks (`uv run streamlit run src/app.py`) |
 | `src/models.py` | loads the Hugging Face embedder and answer model |
 | `config.toml` | all settings |
 | `best_config.json` | settings found best by the evaluation; laid over `config.toml` |
