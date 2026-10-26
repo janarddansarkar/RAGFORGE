@@ -1,42 +1,43 @@
 {
-  "retrieval": "migrated to Ollama; settings below are the Ollama equivalents of the earlier winners - re-run eval/find_best.py to measure them",
+  "retrieval": "updated",
   "settings": {
     "chunking_strategy": "recursive",
-    "contextual": false,
-    "embedding_model": "bge-m3",
-    "default_method": "hybrid_rerank",
+    "contextual": true,
+    "chunk_size": 600,
+    "chunk_overlap": 90,
+    "embedding_model": "all-minilm",
+    "default_method": "hybrid",
     "reranker_model": "qwen2.5:3b",
-    "llm_model": "qwen2.5:3b",
+    "llm_model": "gemma3:4b",
     "top_k": 5,
     "max_new_tokens": 256
   },
   "held_out": {
     "best": {
-      "Recall@1": 0.6666666666666666,
-      "Recall@3": 0.7666666666666667,
-      "Recall@5": 0.9,
-      "Recall@10": 1.0,
-      "Precision@5": 0.3733333333333334,
-      "MRR": 0.8188888888888889,
-      "HitRate@1": 0.7333333333333333,
-      "HitRate@3": 0.8666666666666667,
-      "HitRate@5": 1.0,
+      "Recall@1": 0.43333333333333335,
+      "Recall@3": 0.5666666666666667,
+      "Recall@5": 0.8333333333333334,
+      "Recall@10": 0.9333333333333333,
+      "Precision@5": 0.33333333333333337,
+      "MRR": 0.6135978835978836,
+      "HitRate@1": 0.4666666666666667,
+      "HitRate@3": 0.6,
+      "HitRate@5": 0.8666666666666667,
       "HitRate@10": 1.0,
-      "sec/query": 0.01598293893330265
+      "sec/query": 0.006717802733328426
     },
     "current": {
-      "Recall@1": 0.6666666666666666,
-      "Recall@3": 0.9,
-      "Recall@5": 0.9666666666666667,
-      "Recall@10": 0.9666666666666667,
-      "Precision@5": 0.37333333333333335,
-      "MRR": 0.8555555555555555,
-      "HitRate@1": 0.7333333333333333,
-      "HitRate@3": 1.0,
-      "HitRate@5": 1.0,
+      "Recall@1": 0.3,
+      "Recall@3": 0.7,
+      "Recall@5": 0.8333333333333334,
+      "Recall@10": 0.9333333333333333,
+      "Precision@5": 0.2800000000000001,
+      "MRR": 0.5506349206349206,
+      "HitRate@1": 0.3333333333333333,
+      "HitRate@3": 0.8,
+      "HitRate@5": 0.9333333333333333,
       "HitRate@10": 1.0,
-      "sec/query": 0.8818068721996194
+      "sec/query": 1.6868220444666804
     }
-  },
-  "held_out_measured_with": "the earlier Hugging Face models (bge-m3 + bge-reranker-v2-m3 cross-encoder); not valid for the Ollama setup"
+  }
 }
