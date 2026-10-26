@@ -14,6 +14,7 @@ Look at the chunks without building the store:
 import hashlib
 import json
 import re
+import sys
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
@@ -182,6 +183,8 @@ class ContextualChunker(Chunker):
 
 
 class ChunkingPipeline:
+    IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
+
     def __init__(self, chunker: Chunker, data_dir: Path):
         self.chunker = chunker
         self.data_dir = data_dir
@@ -221,22 +224,45 @@ class ChunkingPipeline:
             chunker = ContextualChunker(chunker, llm, cache_file)
         return cls(chunker, config["data_dir"])
 
-    # 1. LOAD ---- one Document per PDF page
+    # 1. LOAD ---- one Document per PDF page, or per image file
     def load_pages(self) -> list[Document]:
         pages = []
-        for path in sorted(self.data_dir.glob("*.pdf")):
-            pdf = pymupdf.open(path)
-            for page_num, page in enumerate(pdf.pages(), start=1):
-                text = self._clean(str(page.get_text()))  # str() for the type checker
-                if not text:
-                    continue  # skip blank / scanned pages
-                pages.append(
-                    Document(
-                        page_content=text,
-                        metadata={"source": path.name, "page": page_num},
+        for path in sorted(self.data_dir.iterdir()):
+            suffix = path.suffix.lower()
+            if suffix == ".pdf":
+                texts = self._pdf_texts(path)
+            elif suffix in self.IMAGE_SUFFIXES:
+                texts = [self._ocr(pymupdf.open(path)[0])]
+            else:
+                continue
+            for page_num, text in enumerate(texts, start=1):
+                text = self._clean(text)
+                if text:  # skip blank pages
+                    pages.append(
+                        Document(
+                            page_content=text,
+                            metadata={"source": path.name, "page": page_num},
+                        )
                     )
-                )
         return pages
+
+    def _pdf_texts(self, path: Path) -> list[str]:
+        """The text of every page; a page with no text layer (a scan) is read with OCR."""
+        texts = []
+        for page in pymupdf.open(path).pages():
+            text = str(page.get_text())  # str() for the type checker
+            texts.append(text if text.strip() else self._ocr(page))
+        return texts
+
+    @staticmethod
+    def _ocr(page: pymupdf.Page) -> str:
+        """Text read from the page image with Tesseract (brew install tesseract)."""
+        try:
+            textpage = page.get_textpage_ocr(language="eng", dpi=300, full=True)
+        except RuntimeError as error:  # no Tesseract installed: say so, do not crash
+            print(f"OCR failed: {error}", file=sys.stderr)
+            return ""
+        return str(page.get_text(textpage=textpage))
 
     @staticmethod
     def _clean(text: str) -> str:
@@ -247,7 +273,10 @@ class ChunkingPipeline:
     def chunks(self) -> list[Document]:
         chunks = []
         for page in self.load_pages():
-            stem = Path(page.metadata["source"]).stem.strip().replace(" ", "_")
+            source = Path(page.metadata["source"])
+            stem = source.stem.strip().replace(" ", "_")
+            if source.suffix.lower() != ".pdf":
+                stem += "_img"  # so a.pdf and a.jpg never share chunk IDs
             for i, text in enumerate(self.chunker.split_page(page)):
                 chunk_id = f"{stem}_p{page.metadata['page']}_{i}"
                 chunks.append(

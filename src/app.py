@@ -20,7 +20,11 @@ st.set_page_config(page_title="RAGForge", page_icon="📄")
 st.title("RAGForge")
 
 # ---- 1. Upload + ingest ----
-uploaded = st.file_uploader("Upload PDFs", type="pdf", accept_multiple_files=True)
+uploaded = st.file_uploader(
+    "Upload PDFs or images",
+    type=[suffix.removeprefix(".") for suffix in DocumentRAG.SUFFIXES],
+    accept_multiple_files=True,
+)
 
 # A different set of uploads starts fresh: forget the old documents, answer and question.
 files = tuple(file.file_id for file in uploaded)
@@ -46,7 +50,7 @@ if uploaded and st.button("Ingest"):
 
 rag = st.session_state.get("rag")
 if rag is None:
-    st.info("Upload one or more PDFs and click Ingest to begin.")
+    st.info("Upload one or more PDFs or images and click Ingest to begin.")
     st.stop()
 st.success(f"Ready: {st.session_state.ingested}")
 

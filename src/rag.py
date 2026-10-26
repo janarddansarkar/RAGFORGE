@@ -1,4 +1,4 @@
-"""RAG: ask questions about one or more PDFs. Retrieves the best chunks, answers from them,
+"""RAG: ask questions about one or more PDFs or images. Retrieves the best chunks, answers from them,
 and shows the citations and the top-k chunks.
 
     uv run python src/rag.py paper.pdf "What rank r does LoRA use?"
@@ -7,7 +7,8 @@ and shows the citations and the top-k chunks.
 
 The PDFs are indexed the first time (a minute or so) and reused afterwards: each set of
 documents gets its own store in ./vs_docs, named by a hash of the files, so editing a PDF
-re-indexes it. (The CLI takes one PDF; DocumentRAG and the web UI take several.)
+re-indexes it. (The CLI takes one file; DocumentRAG and the web UI take several. Scans and photos are
+read by the vision model, which makes the first indexing slower.)
 """
 
 import argparse
@@ -18,6 +19,7 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 
+from chunking import ChunkingPipeline
 from generator import Generator
 from vectorstore import PROJECT_ROOT, VectorStore, load_config
 
@@ -28,6 +30,9 @@ REFUSAL = (
 
 
 class DocumentRAG:
+    # Scanned pages and photos are read by the vision model (vision.py).
+    SUFFIXES = (".pdf", *ChunkingPipeline.IMAGE_SUFFIXES)
+
     def __init__(
         self,
         pdfs: Path | list[Path],
@@ -38,8 +43,8 @@ class DocumentRAG:
         if not self.pdfs:
             raise SystemExit("No PDF given")
         for pdf in self.pdfs:
-            if pdf.suffix.lower() != ".pdf" or not pdf.is_file():
-                raise SystemExit(f"Not a PDF file: {pdf}")
+            if pdf.suffix.lower() not in self.SUFFIXES or not pdf.is_file():
+                raise SystemExit(f"Not a PDF or image file: {pdf}")
         base = load_config()
         self.k = k or base["top_k"]
         self.method = method or base["default_method"]
@@ -51,7 +56,7 @@ class DocumentRAG:
             print(f"Indexing {names} (first time only)...", file=sys.stderr)
             store.build()
         if store.count() == 0:
-            raise SystemExit(f"No text found in {names} (are they scanned PDFs?)")
+            raise SystemExit(f"No text found in {names} (are they blank?)")
         self.generator = Generator(self.config)
 
     @staticmethod
