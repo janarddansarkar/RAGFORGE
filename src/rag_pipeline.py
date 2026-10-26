@@ -15,6 +15,7 @@ import sys
 from langchain_core.documents import Document
 
 from generator import Generator
+from guardrails import InputBlocked
 from memory import ConversationMemory
 from vectorstore import BEST_CONFIG_FILE, VectorStore, load_config
 
@@ -65,7 +66,11 @@ class RAGPipeline:
         return answer, chunks
 
     def show(self, question: str) -> None:
-        answer, chunks = self.ask(question)
+        try:
+            answer, chunks = self.ask(question)
+        except InputBlocked as blocked:
+            print(f"\nQ: {question}\n\n{blocked}\n")
+            return
         print(f"\nQ: {question}\n\nAnswer:\n{answer}\n\nSources:")
         for label in dict.fromkeys(self.generator.label(c) for c in chunks):
             print(f"  - {label}")

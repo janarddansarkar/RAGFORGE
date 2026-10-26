@@ -11,6 +11,7 @@ embedding_model = "bge-m3"  # changing it requires: uv run python src/vectorstor
 llm_model = "qwen2.5:3b"    # contextual notes, query transforms, answers
 max_new_tokens = 256        # longest reply the LLM writes
 reranker_model = "qwen2.5:3b"  # an LLM scores each chunk 0-10 (Ollama has no cross-encoder reranker)
+guard_model = "mistral:7b"     # checks every question for prompt injection and other malicious input (src/guardrails.py)
 stt_model = "small"            # faster-whisper model (tiny | base | small | medium) that hears spoken questions in the UI
 
 # ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
@@ -42,6 +43,10 @@ golden_file = "golden_data/rag_retriever_golden_dataset_45.json"
 eval_ks = [1, 3, 5, 10]  # Recall@K and HitRate@K
 precision_k = 5          # Precision@K
 compare_methods = ["dense", "bm25", "hybrid_rerank"]  # retrieval methods used to compare chunking
+
+# ---- Input guardrail (src/guardrails.py) ----
+input_guard = true      # false: skip the check (the eval never uses it)
+guard_max_chars = 1000  # longer questions are blocked
 
 memory_turns = 3  # chat: how many past question/answer pairs the model remembers
 num_queries = 3  # multi_query: extra phrasings the LLM writes per question

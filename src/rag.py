@@ -21,6 +21,7 @@ from langchain_core.documents import Document
 
 from chunking import ChunkingPipeline
 from generator import Generator
+from guardrails import InputBlocked
 from memory import ConversationMemory
 from vectorstore import PROJECT_ROOT, VectorStore, load_config
 
@@ -132,9 +133,15 @@ if __name__ == "__main__":
 
     rag = DocumentRAG(args.pdf, k=args.k, method=args.method)
     report = Report(full=args.full)
+
+    def ask_and_show(question: str) -> None:
+        try:
+            report.show(question, *rag.ask(question))
+        except InputBlocked as blocked:
+            print(f"\n{blocked}\n")
+
     if args.question:
-        question = " ".join(args.question)
-        report.show(question, *rag.ask(question))
+        ask_and_show(" ".join(args.question))
     else:
         while question := input("Question (empty to quit): ").strip():
-            report.show(question, *rag.ask(question))
+            ask_and_show(question)

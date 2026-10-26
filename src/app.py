@@ -13,6 +13,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from guardrails import InputBlocked
 from rag import REFUSAL, DocumentRAG, Report
 from vectorstore import PROJECT_ROOT, load_config
 from voice import SpeechToText, TextToSpeech
@@ -75,12 +76,9 @@ if recording:
 read_aloud = st.checkbox("Read answers aloud")
 with st.sidebar:
     st.header("RAG triad")
-    score_answers = st.checkbox(
-        "Score each new answer",
-        help="deepeval + a local judge; adds about a minute per answer",
-    )
     st.caption(
-        f"Judge: {load_config()['judge_model']} (an Ollama model, runs on this machine)."
+        f"Every answer is scored by {load_config()['judge_model']} (an Ollama model, "
+        "runs on this machine); this adds about a minute per answer."
     )
 if st.button("Clear chat"):
     rag.memory.clear()
@@ -104,19 +102,23 @@ question = st.chat_input("Ask a question about the documents") or st.session_sta
     "spoken", None
 )
 if question and question.strip():
-    messages.append({"role": "user", "text": question.strip()})
-    with st.spinner("Retrieving and answering..."):
-        answer, chunks = rag.ask(question.strip())
-    turn = {
-        "role": "assistant",
-        "question": question.strip(),
-        "text": answer,
-        "chunks": chunks,
-        "query": rag.last_query,
-    }
-    if score_answers:
+    try:
+        with st.spinner("Checking, retrieving and answering..."):
+            answer, chunks = rag.ask(question.strip())
+    except InputBlocked as blocked:
+        st.warning(str(blocked))
+        question = None  # nothing was asked: no scoring, no reading aloud
+    else:
+        messages.append({"role": "user", "text": question.strip()})
+        turn = {
+            "role": "assistant",
+            "question": question.strip(),
+            "text": answer,
+            "chunks": chunks,
+            "query": rag.last_query,
+        }
         turn["triad"] = score_turn(question.strip(), answer, chunks)
-    messages.append(turn)
+        messages.append(turn)
 
 
 # ---- 3. The conversation: answers with citations and the chunks behind them ----
@@ -181,10 +183,7 @@ def show_score(name: str, value: float | None) -> None:
 with st.sidebar:
     scored = [m for m in messages if "triad" in m]
     if not scored:
-        st.info(
-            "No scored answers yet. Tick the box above for new answers, "
-            "or click 'Score this answer' under an answer."
-        )
+        st.info("Scores appear here after the first answer.")
     else:
         latest = scored[-1]
         st.subheader("Latest answer")

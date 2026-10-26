@@ -8,6 +8,7 @@ import sys
 
 from langchain_core.documents import Document
 
+from guardrails import InputGuard
 from memory import ConversationMemory
 from retriever import Retriever
 from vectorstore import load_config
@@ -25,6 +26,7 @@ class Generator:
     def __init__(self, config: dict | None = None):
         self.config = config or load_config()
         self.retriever = Retriever(self.config)
+        self.guard = InputGuard(self.config) if self.config["input_guard"] else None
 
     @staticmethod
     def label(chunk: Document) -> str:
@@ -41,7 +43,10 @@ class Generator:
         method: str | None = None,
         k: int | None = None,
     ) -> tuple[str, list[Document], str]:
-        """One turn of a conversation. Returns the answer, the chunks and the query searched."""
+        """One turn of a conversation. Returns the answer, the chunks and the query searched.
+        Raises InputBlocked (before anything is searched or remembered) for a bad question."""
+        if self.guard:
+            self.guard.check(question)
         search_query = memory.standalone(question, self.retriever.llm)
         chunks = self.retriever.retrieve(
             search_query, method or self.config["default_method"], k
