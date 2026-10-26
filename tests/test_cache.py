@@ -33,6 +33,8 @@ def test_empty_cache_misses_and_file_is_json_then_destroyed(tmp_path):
     cache = make_cache(tmp_path)
     assert cache.find("anything") is None
     cache.add("q", "a", [])
-    assert json.loads(cache.file.read_text())[0]["answer"] == "a"
+    saved = json.loads(cache.file.read_text())[0]
+    assert saved["answer"] == "a"
+    assert "vector" not in saved  # kept in memory only
     cache.destroy()
     assert not cache.file.exists()

@@ -73,7 +73,9 @@ class SessionCache:
 
     def save(self) -> None:
         self.file.parent.mkdir(parents=True, exist_ok=True)
-        self.file.write_text(json.dumps(self.entries, indent=1))
+        # The vectors stay in memory only; the file is just the readable part.
+        readable = [{k: v for k, v in e.items() if k != "vector"} for e in self.entries]
+        self.file.write_text(json.dumps(readable, indent=1))
 
     def destroy(self) -> None:
         self.file.unlink(missing_ok=True)
