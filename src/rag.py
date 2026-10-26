@@ -1,17 +1,17 @@
-"""RAG: ask questions about one PDF. Retrieves the best chunks, answers from them,
+"""RAG: ask questions about one or more PDFs. Retrieves the best chunks, answers from them,
 and shows the citations and the top-k chunks.
 
     uv run python src/rag.py paper.pdf "What rank r does LoRA use?"
     uv run python src/rag.py paper.pdf                  # no question: ask several, empty line quits
     uv run python src/rag.py paper.pdf "..." --k 3 --full
 
-The PDF is indexed the first time (a minute or so) and reused afterwards: each document
-gets its own store in ./vs_docs, named by a hash of the file, so editing the PDF re-indexes it.
+The PDFs are indexed the first time (a minute or so) and reused afterwards: each set of
+documents gets its own store in ./vs_docs, named by a hash of the files, so editing a PDF
+re-indexes it. (The CLI takes one PDF; DocumentRAG and the web UI take several.)
 """
 
 import argparse
 import hashlib
-import shutil
 import sys
 import textwrap
 from pathlib import Path
@@ -28,32 +28,45 @@ REFUSAL = (
 
 
 class DocumentRAG:
-    def __init__(self, pdf: Path, k: int | None = None, method: str | None = None):
-        if pdf.suffix.lower() != ".pdf" or not pdf.is_file():
-            raise SystemExit(f"Not a PDF file: {pdf}")
+    def __init__(
+        self,
+        pdfs: Path | list[Path],
+        k: int | None = None,
+        method: str | None = None,
+    ):
+        self.pdfs = [pdfs] if isinstance(pdfs, Path) else list(pdfs)
+        if not self.pdfs:
+            raise SystemExit("No PDF given")
+        for pdf in self.pdfs:
+            if pdf.suffix.lower() != ".pdf" or not pdf.is_file():
+                raise SystemExit(f"Not a PDF file: {pdf}")
         base = load_config()
-        self.pdf = pdf
         self.k = k or base["top_k"]
         self.method = method or base["default_method"]
-        self.config = self.config_for(pdf, base)
+        self.config = self.config_for(self.pdfs, base)
 
         store = VectorStore(self.config)
+        names = ", ".join(pdf.name for pdf in self.pdfs)
         if store.count() == 0:
-            print(f"Indexing {pdf.name} (first time only)...", file=sys.stderr)
+            print(f"Indexing {names} (first time only)...", file=sys.stderr)
             store.build()
         if store.count() == 0:
-            raise SystemExit(f"No text found in {pdf.name} (is it a scanned PDF?)")
+            raise SystemExit(f"No text found in {names} (are they scanned PDFs?)")
         self.generator = Generator(self.config)
 
     @staticmethod
-    def config_for(pdf: Path, base: dict) -> dict:
-        """A config whose data and store folders belong to this one document."""
-        digest = hashlib.sha1(pdf.read_bytes()).hexdigest()[:12]
-        folder = DOCS_DIR / digest
+    def config_for(pdfs: list[Path], base: dict) -> dict:
+        """A config whose data and store folders belong to exactly this set of documents."""
+        contents = sorted((pdf.name, pdf.read_bytes()) for pdf in pdfs)
+        digest = hashlib.sha1()
+        for name, data in contents:  # same files in any order -> same store
+            digest.update(name.encode() + hashlib.sha1(data).digest())
+        folder = DOCS_DIR / digest.hexdigest()[:12]
         (folder / "pdf").mkdir(parents=True, exist_ok=True)
-        staged = folder / "pdf" / pdf.name
-        if not staged.exists():
-            shutil.copy2(pdf, staged)  # the pipeline reads every PDF in data_dir
+        for name, data in contents:
+            staged = folder / "pdf" / name  # the pipeline reads every PDF in data_dir
+            if not staged.exists():
+                staged.write_bytes(data)
         return {**base, "data_dir": folder / "pdf", "vs_dir": folder / "vs"}
 
     def ask(self, question: str) -> tuple[str, list[Document]]:

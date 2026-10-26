@@ -1,4 +1,4 @@
-"""Minimal web UI: upload a PDF, click Ingest, then ask questions about it.
+"""Minimal web UI: upload one or more PDFs, click Ingest, then ask questions about them.
 
     uv run streamlit run src/app.py
 
@@ -17,20 +17,25 @@ st.set_page_config(page_title="RAGForge", page_icon="📄")
 st.title("RAGForge")
 
 # ---- 1. Upload + ingest ----
-uploaded = st.file_uploader("Upload a PDF", type="pdf")
+uploaded = st.file_uploader("Upload PDFs", type="pdf", accept_multiple_files=True)
 
 if uploaded and st.button("Ingest"):
-    # DocumentRAG wants a real file path; keep the original name so citations read well.
-    path = Path(tempfile.mkdtemp()) / uploaded.name
-    path.write_bytes(uploaded.getvalue())
+    # DocumentRAG wants real file paths; keep the original names so citations read well.
+    # A name uploaded twice is dropped (the first one wins).
+    folder = Path(tempfile.mkdtemp())
+    paths = {}
+    for file in uploaded:
+        if file.name not in paths:
+            paths[file.name] = folder / file.name
+            paths[file.name].write_bytes(file.getvalue())
     with st.spinner("Preparing the vector store (a minute or so the first time)..."):
-        st.session_state.rag = DocumentRAG(path)
-        st.session_state.ingested = uploaded.name
+        st.session_state.rag = DocumentRAG(list(paths.values()))
+        st.session_state.ingested = ", ".join(paths)
         st.session_state.pop("result", None)
 
 rag = st.session_state.get("rag")
 if rag is None:
-    st.info("Upload a PDF and click Ingest to begin.")
+    st.info("Upload one or more PDFs and click Ingest to begin.")
     st.stop()
 st.success(f"Ready: {st.session_state.ingested}")
 
