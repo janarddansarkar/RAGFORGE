@@ -9,6 +9,7 @@ embedding_model = "BAAI/bge-m3"  # changing it requires: uv run python src/vecto
 llm_model = "unsloth/gemma-3-1b-it"  # contextual notes, query transforms, answers
 max_new_tokens = 256                 # longest reply the huggingface LLM writes
 reranker_model = "BAAI/bge-reranker-v2-m3"
+stt_model = "openai/whisper-small"   # speech to text for the voice UI (whisper-base is faster)
 
 # ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
 # Each strategy gets its own collection in ./vs, so several can exist side by side.

@@ -1,4 +1,4 @@
-"""Minimal web UI: upload one or more PDFs, click Ingest, then ask questions about them.
+"""Minimal web UI: upload one or more PDFs, click Ingest, then ask questions about them (typed or spoken).
 
     uv run streamlit run src/app.py
 
@@ -6,12 +6,15 @@ It uses DocumentRAG from rag.py (the best settings from best_config.json), so th
 with its citations and the retrieved + reranked chunks behind it.
 """
 
+import hashlib
 import tempfile
 from pathlib import Path
 
 import streamlit as st
 
 from rag import REFUSAL, DocumentRAG, Report
+from vectorstore import load_config
+from voice import SpeechToText, TextToSpeech
 
 st.set_page_config(page_title="RAGForge", page_icon="📄")
 st.title("RAGForge")
@@ -39,9 +42,20 @@ if rag is None:
     st.stop()
 st.success(f"Ready: {st.session_state.ingested}")
 
-# ---- 2. Ask ----
+# ---- 2. Ask (typed or spoken) ----
+recording = st.audio_input("Or ask by voice")
+if recording:
+    audio = recording.getvalue()
+    digest = hashlib.sha1(audio).hexdigest()
+    if digest != st.session_state.get("heard"):  # transcribe each recording once
+        with st.spinner("Listening..."):
+            if "stt" not in st.session_state:
+                st.session_state.stt = SpeechToText(load_config()["stt_model"])
+            st.session_state.question = st.session_state.stt.transcribe(audio)
+        st.session_state.heard = digest
+
 with st.form("ask"):
-    question = st.text_input("Ask a question about the document")
+    question = st.text_input("Ask a question about the document", key="question")
     asked = st.form_submit_button("Ask")
 
 if asked and question.strip():
@@ -53,6 +67,8 @@ if "result" in st.session_state:
     question, answer, chunks = st.session_state.result
     st.subheader("Answer")
     st.write(answer)
+    if st.checkbox("Read the answer aloud"):
+        st.audio(TextToSpeech().speak(answer), autoplay=True)
 
     st.subheader("Citations")
     if REFUSAL in answer.lower().replace("’", "'"):
