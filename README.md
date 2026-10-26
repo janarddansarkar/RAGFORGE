@@ -35,6 +35,7 @@ question -> hybrid search (dense + BM25, fused) -> reranker -> top-k chunks -> a
 | `src/rag_pipeline.py` | the full pipeline over `documents/`, using the best settings from `best_config.json` |
 | `src/app.py` | Streamlit UI: upload one or more PDFs, Ingest, ask, see answer + citations + reranked chunks (`uv run streamlit run src/app.py`) |
 | `src/voice.py` | speech to text (Whisper) for spoken questions, text to speech (macOS `say`) for reading answers aloud |
+| `src/memory.py` | short-term memory: the last few turns, and follow-ups rewritten into standalone questions |
 | `src/models.py` | loads the Hugging Face embedder and answer model |
 | `config.toml` | all settings |
 | `best_config.json` | settings found best by the evaluation; laid over `config.toml` |

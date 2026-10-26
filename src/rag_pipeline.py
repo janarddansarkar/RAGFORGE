@@ -15,6 +15,7 @@ import sys
 from langchain_core.documents import Document
 
 from generator import Generator
+from memory import ConversationMemory
 from vectorstore import BEST_CONFIG_FILE, VectorStore, load_config
 
 
@@ -43,6 +44,7 @@ class RAGPipeline:
             raise SystemExit(f"No PDFs found in {self.config['data_dir']}")
 
         self.generator = Generator(self.config)
+        self.memory = ConversationMemory(self.config["memory_turns"])
 
     @classmethod
     def settings(cls, config: dict) -> str:
@@ -56,9 +58,11 @@ class RAGPipeline:
         return "\n".join(lines)
 
     def ask(self, question: str) -> tuple[str, list[Document]]:
-        """Retrieve the top-k chunks, then answer from them. Returns the answer and the chunks."""
-        chunks = self.generator.retriever.retrieve(question, self.method, self.k)
-        return self.generator.answer_from(question, chunks)
+        """Retrieve the top-k chunks, then answer from them (follow-ups use the last few turns). Returns the answer and the chunks."""
+        answer, chunks, _ = self.generator.chat(
+            question, self.memory, self.method, self.k
+        )
+        return answer, chunks
 
     def show(self, question: str) -> None:
         answer, chunks = self.ask(question)

@@ -1,4 +1,4 @@
-"""Minimal web UI: upload one or more PDFs, click Ingest, then ask questions about them (typed or spoken).
+"""Minimal web UI: upload one or more PDFs, click Ingest, then ask questions about them (typed or spoken), as a chat that remembers the last few turns.
 
     uv run streamlit run src/app.py
 
@@ -29,7 +29,7 @@ uploaded = st.file_uploader(
 # A different set of uploads starts fresh: forget the old documents, answer and question.
 files = tuple(file.file_id for file in uploaded)
 if files != st.session_state.get("files"):
-    for key in ("rag", "ingested", "result", "question", "heard"):
+    for key in ("rag", "ingested", "messages", "spoken", "heard"):
         st.session_state.pop(key, None)
     st.session_state.fresh = st.session_state.get("fresh", 0) + 1  # new recorder, empty
     st.session_state.files = files
@@ -46,7 +46,7 @@ if uploaded and st.button("Ingest"):
     with st.spinner("Preparing the vector store (a minute or so the first time)..."):
         st.session_state.rag = DocumentRAG(list(paths.values()))
         st.session_state.ingested = ", ".join(paths)
-        st.session_state.pop("result", None)
+        st.session_state.messages = []
 
 rag = st.session_state.get("rag")
 if rag is None:
@@ -54,7 +54,7 @@ if rag is None:
     st.stop()
 st.success(f"Ready: {st.session_state.ingested}")
 
-# ---- 2. Ask (typed or spoken) ----
+# ---- 2. Ask (typed or spoken); the chat remembers the last few turns ----
 recording = st.audio_input(
     "Or ask by voice", key=f"voice_{st.session_state.get('fresh', 0)}"
 )
@@ -65,35 +65,54 @@ if recording:
         with st.spinner("Listening..."):
             if "stt" not in st.session_state:
                 st.session_state.stt = SpeechToText(load_config()["stt_model"])
-            st.session_state.question = st.session_state.stt.transcribe(audio)
+            st.session_state.spoken = st.session_state.stt.transcribe(audio)
         st.session_state.heard = digest
 
-with st.form("ask"):
-    question = st.text_input("Ask a question about the document", key="question")
-    asked = st.form_submit_button("Ask")
+read_aloud = st.checkbox("Read answers aloud")
+if st.button("Clear chat"):
+    rag.memory.clear()
+    st.session_state.messages = []
+messages = st.session_state.setdefault("messages", [])
 
-if asked and question.strip():
+question = st.chat_input("Ask a question about the documents") or st.session_state.pop(
+    "spoken", None
+)
+if question and question.strip():
+    messages.append({"role": "user", "text": question.strip()})
     with st.spinner("Retrieving and answering..."):
-        st.session_state.result = (question.strip(), *rag.ask(question.strip()))
+        answer, chunks = rag.ask(question.strip())
+    messages.append(
+        {"role": "assistant", "text": answer, "chunks": chunks, "query": rag.last_query}
+    )
 
-# ---- 3. Answer, citations and chunks ----
-if "result" in st.session_state:
-    question, answer, chunks = st.session_state.result
-    st.subheader("Answer")
+
+# ---- 3. The conversation: answers with citations and the chunks behind them ----
+def show_answer(message: dict) -> None:
+    answer, chunks = message["text"], message["chunks"]
     st.write(answer)
-    if st.checkbox("Read the answer aloud"):
-        st.audio(TextToSpeech().speak(answer), autoplay=True)
-
-    st.subheader("Citations")
-    if REFUSAL in answer.lower().replace("’", "'"):
-        st.write("None - the document does not answer this question.")
+    if message["query"] != previous_question:
+        st.caption(f"Searched for: {message['query']}")
+    if REFUSAL in answer.lower().replace("\u2019", "'"):
+        st.write("**Citations:** none - the document does not answer this question.")
     else:
-        for label in dict.fromkeys(Report.label(c) for c in chunks):
-            st.write(f"- {label}")
-
-    st.subheader(f"Top {len(chunks)} chunks (retrieved, then reranked)")
-    for rank, chunk in enumerate(chunks, start=1):
-        score = chunk.metadata.get("rerank_score")
-        score_text = f" - rerank score {score:.4f}" if score is not None else ""
-        with st.expander(f"[{rank}] {Report.label(chunk)}{score_text}"):
+        labels = dict.fromkeys(Report.label(c) for c in chunks)
+        st.write("**Citations:** " + ", ".join(labels))
+    with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
+        for rank, chunk in enumerate(chunks, start=1):
+            score = chunk.metadata.get("rerank_score")
+            score_text = f" - rerank score {score:.4f}" if score is not None else ""
+            st.markdown(f"**[{rank}] {Report.label(chunk)}{score_text}**")
             st.write(chunk.page_content)
+
+
+previous_question = ""
+for message in messages:
+    with st.chat_message(message["role"]):
+        if message["role"] == "user":
+            st.write(message["text"])
+            previous_question = message["text"]
+        else:
+            show_answer(message)
+
+if read_aloud and question and messages and messages[-1]["role"] == "assistant":
+    st.audio(TextToSpeech().speak(messages[-1]["text"]), autoplay=True)

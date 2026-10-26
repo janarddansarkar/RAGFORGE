@@ -21,6 +21,7 @@ from langchain_core.documents import Document
 
 from chunking import ChunkingPipeline
 from generator import Generator
+from memory import ConversationMemory
 from vectorstore import PROJECT_ROOT, VectorStore, load_config
 
 DOCS_DIR = PROJECT_ROOT / "vs_docs"
@@ -58,6 +59,8 @@ class DocumentRAG:
         if store.count() == 0:
             raise SystemExit(f"No text found in {names} (are they blank?)")
         self.generator = Generator(self.config)
+        self.memory = ConversationMemory(self.config["memory_turns"])
+        self.last_query = ""  # what the last question was rewritten to, for display
 
     @staticmethod
     def config_for(pdfs: list[Path], base: dict) -> dict:
@@ -75,9 +78,11 @@ class DocumentRAG:
         return {**base, "data_dir": folder / "pdf", "vs_dir": folder / "vs"}
 
     def ask(self, question: str) -> tuple[str, list[Document]]:
-        """The answer and the top-k chunks it was written from."""
-        chunks = self.generator.retriever.retrieve(question, self.method, self.k)
-        return self.generator.answer_from(question, chunks)
+        """The answer and the top-k chunks it was written from. Remembers the last few turns."""
+        answer, chunks, self.last_query = self.generator.chat(
+            question, self.memory, self.method, self.k
+        )
+        return answer, chunks
 
 
 class Report:

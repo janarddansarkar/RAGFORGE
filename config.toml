@@ -44,6 +44,7 @@ eval_ks = [1, 3, 5, 10]  # Recall@K and HitRate@K
 precision_k = 5          # Precision@K
 compare_methods = ["dense", "bm25", "hybrid_rerank"]  # retrieval methods used to compare chunking
 
+memory_turns = 3  # chat: how many past question/answer pairs the model remembers
 num_queries = 3  # multi_query: extra phrasings the LLM writes per question
 
 # ---- eval/find_best.py ----
