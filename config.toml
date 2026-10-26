@@ -11,7 +11,7 @@ embedding_model = "bge-m3"  # changing it requires: uv run python src/vectorstor
 llm_model = "qwen2.5:3b"    # contextual notes, query transforms, answers
 max_new_tokens = 256        # longest reply the LLM writes
 reranker_model = "qwen2.5:3b"  # an LLM scores each chunk 0-10 (Ollama has no cross-encoder reranker)
-stt_model = "gemma4:e2b"       # an audio model: turns a spoken question into text in the voice UI
+stt_model = "small"            # faster-whisper model (tiny | base | small | medium) that hears spoken questions in the UI
 
 # ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
 # Each strategy gets its own collection in ./vs, so several can exist side by side.

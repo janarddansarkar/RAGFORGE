@@ -1,8 +1,8 @@
 # RAGForge
 
 Ask questions about PDFs and images. Everything runs **locally and free**: embeddings, reranker,
-answer model, speech-to-text and the evaluation judge are all [Ollama](https://ollama.com) models
-(no API keys, no per-call cost). Each model is pulled once, then works offline.
+answer model and the evaluation judge are [Ollama](https://ollama.com) models, and spoken questions use
+faster-whisper (no API keys, no per-call cost). Each model is downloaded once, then works offline.
 
 ## Quick start
 
@@ -10,7 +10,6 @@ answer model, speech-to-text and the evaluation judge are all [Ollama](https://o
 ollama serve                           # if Ollama is not already running
 ollama pull bge-m3 qwen2.5:3b          # embeddings, answers and reranking (see config.toml)
 ollama pull mistral:7b                 # the evaluation judge
-ollama pull gemma4:e2b                 # only for spoken questions in the UI
 uv sync
 uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"
 ```
@@ -39,7 +38,7 @@ question -> hybrid search (dense + BM25, fused) -> reranker -> top-k chunks -> a
 | `src/rag.py` | puts it together for PDFs and images (scans are read with Tesseract: `brew install tesseract`) |
 | `src/rag_pipeline.py` | the full pipeline over `documents/`, using the best settings from `best_config.json` |
 | `src/app.py` | Streamlit UI: upload one or more PDFs, Ingest, ask, see answer + citations + reranked chunks (`uv run streamlit run src/app.py`) |
-| `src/voice.py` | speech to text (an Ollama audio model) for spoken questions, macOS `say` for reading answers aloud |
+| `src/voice.py` | speech to text (faster-whisper, on CPU) for spoken questions, macOS `say` for reading answers aloud |
 | `src/memory.py` | short-term memory: the last few turns, and follow-ups rewritten into standalone questions |
 | `src/models.py` | the Ollama embedder, chat and audio models |
 | `config.toml` | all settings |

@@ -1,10 +1,12 @@
-"""Voice: turn speech into a question (Whisper) and an answer into speech (macOS `say`).
+"""Voice: turn speech into a question (faster-whisper) and an answer into speech (macOS `say`).
 
     uv run python src/voice.py "What rank r does LoRA use?"   # speaks it, then transcribes it back
 
-Whisper is a Hugging Face model that runs inside this process: free, and offline once downloaded.
+faster-whisper is Whisper running on CPU (no PyTorch): free, and offline once the model has
+downloaded the first time (stt_model in config.toml; "small" is about 500 MB).
 """
 
+import io
 import re
 import subprocess
 import sys
@@ -21,20 +23,14 @@ class SpeechToText:
 
     @cached_property
     def recognizer(self):
-        import torch
-        from transformers import pipeline
+        from faster_whisper import WhisperModel
 
-        if torch.cuda.is_available():
-            device = "cuda"
-        elif torch.backends.mps.is_available():
-            device = "mps"
-        else:
-            device = "cpu"
-        return pipeline("automatic-speech-recognition", model=self.model, device=device)
+        return WhisperModel(self.model, device="cpu", compute_type="int8")
 
     def transcribe(self, audio: bytes) -> str:
-        """The words in the audio (WAV, MP3, ...; ffmpeg decodes it)."""
-        return str(self.recognizer(audio)["text"]).strip()
+        """The words in the audio (WAV, MP3, ...)."""
+        segments, _ = self.recognizer.transcribe(io.BytesIO(audio), beam_size=1)
+        return " ".join(segment.text.strip() for segment in segments).strip()
 
 
 class TextToSpeech:
