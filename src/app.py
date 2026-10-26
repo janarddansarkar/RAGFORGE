@@ -59,6 +59,6 @@ if "result" in st.session_state:
     st.subheader(f"Top {len(chunks)} chunks (retrieved, then reranked)")
     for rank, chunk in enumerate(chunks, start=1):
         score = chunk.metadata.get("rerank_score")
-        score_text = f" - rerank score {score:.2f}" if score is not None else ""
+        score_text = f" - rerank score {score:.4f}" if score is not None else ""
         with st.expander(f"[{rank}] {Report.label(chunk)}{score_text}"):
             st.write(chunk.page_content)
