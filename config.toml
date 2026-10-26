@@ -87,6 +87,7 @@ tie_margin = 0.01             # within this of the best counts as a tie; the fas
 # ---- eval/generator_eval.py ----
 # The judge should be a different, stronger model than the generator (llm_model).
 judge_model = "mistralai/Mistral-7B-Instruct-v0.3"
+triad_judge_model = "Qwen/Qwen2.5-3B-Instruct"  # scores the RAG triad live in the UI (eval/rag_triad_eval.py); Mistral-7B is steadier but ~3x slower and needs ~14 GB more memory
 
 # Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
 # Keep this at the end of the file (a TOML array of tables).

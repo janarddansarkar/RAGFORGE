@@ -43,6 +43,7 @@ question -> hybrid search (dense + BM25, fused) -> reranker -> top-k chunks -> a
 ## Settings
 
 `config.toml` holds every setting. After `eval/find_best.py` has run, the settings it found best
+| `eval/rag_triad_eval.py` | RAG triad (context relevance, groundedness, answer relevance) scored live with deepeval and a local judge; the UI has a checkbox for it |
 are in `best_config.json` and **override** the matching `config.toml` values, so the pipeline
 uses them without code changes. Delete that file to go back to `config.toml` alone.
 
@@ -51,6 +52,7 @@ uses them without code changes. Delete that file to go back to `config.toml` alo
 | script | what it does |
 |---|---|
 | `eval/find_best.py` | the main one: searches chunking, embedder, retrieval method, reranker and answer model, then writes `best_config.json` and `eval/find_best_report.json` |
+| `eval/rag_triad_eval.py` | RAG triad (context relevance, groundedness, answer relevance) scored live with deepeval and a local judge; the UI has a checkbox for it |
 | `eval/retriever_eval.py` | scores the retrieval methods (Recall, Precision, HitRate, MRR) |
 | `eval/generator_eval.py` | scores answers (faithfulness, relevancy, correctness, similarity, context recall); `--oracle` gives the generator the golden pages |
 | `eval/chunking_compare.py` | scores each chunking strategy |

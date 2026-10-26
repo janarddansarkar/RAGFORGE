@@ -7,15 +7,17 @@ with its citations and the retrieved + reranked chunks behind it.
 """
 
 import hashlib
+import sys
 import tempfile
 from pathlib import Path
 
 import streamlit as st
 
 from rag import REFUSAL, DocumentRAG, Report
-from vectorstore import load_config
+from vectorstore import PROJECT_ROOT, load_config
 from voice import SpeechToText, TextToSpeech
 
+sys.path.insert(0, str(PROJECT_ROOT))  # so the eval/ package can be imported
 st.set_page_config(page_title="RAGForge", page_icon="📄")
 st.title("RAGForge")
 
@@ -69,6 +71,9 @@ if recording:
         st.session_state.heard = digest
 
 read_aloud = st.checkbox("Read answers aloud")
+score_answers = st.checkbox(
+    "Score each answer with the RAG triad (deepeval, slow: a minute or two per answer)"
+)
 if st.button("Clear chat"):
     rag.memory.clear()
     st.session_state.messages = []
@@ -81,12 +86,38 @@ if question and question.strip():
     messages.append({"role": "user", "text": question.strip()})
     with st.spinner("Retrieving and answering..."):
         answer, chunks = rag.ask(question.strip())
-    messages.append(
-        {"role": "assistant", "text": answer, "chunks": chunks, "query": rag.last_query}
-    )
+    turn = {
+        "role": "assistant",
+        "text": answer,
+        "chunks": chunks,
+        "query": rag.last_query,
+    }
+    if score_answers:
+        with st.spinner(
+            "Scoring the answer (context relevance, groundedness, answer relevance)..."
+        ):
+            if "triad" not in st.session_state:
+                from eval.rag_triad_eval import TriadEvaluator
+
+                st.session_state.triad = TriadEvaluator()
+            turn["triad"] = st.session_state.triad.evaluate(
+                question.strip(), answer, chunks
+            )
+    messages.append(turn)
 
 
 # ---- 3. The conversation: answers with citations and the chunks behind them ----
+def show_triad(triad: dict) -> None:
+    """The three RAG-triad scores (0-1) with the judge's reasons."""
+    columns = st.columns(len(triad))
+    for column, (name, result) in zip(columns, triad.items()):
+        score = result["score"]
+        column.metric(name, "n/a" if score is None else f"{score:.2f}")
+    with st.expander("Why these scores"):
+        for name, result in triad.items():
+            st.markdown(f"**{name}:** {result['reason']}")
+
+
 def show_answer(message: dict) -> None:
     answer, chunks = message["text"], message["chunks"]
     st.write(answer)
@@ -97,6 +128,8 @@ def show_answer(message: dict) -> None:
     else:
         labels = dict.fromkeys(Report.label(c) for c in chunks)
         st.write("**Citations:** " + ", ".join(labels))
+    if "triad" in message:
+        show_triad(message["triad"])
     with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
         for rank, chunk in enumerate(chunks, start=1):
             score = chunk.metadata.get("rerank_score")
