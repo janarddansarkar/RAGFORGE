@@ -22,6 +22,14 @@ st.title("RAGForge")
 # ---- 1. Upload + ingest ----
 uploaded = st.file_uploader("Upload PDFs", type="pdf", accept_multiple_files=True)
 
+# A different set of uploads starts fresh: forget the old documents, answer and question.
+files = tuple(file.file_id for file in uploaded)
+if files != st.session_state.get("files"):
+    for key in ("rag", "ingested", "result", "question", "heard"):
+        st.session_state.pop(key, None)
+    st.session_state.fresh = st.session_state.get("fresh", 0) + 1  # new recorder, empty
+    st.session_state.files = files
+
 if uploaded and st.button("Ingest"):
     # DocumentRAG wants real file paths; keep the original names so citations read well.
     # A name uploaded twice is dropped (the first one wins).
@@ -43,7 +51,9 @@ if rag is None:
 st.success(f"Ready: {st.session_state.ingested}")
 
 # ---- 2. Ask (typed or spoken) ----
-recording = st.audio_input("Or ask by voice")
+recording = st.audio_input(
+    "Or ask by voice", key=f"voice_{st.session_state.get('fresh', 0)}"
+)
 if recording:
     audio = recording.getvalue()
     digest = hashlib.sha1(audio).hexdigest()
