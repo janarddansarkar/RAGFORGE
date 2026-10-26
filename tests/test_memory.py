@@ -65,3 +65,24 @@ def test_answer_prompt_is_unchanged_without_history():
     assert "Conversation so far" not in generator.retriever.llm.prompts[0]
     generator.answer_from("Q?", [], history="User: a\nAssistant: b")
     assert "Conversation so far" in generator.retriever.llm.prompts[1]
+
+
+def test_chat_stream_gives_the_same_answer_as_chat_and_updates_memory():
+    class StreamingLLM(FakeLLM):
+        def stream(self, prompt: str):
+            self.prompts.append(prompt)
+            yield from ("It is ", "r = 8 ", "[LoRA p.4]")
+
+    generator = Generator.__new__(Generator)
+    generator.guard = generator.cache = None
+    generator.retriever = SimpleNamespace(
+        llm=StreamingLLM("unused"), retrieve=lambda query, method, k: []
+    )
+    generator.config = {"default_method": "hybrid"}
+    memory = ConversationMemory()
+    pieces = list(generator.chat_stream("What rank?", memory))
+    assert pieces == ["It is ", "r = 8 ", "[LoRA p.4]"]
+    assert memory.turns == [("What rank?", "It is r = 8 [LoRA p.4]")]
+    assert generator.last_query == "What rank?"
+    answer, chunks, query = generator.chat("What rank?", ConversationMemory())
+    assert answer == "It is r = 8 [LoRA p.4]" and chunks == [] and query == "What rank?"

@@ -9,6 +9,7 @@ with its citations and the retrieved + reranked chunks behind it.
 import hashlib
 import sys
 import tempfile
+from itertools import chain
 from pathlib import Path
 
 import streamlit as st
@@ -78,7 +79,7 @@ with st.sidebar:
     st.header("RAG triad")
     st.caption(
         f"Every answer is scored by {load_config()['judge_model']} (an Ollama model, "
-        "runs on this machine); this adds about a minute per answer."
+        "runs on this machine). The scores appear about a minute after the answer."
     )
 if st.button("Clear chat"):
     rag.memory.clear()
@@ -96,36 +97,6 @@ def score_turn(question: str, answer: str, chunks: list) -> dict:
 
             st.session_state.triad = TriadEvaluator()
         return st.session_state.triad.evaluate(question, answer, chunks)
-
-
-question = st.chat_input("Ask a question about the documents") or st.session_state.pop(
-    "spoken", None
-)
-if question and question.strip():
-    try:
-        with st.spinner("Checking, retrieving and answering..."):
-            answer, chunks = rag.ask(question.strip())
-    except InputBlocked as blocked:
-        st.warning(str(blocked))
-        question = None  # nothing was asked: no scoring, no reading aloud
-    else:
-        messages.append({"role": "user", "text": question.strip()})
-        turn = {
-            "role": "assistant",
-            "question": question.strip(),
-            "text": answer,
-            "chunks": chunks,
-            "query": rag.last_query,
-        }
-        entry = rag.generator.cache_entry  # the cache keeps the scores with the answer
-        if entry and entry["triad"]:
-            turn["triad"] = entry["triad"]
-        else:
-            turn["triad"] = score_turn(question.strip(), answer, chunks)
-            if entry:
-                entry["triad"] = turn["triad"]
-                rag.generator.cache.save()
-        messages.append(turn)
 
 
 # ---- 3. The conversation: answers with citations and the chunks behind them ----
@@ -162,9 +133,11 @@ def score_line(chunk) -> str:
     return " | ".join(parts) or "no scores"
 
 
-def show_answer(message: dict, index: int) -> None:
+def show_answer(message: dict, index: int, streamed: bool = False) -> None:
+    """streamed=True: the answer text is already on screen and the caller scores it."""
     answer, chunks = message["text"], message["chunks"]
-    st.write(answer)
+    if not streamed:
+        st.write(answer)
     if message["query"] != previous_question:
         st.caption(f"Searched for: {message['query']}")
     if REFUSAL in answer.lower().replace("\u2019", "'"):
@@ -174,7 +147,9 @@ def show_answer(message: dict, index: int) -> None:
         st.write("**Citations:** " + ", ".join(labels))
     if "triad" in message:
         show_triad(message["triad"])
-    elif st.button("Score this answer (RAG triad)", key=f"score_{index}"):
+    elif not streamed and st.button(
+        "Score this answer (RAG triad)", key=f"score_{index}"
+    ):
         message["triad"] = score_turn(message["question"], answer, chunks)
         st.rerun()
     with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
@@ -192,6 +167,48 @@ for index, message in enumerate(messages):
             previous_question = message["text"]
         else:
             show_answer(message, index)
+
+question = st.chat_input("Ask a question about the documents") or st.session_state.pop(
+    "spoken", None
+)
+if question and question.strip():
+    question = question.strip()
+    stream = rag.ask_stream(question)
+    try:
+        with st.spinner("Checking, retrieving and answering..."):
+            first = next(stream, "")  # the guard, the search and the first words
+    except InputBlocked as blocked:
+        st.warning(str(blocked))
+        question = None  # nothing was asked: no scoring, no reading aloud
+    else:
+        messages.append({"role": "user", "text": question})
+        with st.chat_message("user"):
+            st.write(question)
+        with st.chat_message("assistant"):
+            answer = st.write_stream(chain([first], stream)).strip()
+            turn = {
+                "role": "assistant",
+                "question": question,
+                "text": answer,
+                "chunks": rag.last_chunks,
+                "query": rag.last_query,
+            }
+            messages.append(turn)
+            previous_question = question
+            show_answer(
+                turn, len(messages) - 1, streamed=True
+            )  # citations and chunks now
+            entry = (
+                rag.generator.cache_entry
+            )  # the cache keeps the scores with the answer
+            if entry and entry["triad"]:
+                turn["triad"] = entry["triad"]
+            else:
+                turn["triad"] = score_turn(question, answer, turn["chunks"])
+                if entry:
+                    entry["triad"] = turn["triad"]
+                    rag.generator.cache.save()
+            show_triad(turn["triad"])
 
 if read_aloud and question and messages and messages[-1]["role"] == "assistant":
     st.audio(TextToSpeech().speak(messages[-1]["text"]), autoplay=True)

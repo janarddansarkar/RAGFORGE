@@ -85,6 +85,18 @@ class DocumentRAG:
         )
         return answer, chunks
 
+    def ask_stream(self, question: str):
+        """Like ask(), but yields the answer piece by piece. Afterwards .last_chunks and
+        .last_query hold the chunks and the rewritten query."""
+        yield from self.generator.chat_stream(
+            question, self.memory, self.method, self.k
+        )
+        self.last_query = self.generator.last_query
+
+    @property
+    def last_chunks(self) -> list[Document]:
+        return self.generator.last_chunks
+
 
 class Report:
     """Prints an answer, its citations and the chunks behind it."""

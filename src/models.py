@@ -9,6 +9,7 @@ An LLM has .model (its name) and .invoke(prompt).content (the reply).
 """
 
 import math
+from contextlib import contextmanager
 from functools import cached_property
 
 import httpx
@@ -22,18 +23,24 @@ DEFAULT_HOST = "http://localhost:11434"
 class OllamaModel:
     """What every Ollama model needs: a client, and clear errors when Ollama is not ready."""
 
-    def __init__(self, model: str, host: str | None = None):
+    def __init__(
+        self, model: str, host: str | None = None, keep_alive: str | None = None
+    ):
         self.model = model
         self.host = host or DEFAULT_HOST
+        self.keep_alive = (
+            keep_alive  # how long Ollama keeps the model loaded after a call
+        )
 
     @cached_property
     def client(self) -> ollama.Client:
         return ollama.Client(host=self.host, timeout=600)
 
-    def call(self, method: str, **kwargs):
-        """Run a client method (chat, embed), turning Ollama's errors into plain advice."""
+    @contextmanager
+    def friendly_errors(self):
+        """Turn Ollama's errors into plain advice."""
         try:
-            return getattr(self.client, method)(model=self.model, **kwargs)
+            yield
         except ollama.ResponseError as error:
             if error.status_code == 404:
                 raise RuntimeError(
@@ -45,6 +52,12 @@ class OllamaModel:
             raise RuntimeError(
                 f"Cannot reach Ollama at {self.host}. Start it with: ollama serve"
             ) from error
+
+    def call(self, method: str, **kwargs):
+        """Run a client method (chat, embed), turning Ollama's errors into plain advice."""
+        kwargs = {"keep_alive": self.keep_alive, **kwargs}
+        with self.friendly_errors():
+            return getattr(self.client, method)(model=self.model, **kwargs)
 
     def unload(self) -> None:
         """Free the model's memory now instead of after Ollama's idle timeout."""
@@ -72,8 +85,9 @@ class OllamaChat(OllamaModel):
         max_new_tokens: int = 256,
         host: str | None = None,
         num_ctx: int = 8192,
+        keep_alive: str | None = None,
     ):
-        super().__init__(model, host)
+        super().__init__(model, host, keep_alive)
         self.max_new_tokens = max_new_tokens
         self.num_ctx = (
             num_ctx  # Ollama's default window (4096) is too small for 5 chunks
@@ -97,6 +111,24 @@ class OllamaChat(OllamaModel):
             },
         )
         return AIMessage(content=str(reply.message.content or "").strip())
+
+    def stream(self, prompt: str, max_new_tokens: int | None = None):
+        """Like invoke(), but yields the reply piece by piece as the model writes it."""
+        with self.friendly_errors():
+            for part in self.client.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+                think=False,
+                keep_alive=self.keep_alive,
+                options={
+                    "temperature": 0,
+                    "num_predict": max_new_tokens or self.max_new_tokens,
+                    "num_ctx": self.num_ctx,
+                },
+            ):
+                if part.message.content:
+                    yield part.message.content
 
     def digit_score(self, prompt: str) -> float:
         """Ask for one digit (0-9) and return it as 0-1: the average of the digits the model
@@ -123,7 +155,11 @@ class OllamaChat(OllamaModel):
 
 
 def make_embeddings(config: dict) -> OllamaEmbeddings:
-    return OllamaEmbeddings(config["embedding_model"], config.get("ollama_host"))
+    return OllamaEmbeddings(
+        config["embedding_model"],
+        config.get("ollama_host"),
+        config.get("ollama_keep_alive"),
+    )
 
 
 def make_llm(config: dict) -> OllamaChat:
@@ -132,4 +168,5 @@ def make_llm(config: dict) -> OllamaChat:
         config["max_new_tokens"],
         config.get("ollama_host"),
         config["ollama_num_ctx"],
+        config.get("ollama_keep_alive"),
     )

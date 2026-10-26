@@ -83,6 +83,7 @@ def test_llm_rerank_scores_sort_chunks_and_ties_keep_their_order():
 
     scores = {"a": "3", "b": "9", "c": "9", "d": "no number"}
     retriever = Retriever.__new__(Retriever)
+    retriever.config = {}  # no rerank_workers: one chunk at a time
     retriever._relevance = lambda query, passage: (
         0.0 if scores[passage] == "no number" else float(scores[passage]) / 10
     )
@@ -146,3 +147,32 @@ def test_rrf_keeps_the_scores_of_every_search_that_found_a_chunk():
     assert ranked[0].metadata["bm25_score"] == 5.0
     assert ranked[0].metadata["rrf_score"] > ranked[1].metadata["rrf_score"]
     assert "rrf_score" not in both.metadata  # the original chunk is untouched
+
+
+def test_parallel_rerank_gives_the_same_ranking_as_one_by_one():
+    from langchain_core.documents import Document
+
+    retriever = Retriever.__new__(Retriever)
+    retriever.config = {"rerank_workers": 4}
+    retriever._relevance = lambda query, passage: len(passage) / 100
+    docs = [Document(id=str(n), page_content="x" * (n * 7 % 13 + 1)) for n in range(12)]
+    ranked = retriever.rerank("q", docs, 5)
+    expected = sorted(docs, key=lambda d: len(d.page_content), reverse=True)[:5]
+    assert [d.id for d in ranked] == [d.id for d in expected]
+    assert ranked[0].metadata["rerank_score"] == len(expected[0].page_content) / 100
+
+
+def test_stream_yields_the_pieces_of_the_reply():
+    from types import SimpleNamespace
+
+    from models import OllamaChat
+
+    class FakeClient:
+        def chat(self, **kwargs):
+            assert kwargs["stream"] is True
+            for text in ("Hel", "", "lo"):
+                yield SimpleNamespace(message=SimpleNamespace(content=text))
+
+    chat = OllamaChat("any")
+    chat.__dict__["client"] = FakeClient()  # cached_property: put the fake in place
+    assert list(chat.stream("hi")) == ["Hel", "lo"]

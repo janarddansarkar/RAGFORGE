@@ -6,6 +6,7 @@ vs_dir = "vs"           # Chroma vector store
 
 # ---- Models (all served by Ollama: free, local, offline once pulled with `ollama pull <name>`) ----
 ollama_host = "http://localhost:11434"  # a server's Ollama works too (it has no login: keep it private)
+ollama_keep_alive = "30m"               # how long Ollama keeps a model in memory after use (its default, 5m, reloads models between questions)
 ollama_num_ctx = 8192                   # context window; Ollama's default (4096) is too small for 5 chunks
 embedding_model = "bge-m3"  # changing it requires: uv run python src/vectorstore.py --rebuild
 llm_model = "qwen2.5:3b"    # contextual notes, query transforms, answers
@@ -35,6 +36,7 @@ methods = [                       # pipelines the eval / demo run
     "hybrid_rerank",
 ]
 top_k = 5        # results returned to the caller
+rerank_workers = 4  # chunks the reranker scores at the same time (1 = one by one)
 fetch_k = 20     # candidates gathered before fusion / reranking
 rrf_k = 60       # RRF constant: score = 1 / (rrf_k + rank)
 

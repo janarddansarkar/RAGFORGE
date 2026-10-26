@@ -31,6 +31,8 @@ class Generator:
         self.guard = InputGuard(self.config) if self.config["input_guard"] else None
         self.cache = SessionCache(self.config) if self.config["use_cache"] else None
         self.cache_entry: dict | None = None  # the cache entry behind the last answer
+        self.last_chunks: list[Document] = []  # set by chat_stream() when it finishes
+        self.last_query = ""
 
     @staticmethod
     def label(chunk: Document) -> str:
@@ -48,6 +50,19 @@ class Generator:
         k: int | None = None,
     ) -> tuple[str, list[Document], str]:
         """One turn of a conversation. Returns the answer, the chunks and the query searched.
+        Same as chat_stream(), just waiting for the whole answer."""
+        answer = "".join(self.chat_stream(question, memory, method, k)).strip()
+        return answer, self.last_chunks, self.last_query
+
+    def chat_stream(
+        self,
+        question: str,
+        memory: ConversationMemory,
+        method: str | None = None,
+        k: int | None = None,
+    ):
+        """One turn of a conversation, yielding the answer piece by piece as it is written.
+        Once it is used up, .last_chunks and .last_query hold the chunks and the query searched.
         Raises InputBlocked (before anything is searched or remembered) for a bad question.
         A question like an earlier one in this session is answered from the cache."""
         if self.guard:
@@ -56,32 +71,44 @@ class Generator:
         hit = self.cache.find(search_query) if self.cache else None
         if hit:  # a similar question was answered earlier in this session
             self.cache_entry = hit
-            answer, chunks = hit["answer"], self.cache.chunks_of(hit)
+            chunks = self.cache.chunks_of(hit)
+            answer = hit["answer"]
+            yield answer
         else:
             chunks = self.retriever.retrieve(
                 search_query, method or self.config["default_method"], k
             )
-            answer, chunks = self.answer_from(question, chunks, memory.history())
+            prompt = self.build_prompt(question, chunks, memory.history())
+            pieces = []
+            for piece in self.retriever.llm.stream(prompt):
+                pieces.append(piece)
+                yield piece
+            answer = "".join(pieces).strip()
             self.cache_entry = (
                 self.cache.add(search_query, answer, chunks) if self.cache else None
             )
         memory.add(question, answer)
-        return answer, chunks, search_query
+        self.last_chunks, self.last_query = chunks, search_query
 
-    def answer_from(
+    def build_prompt(
         self, question: str, chunks: list[Document], history: str = ""
-    ) -> tuple[str, list[Document]]:
-        """Answer from the given chunks (lets the eval test the generator on its own).
-        history is the recent conversation, for context only (empty: same prompt as before)."""
+    ) -> str:
+        """The answer prompt. history is the recent conversation, for context only."""
         passages = "\n\n".join(f"[{self.label(c)}]\n{c.page_content}" for c in chunks)
         conversation = (
             f"\n\nConversation so far (for context only, not a source):\n{history}"
             if history
             else ""
         )
-        prompt = ANSWER_PROMPT.format(
+        return ANSWER_PROMPT.format(
             passages=passages, history=conversation, question=question
         )
+
+    def answer_from(
+        self, question: str, chunks: list[Document], history: str = ""
+    ) -> tuple[str, list[Document]]:
+        """Answer from the given chunks (lets the eval test the generator on its own)."""
+        prompt = self.build_prompt(question, chunks, history)
         reply = str(self.retriever.llm.invoke(prompt).content).strip()
         return reply, chunks
 

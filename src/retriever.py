@@ -9,6 +9,7 @@ Build the store first:  uv run python src/vectorstore.py
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from functools import cached_property
 
 from langchain_core.documents import Document
@@ -159,7 +160,11 @@ class Retriever:
         incoming order (sorted() is stable), so ties fall back to the fusion ranking."""
         if not docs:
             return []
-        scores = [self._relevance(query, d.page_content) for d in docs]
+        # Each chunk is scored on its own, so several can be asked at once (map keeps the order).
+        with ThreadPoolExecutor(self.config.get("rerank_workers", 1)) as pool:
+            scores = list(
+                pool.map(lambda d: self._relevance(query, d.page_content), docs)
+            )
         ranked = sorted(zip(docs, scores), key=lambda pair: pair[1], reverse=True)
         # New Documents, so the score doesn't leak into the shared BM25 chunks.
         return [
