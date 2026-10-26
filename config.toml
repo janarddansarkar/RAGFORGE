@@ -74,6 +74,9 @@ generators = [                   # stage 5: Ollama answer models, scored on the 
     "llama3.2:3b",
     "gemma3:4b",
 ]
+chunk_sizes = [1000, 600, 400, 250, 150]  # stage 5: chunk sizes in characters (overlap is 15%) - the first run always includes chunk_size
+triad_sample = 8      # stage 5: golden questions whose context relevance the judge scores per size
+chunk_tolerance = 0.05  # stage 5: a size may lose this much Recall@5 / MRR and still win on context relevance
 generator_metric = "answer_correctness"  # generators are ranked by this
 generator_margin = 0.03                  # within this of the best counts as a tie; the faster one wins
 primary_metric = "MRR"        # candidates are ranked by this

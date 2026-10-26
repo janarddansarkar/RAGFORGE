@@ -55,7 +55,8 @@ uses them without code changes. Delete that file to go back to `config.toml` alo
 
 | script | what it does |
 |---|---|
-| `eval/find_best.py` | the main one: searches chunking, embedder, retrieval method, reranker and answer model, then writes `best_config.json` and `eval/find_best_report.json` |
+| `eval/find_best.py` | **the one script that runs your evals and gives the best config**: searches chunking, embedder, retrieval method, reranker, chunk size + top-k (with context relevance) and answer model, then writes `best_config.json` and `eval/find_best_report.json` |
+| `eval/chunk_size_sweep.py` | stage 5 of the above on its own: chunk sizes scored on retrieval and on the judge's context relevance |
 | `eval/rag_triad_eval.py` | RAG triad (context relevance, groundedness, answer relevance) scored live with deepeval and a local judge; the UI has a checkbox for it |
 | `eval/retriever_eval.py` | scores the retrieval methods (Recall, Precision, HitRate, MRR) |
 | `eval/generator_eval.py` | scores answers (faithfulness, relevancy, correctness, similarity, context recall); `--oracle` gives the generator the golden pages |
@@ -66,13 +67,18 @@ The 45 test questions are in `golden_data/`. Metric definitions and how to read 
 `specs_md/retriever_eval.md` and `specs_md/generator_eval.md`.
 
 ```bash
-uv run python eval/find_best.py        # slow (hours): needs the models in config.toml pulled, rebuilds stores
+uv run python eval/find_best.py                      # every eval, then save the best config (hours)
+uv run python eval/find_best.py --stages chunk_size  # only some stages (the others keep today's settings)
+uv run python eval/find_best.py --no-save            # try it: prints everything, writes nothing
+uv run python eval/find_best.py --limit 5 --no-save  # quick smoke test on 5 golden questions
+uv run python eval/find_best.py --skip-missing       # leave out candidate models that are not pulled
 uv run pytest                          # unit tests (no models needed)
 ```
 
 ## Notes
 
 - `best_config.json` and `eval/*_report.json` from before the Ollama switch were measured with other (Hugging Face) models; re-run `eval/find_best.py` to measure the Ollama setup.
+- `find_best.py` first checks that every model it needs is pulled and prints the `ollama pull` commands for any that are not.
 - The judge model must differ from the answer model, so a model never grades its own answers.
 - Evaluation scores come from 45 questions over three papers: gaps of a few hundredths are noise.
 - `RAGForge_RAG_Pipeline_Design.md` and `RAGForge_Tasks.md` describe a larger production design

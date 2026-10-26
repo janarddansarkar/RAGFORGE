@@ -101,21 +101,33 @@ class TriadEvaluator:
             actual_output=answer,
             retrieval_context=[chunk.page_content for chunk in chunks],
         )
-        results = {}
-        for name, metric_class in self.METRICS.items():
-            metric = metric_class(
-                threshold=self.threshold,
-                model=self.judge,
-                include_reason=True,
-                async_mode=False,
-                verbose_mode=False,
-            )
-            try:
-                metric.measure(case, _show_indicator=False)
-                results[name] = {"score": metric.score, "reason": metric.reason or ""}
-            except Exception as error:  # noqa: BLE001 - a weak judge can break one metric
-                results[name] = {"score": None, "reason": f"judge failed: {error}"}
-        return results
+        return {
+            name: self._measure(metric_class, case)
+            for name, metric_class in self.METRICS.items()
+        }
+
+    def context_relevance(self, question: str, chunks: list[Document]) -> dict:
+        """Only the retrieval check (no answer needed): are these chunks relevant to the question?"""
+        case = LLMTestCase(
+            input=question,
+            actual_output="",
+            retrieval_context=[chunk.page_content for chunk in chunks],
+        )
+        return self._measure(ContextualRelevancyMetric, case)
+
+    def _measure(self, metric_class, case: LLMTestCase) -> dict:
+        metric = metric_class(
+            threshold=self.threshold,
+            model=self.judge,
+            include_reason=True,
+            async_mode=False,
+            verbose_mode=False,
+        )
+        try:
+            metric.measure(case, _show_indicator=False)
+            return {"score": metric.score, "reason": metric.reason or ""}
+        except Exception as error:  # noqa: BLE001 - a weak judge can break one metric
+            return {"score": None, "reason": f"judge failed: {error}"}
 
 
 # TRY IT ---- python eval/rag_triad_eval.py "your question"
