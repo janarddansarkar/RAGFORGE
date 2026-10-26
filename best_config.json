@@ -1,12 +1,12 @@
 {
-  "retrieval": "kept current settings",
+  "retrieval": "migrated to Ollama; settings below are the Ollama equivalents of the earlier winners - re-run eval/find_best.py to measure them",
   "settings": {
     "chunking_strategy": "recursive",
     "contextual": false,
-    "embedding_model": "BAAI/bge-m3",
+    "embedding_model": "bge-m3",
     "default_method": "hybrid_rerank",
-    "reranker_model": "BAAI/bge-reranker-v2-m3",
-    "llm_model": "Qwen/Qwen2.5-3B-Instruct",
+    "reranker_model": "qwen2.5:3b",
+    "llm_model": "qwen2.5:3b",
     "top_k": 5,
     "max_new_tokens": 256
   },
@@ -37,5 +37,6 @@
       "HitRate@10": 1.0,
       "sec/query": 0.8818068721996194
     }
-  }
+  },
+  "held_out_measured_with": "the earlier Hugging Face models (bge-m3 + bge-reranker-v2-m3 cross-encoder); not valid for the Ollama setup"
 }

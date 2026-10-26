@@ -5,9 +5,8 @@
   Answer relevance  - does the answer address the question?                 (question -> answer)
 
 It needs no golden data: give it the question asked, the top-k chunks retrieved and the answer
-generated (the web UI does this after every answer). The judge is a local Hugging Face model
-(triad_judge_model in config.toml), so nothing leaves your machine. Small judges are noisy;
-read the scores as a guide, not as truth.
+generated (the web UI does this after every answer). The judge is an Ollama model (judge_model
+in config.toml), so nothing leaves your machine. Judges are noisy; read the scores as a guide.
 
 Run:  uv run python eval/rag_triad_eval.py "What rank r does LoRA use?" [--judge ID]
       (asks the question over ./documents with rag_pipeline.py, then scores the answer)
@@ -35,39 +34,39 @@ from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase
 from langchain_core.documents import Document
 
-from models import HuggingFaceChat
+from models import OllamaChat
 from vectorstore import load_config
 
 
-class LocalJudge(DeepEvalBaseLLM):
-    """Lets deepeval use a Hugging Face model as its judge (deepeval defaults to OpenAI)."""
+class Judge(DeepEvalBaseLLM):
+    """Lets deepeval use an Ollama model as its judge (deepeval defaults to OpenAI).
+    Ollama can force the reply to match the metric's JSON schema, so JSON rarely breaks."""
 
-    def __init__(self, model: str, max_new_tokens: int = 1024):
+    def __init__(self, model: str, config: dict):
         self.model_id = model
-        self.chat = HuggingFaceChat(model, max_new_tokens)
+        self.chat = OllamaChat(
+            model,
+            max_new_tokens=1024,
+            host=config.get("ollama_host"),
+            num_ctx=config["ollama_num_ctx"],
+        )
 
     def load_model(self):
-        return self.chat
+        return self
 
     def get_model_name(self) -> str:
         return self.model_id
 
     def generate(self, prompt: str, schema=None) -> str:
-        """The metrics ask for JSON in the prompt; deepeval reads it from this text.
-        A small model often adds chatter or breaks the JSON, so ask strictly and repair once."""
-        if schema is not None:
-            prompt += (
-                "\n\nIMPORTANT: reply with ONLY one valid JSON object in the format above. "
-                "No explanation before or after it, no markdown."
-            )
-        reply = str(self.chat.invoke(prompt).content)
+        """The metrics ask for JSON in the prompt; deepeval reads it from this text."""
+        reply = str(self.chat.invoke(prompt, schema=schema).content)
         if schema is not None and not self.is_json(reply):
-            # Greedy decoding would repeat itself, so ask the model to repair its own reply.
+            # Rare, e.g. a reply cut off at the token limit: ask the model to repair it.
             repair = (
                 f"{reply}\n\nThe text above should be one valid JSON object but it is "
                 "not valid JSON. Rewrite it as one valid JSON object only."
             )
-            reply = str(self.chat.invoke(repair).content)
+            reply = str(self.chat.invoke(repair, schema=schema).content)
         return reply
 
     @staticmethod
@@ -92,9 +91,7 @@ class TriadEvaluator:
 
     def __init__(self, judge_model: str | None = None, threshold: float = 0.5):
         config = load_config()
-        self.judge = LocalJudge(
-            judge_model or config.get("triad_judge_model", config["judge_model"])
-        )
+        self.judge = Judge(judge_model or config["judge_model"], config)
         self.threshold = threshold
 
     def evaluate(self, question: str, answer: str, chunks: list[Document]) -> dict:
@@ -125,7 +122,9 @@ class TriadEvaluator:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("question", nargs="+")
-    parser.add_argument("--judge", help="judge model (default: triad_judge_model)")
+    parser.add_argument(
+        "--judge", help="Ollama model for the judge (default: judge_model)"
+    )
     args = parser.parse_args()
 
     from rag_pipeline import RAGPipeline
@@ -135,7 +134,9 @@ if __name__ == "__main__":
     answer, chunks = pipeline.ask(question)
     print(f"\nQ: {question}\nA: {answer}\n")
     for name, result in (
-        TriadEvaluator(args.judge).evaluate(question, answer, chunks).items()
+        TriadEvaluator(args.judge, args.backend)
+        .evaluate(question, answer, chunks)
+        .items()
     ):
         score = "n/a" if result["score"] is None else f"{result['score']:.2f}"
         print(f"{name:18} {score}   {result['reason']}")

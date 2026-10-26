@@ -4,23 +4,22 @@
 data_dir = "documents"  # source PDFs
 vs_dir = "vs"           # Chroma vector store
 
-# ---- Models (Hugging Face ids; free, run inside Python, offline once downloaded) ----
-embedding_model = "BAAI/bge-m3"  # changing it requires: uv run python src/vectorstore.py --rebuild
-llm_model = "unsloth/gemma-3-1b-it"  # contextual notes, query transforms, answers
-max_new_tokens = 256                 # longest reply the huggingface LLM writes
-reranker_model = "BAAI/bge-reranker-v2-m3"
-stt_model = "openai/whisper-small"   # speech to text for the voice UI (whisper-base is faster)
+# ---- Models (all served by Ollama: free, local, offline once pulled with `ollama pull <name>`) ----
+ollama_host = "http://localhost:11434"  # a server's Ollama works too (it has no login: keep it private)
+ollama_num_ctx = 8192                   # context window; Ollama's default (4096) is too small for 5 chunks
+embedding_model = "bge-m3"  # changing it requires: uv run python src/vectorstore.py --rebuild
+llm_model = "qwen2.5:3b"    # contextual notes, query transforms, answers
+max_new_tokens = 256        # longest reply the LLM writes
+reranker_model = "qwen2.5:3b"  # an LLM scores each chunk 0-10 (Ollama has no cross-encoder reranker)
+stt_model = "gemma4:e2b"       # an audio model: turns a spoken question into text in the voice UI
 
 # ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
 # Each strategy gets its own collection in ./vs, so several can exist side by side.
 collection_name = "ragforge"    # the strategy name is added to it
-chunking_strategy = "recursive"  # recursive | tokens | semantic
+chunking_strategy = "recursive"  # recursive | semantic
 contextual = false               # true: an LLM adds a context note to every chunk (slow to build)
 chunk_size = 1000                # recursive: characters
 chunk_overlap = 150
-token_chunk_size = 500           # tokens: size and overlap in tokens
-token_overlap = 100
-tokenizer_model = "BAAI/bge-m3"  # tokenizer used to count tokens
 semantic_percentile = 90         # semantic: break where the similarity drop is in the top 10%
 semantic_max_chars = 1500        # semantic: hard limit on chunk length
 
@@ -59,24 +58,21 @@ search_methods = [               # stage 2: pipelines to compare (LLM ones are s
     "multi_query_hybrid_rerank",
     "hyde_hybrid_rerank",
 ]
-rerankers = [                    # stage 3: Hugging Face cross-encoders to compare
-    "BAAI/bge-reranker-v2-m3",
-    "BAAI/bge-reranker-base",
-    "BAAI/bge-reranker-large",
-    "mixedbread-ai/mxbai-rerank-base-v1",
-    "cross-encoder/ms-marco-MiniLM-L-12-v2",
-    "cross-encoder/ms-marco-MiniLM-L-6-v2",
+rerankers = [                    # stage 3: Ollama chat models that rerank (an LLM scores each chunk 0-10)
+    "qwen2.5:1.5b",
+    "qwen2.5:3b",
+    "llama3.2:3b",
 ]
-embedders = [                    # stage 2: Hugging Face embedding models (no query prefix needed)
-    "BAAI/bge-m3",
-    "BAAI/bge-base-en-v1.5",
-    "sentence-transformers/all-mpnet-base-v2",
-    "sentence-transformers/all-MiniLM-L12-v2",
+embedders = [                    # stage 2: Ollama embedding models
+    "bge-m3",
+    "nomic-embed-text",
+    "mxbai-embed-large",
+    "all-minilm",
 ]
-generators = [                   # stage 5: answer models, scored on the golden pages
-    "unsloth/gemma-3-1b-it",
-    "Qwen/Qwen2.5-3B-Instruct",
-    "microsoft/Phi-3.5-mini-instruct",
+generators = [                   # stage 5: Ollama answer models, scored on the golden pages
+    "qwen2.5:3b",
+    "llama3.2:3b",
+    "gemma3:4b",
 ]
 generator_metric = "answer_correctness"  # generators are ranked by this
 generator_margin = 0.03                  # within this of the best counts as a tie; the faster one wins
@@ -86,17 +82,12 @@ tie_margin = 0.01             # within this of the best counts as a tie; the fas
 
 # ---- eval/generator_eval.py ----
 # The judge should be a different, stronger model than the generator (llm_model).
-judge_model = "mistralai/Mistral-7B-Instruct-v0.3"
-triad_judge_model = "Qwen/Qwen2.5-3B-Instruct"  # scores the RAG triad live in the UI (eval/rag_triad_eval.py); Mistral-7B is steadier but ~3x slower and needs ~14 GB more memory
+judge_model = "mistral:7b"  # also scores the RAG triad live in the UI (eval/rag_triad_eval.py)
 
 # Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
 # Keep this at the end of the file (a TOML array of tables).
 [[chunking_variants]]
 chunking_strategy = "recursive"
-contextual = false
-
-[[chunking_variants]]
-chunking_strategy = "tokens"
 contextual = false
 
 [[chunking_variants]]

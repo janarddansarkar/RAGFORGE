@@ -1,9 +1,9 @@
 """Find the best RAG settings in one run, stage by stage (each winner carries forward).
 
   1. chunking   - build / reuse a store per [[chunking_variants]], score the default method
-  2. embedder   - compare the Hugging Face embedding models in `embedders` (one store each)
+  2. embedder   - compare the Ollama embedding models in `embedders` (one store each)
   3. method     - compare the pipelines in `search_methods`
-  4. reranker   - compare the Hugging Face rerankers in `rerankers` (only if the method reranks)
+  4. reranker   - compare the Ollama rerankers (LLMs that score chunks) in `rerankers` (only if the method reranks)
   5. generator  - compare the answer models in `generators` on the golden pages (oracle mode),
                   scored by the judge model; this is the slowest stage
 

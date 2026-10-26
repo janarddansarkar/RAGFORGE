@@ -1,6 +1,6 @@
 """Retriever: search the vector store (./vs) with several techniques.
 
-Techniques: dense (vectors), BM25 (keywords), RRF fusion, cross-encoder reranking,
+Techniques: dense (vectors), BM25 (keywords), RRF fusion, LLM reranking (a chat model scores chunks),
 and LLM query transforms (rewrite, multi-query, HyDE) - on their own and combined.
 
 Build the store first:  uv run python src/vectorstore.py
@@ -13,9 +13,8 @@ from functools import cached_property
 
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
-from sentence_transformers import CrossEncoder
 
-from models import HuggingFaceChat, make_llm
+from models import OllamaChat, make_llm
 from vectorstore import VectorStore, load_config
 
 REWRITE_PROMPT = """Rewrite the question below into a clear, specific search query \
@@ -32,6 +31,15 @@ HYDE_PROMPT = """Write a short passage (3-4 sentences) from a research paper \
 that answers the question below. Reply with the passage only.
 
 Question: {query}"""
+
+
+RERANK_PROMPT = """Rate how well the passage answers the question, from 0 (unrelated) \
+to 9 (fully answers it). Reply with the single digit only.
+
+Question: {query}
+
+Passage:
+{passage}"""
 
 
 class Retriever:
@@ -86,12 +94,19 @@ class Retriever:
 
     # The LLM and reranker are loaded only the first time a pipeline needs them.
     @cached_property
-    def llm(self) -> HuggingFaceChat:
+    def llm(self) -> OllamaChat:
         return make_llm(self.config)
 
     @cached_property
-    def reranker(self) -> CrossEncoder:
-        return CrossEncoder(self.config["reranker_model"])
+    def reranker(self) -> OllamaChat:
+        """The model that scores chunks: it only ever writes a number, so replies are tiny."""
+        return make_llm(
+            {
+                **self.config,
+                "llm_model": self.config["reranker_model"],
+                "max_new_tokens": 4,
+            }
+        )
 
     # 1. SEARCH ---- the two basic ways to find chunks
     def dense(self, query: str, k: int) -> list[Document]:
@@ -121,10 +136,12 @@ class Retriever:
         return sorted(docs.values(), key=lambda d: scores[str(d.id)], reverse=True)
 
     def rerank(self, query: str, docs: list[Document], k: int) -> list[Document]:
-        """Cross-encoder reads (query, chunk) together and scores the match."""
+        """An LLM reads (question, chunk) together and scores the match from 0 to 1.
+        Ollama has no cross-encoder, so this asks a chat model; equal scores keep their
+        incoming order (sorted() is stable), so ties fall back to the fusion ranking."""
         if not docs:
             return []
-        scores = self.reranker.predict([(query, d.page_content) for d in docs])
+        scores = [self._relevance(query, d.page_content) for d in docs]
         ranked = sorted(zip(docs, scores), key=lambda pair: pair[1], reverse=True)
         # New Documents, so the score doesn't leak into the shared BM25 chunks.
         return [
@@ -135,6 +152,11 @@ class Retriever:
             )
             for doc, score in ranked[:k]
         ]
+
+    def _relevance(self, query: str, passage: str) -> float:
+        return self.reranker.digit_score(
+            RERANK_PROMPT.format(query=query, passage=passage)
+        )
 
     # 3. QUERY TRANSFORM ---- let the LLM improve the query before searching
     def _ask(self, prompt: str) -> str:

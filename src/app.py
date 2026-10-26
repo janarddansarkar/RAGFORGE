@@ -72,8 +72,12 @@ if recording:
 
 read_aloud = st.checkbox("Read answers aloud")
 score_answers = st.checkbox(
-    "Score each answer with the RAG triad (deepeval, slow: a minute or two per answer)"
+    "Score each answer with the RAG triad (deepeval; adds a little time per answer)"
 )
+if score_answers:
+    st.caption(
+        f"Judge: {load_config()['judge_model']} (an Ollama model; the answer is scored on this machine)."
+    )
 if st.button("Clear chat"):
     rag.memory.clear()
     st.session_state.messages = []

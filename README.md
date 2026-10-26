@@ -1,12 +1,16 @@
 # RAGForge
 
-Ask questions about PDFs. Everything runs **locally and free**: embeddings, reranker, answer
-model and the evaluation judge are Hugging Face models that run inside Python (no server, no
-API keys, no per-call cost). Models download once to `~/.cache/huggingface`, then work offline.
+Ask questions about PDFs and images. Everything runs **locally and free**: embeddings, reranker,
+answer model, speech-to-text and the evaluation judge are all [Ollama](https://ollama.com) models
+(no API keys, no per-call cost). Each model is pulled once, then works offline.
 
 ## Quick start
 
 ```bash
+ollama serve                           # if Ollama is not already running
+ollama pull bge-m3 qwen2.5:3b          # embeddings, answers and reranking (see config.toml)
+ollama pull mistral:7b                 # the evaluation judge
+ollama pull gemma4:e2b                 # only for spoken questions in the UI
 uv sync
 uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"
 ```
@@ -15,8 +19,9 @@ uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"
 answer, its citations and the top-k chunks it was written from. Leave the question out to ask
 several. Options: `--k 3` (chunks), `--method hybrid` (retrieval method), `--full` (whole chunks).
 
-A free Hugging Face token speeds up downloads: put `HF_TOKEN=...` in `.env`
-(then `export HF_TOKEN` or load it in your shell).
+Models and the Ollama address (`ollama_host`) are set in `config.toml`; a missing model gives a
+clear `ollama pull ...` message. Ollama has no cross-encoder reranker, so reranking asks a chat
+model to score each chunk 0-10 (ties keep the search order).
 
 ## How it works
 
@@ -34,9 +39,9 @@ question -> hybrid search (dense + BM25, fused) -> reranker -> top-k chunks -> a
 | `src/rag.py` | puts it together for PDFs and images (scans are read with Tesseract: `brew install tesseract`) |
 | `src/rag_pipeline.py` | the full pipeline over `documents/`, using the best settings from `best_config.json` |
 | `src/app.py` | Streamlit UI: upload one or more PDFs, Ingest, ask, see answer + citations + reranked chunks (`uv run streamlit run src/app.py`) |
-| `src/voice.py` | speech to text (Whisper) for spoken questions, text to speech (macOS `say`) for reading answers aloud |
+| `src/voice.py` | speech to text (an Ollama audio model) for spoken questions, macOS `say` for reading answers aloud |
 | `src/memory.py` | short-term memory: the last few turns, and follow-ups rewritten into standalone questions |
-| `src/models.py` | loads the Hugging Face embedder and answer model |
+| `src/models.py` | the Ollama embedder, chat and audio models |
 | `config.toml` | all settings |
 | `best_config.json` | settings found best by the evaluation; laid over `config.toml` |
 
@@ -62,12 +67,13 @@ The 45 test questions are in `golden_data/`. Metric definitions and how to read 
 `specs_md/retriever_eval.md` and `specs_md/generator_eval.md`.
 
 ```bash
-uv run python eval/find_best.py        # slow (hours): downloads models, rebuilds stores
+uv run python eval/find_best.py        # slow (hours): needs the models in config.toml pulled, rebuilds stores
 uv run pytest                          # unit tests (no models needed)
 ```
 
 ## Notes
 
+- `best_config.json` and `eval/*_report.json` from before the Ollama switch were measured with other (Hugging Face) models; re-run `eval/find_best.py` to measure the Ollama setup.
 - The judge model must differ from the answer model, so a model never grades its own answers.
 - Evaluation scores come from 45 questions over three papers: gaps of a few hundredths are noise.
 - `RAGForge_RAG_Pipeline_Design.md` and `RAGForge_Tasks.md` describe a larger production design

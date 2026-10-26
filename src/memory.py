@@ -8,15 +8,29 @@ Two jobs:
 Memory is never a source: answers still come only from the retrieved passages.
 """
 
-CONDENSE_PROMPT = """Given the conversation below and a follow-up question, rewrite the \
-follow-up as one standalone question that makes sense without the conversation. \
-Keep every name and detail. If it is already standalone, repeat it unchanged. \
-Reply with the question only.
+CONDENSE_PROMPT = """Rewrite the follow-up question so it makes sense without the conversation. \
+Only fill in what the follow-up leaves out (such as "it" or "that one"). \
+If the follow-up already names its own subject, copy it EXACTLY as written, \
+even when the conversation was about something else. Reply with the question only.
+
+Example 1
+Conversation:
+User: What is NF4?
+Assistant: A 4-bit data type.
+Follow-up: Which paper introduced it?
+Question: Which paper introduced NF4?
+
+Example 2
+Conversation:
+User: What is NF4?
+Assistant: A 4-bit data type.
+Follow-up: What rank r does LoRA use?
+Question: What rank r does LoRA use?
 
 Conversation:
 {history}
-
-Follow-up question: {question}"""
+Follow-up: {question}
+Question:"""
 
 MAX_ANSWER_CHARS = (
     500  # long answers are cut, to keep the prompt small for a small model

@@ -4,7 +4,7 @@ One pipeline is shared by everything that needs chunks:
   - vectorstore.py builds the Chroma store from pipeline.chunks()
   - the Retriever opens the store of the same pipeline (the name picks the collection)
 
-Strategies (config.toml): recursive | tokens | semantic. With contextual = true,
+Strategies (config.toml): recursive | semantic. With contextual = true,
 any of them is wrapped so an LLM adds a short context note to every chunk.
 
 Look at the chunks without building the store:
@@ -16,7 +16,6 @@ import json
 import re
 import sys
 from abc import ABC, abstractmethod
-from functools import cached_property
 from pathlib import Path
 
 import numpy as np
@@ -25,7 +24,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from models import HuggingFaceChat, make_embeddings, make_llm
+from models import OllamaChat, make_embeddings, make_llm
 
 
 class Chunker(ABC):
@@ -56,41 +55,6 @@ class RecursiveChunker(Chunker):
 
     def split_page(self, page: Document) -> list[str]:
         return self.splitter.split_text(page.page_content)
-
-
-class TokenChunker(Chunker):
-    """Cut every `size` tokens; each chunk repeats the last `overlap` tokens of the previous."""
-
-    def __init__(self, size: int, overlap: int, tokenizer_model: str):
-        self.size = size
-        self.overlap = overlap
-        self.tokenizer_model = tokenizer_model
-
-    @property
-    def name(self) -> str:
-        return f"tokens_{self.size}_{self.overlap}"
-
-    @cached_property
-    def tokenizer(self):
-        from transformers import AutoTokenizer
-
-        tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_model)
-        tokenizer.model_max_length = 10**9  # we cut the text ourselves
-        return tokenizer
-
-    def split_page(self, page: Document) -> list[str]:
-        text = page.page_content
-        # offsets[i] = (start, end) characters of token i, so we can cut the original text
-        offsets = self.tokenizer(
-            text, add_special_tokens=False, return_offsets_mapping=True
-        )["offset_mapping"]
-        chunks = []
-        for start in range(0, len(offsets), self.size - self.overlap):
-            window = offsets[start : start + self.size]
-            chunks.append(text[window[0][0] : window[-1][1]])
-            if start + self.size >= len(offsets):
-                break
-        return chunks
 
 
 class SemanticChunker(Chunker):
@@ -147,7 +111,7 @@ Reply with those sentences only."""
 class ContextualChunker(Chunker):
     """Wraps another chunker and puts an LLM-written context note in front of each chunk."""
 
-    def __init__(self, base: Chunker, llm: HuggingFaceChat, cache_file: Path):
+    def __init__(self, base: Chunker, llm: OllamaChat, cache_file: Path):
         self.base = base
         self.llm = llm
         self.cache_file = cache_file
@@ -201,12 +165,6 @@ class ChunkingPipeline:
             chunker: Chunker = RecursiveChunker(
                 config["chunk_size"], config["chunk_overlap"]
             )
-        elif strategy == "tokens":
-            chunker = TokenChunker(
-                config["token_chunk_size"],
-                config["token_overlap"],
-                config["tokenizer_model"],
-            )
         elif strategy == "semantic":
             chunker = SemanticChunker(
                 make_embeddings(config),
@@ -215,7 +173,7 @@ class ChunkingPipeline:
             )
         else:
             raise ValueError(
-                f"Unknown chunking_strategy '{strategy}'. Choose: recursive, tokens, semantic"
+                f"Unknown chunking_strategy '{strategy}'. Choose: recursive, semantic"
             )
 
         if config["contextual"]:

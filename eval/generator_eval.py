@@ -19,7 +19,6 @@ the generator on its own (compare with a normal run to see what retrieval costs)
 """
 
 import argparse
-import gc
 import json
 import re
 import sys
@@ -192,13 +191,13 @@ class GeneratorEval:
         return samples
 
     def release_generator(self) -> None:
-        """Free the generator's memory, so a large judge fits next to it."""
-        self.generator.retriever.__dict__.pop("llm", None)
-        gc.collect()
-        import torch
-
-        if torch.backends.mps.is_available():
-            torch.mps.empty_cache()
+        """Unload the generator from Ollama's memory, so a large judge fits next to it."""
+        self.generator.retriever.llm.unload()
+        if (
+            self.generator.retriever.config["reranker_model"]
+            != self.config["llm_model"]
+        ):
+            self.generator.retriever.reranker.unload()
 
     # PHASE 2 ---- the judge scores the answers
     def judge(self, samples: list[dict]) -> list[dict]:
@@ -280,10 +279,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--oracle", action="store_true", help="give the generator the golden pages"
     )
-    parser.add_argument(
-        "--generator", help="Hugging Face id to use instead of llm_model"
-    )
-    parser.add_argument("--judge", help="Hugging Face id to use instead of judge_model")
+    parser.add_argument("--generator", help="Ollama model to use instead of llm_model")
+    parser.add_argument("--judge", help="Ollama model to use instead of judge_model")
     args = parser.parse_args()
 
     config = load_config()
