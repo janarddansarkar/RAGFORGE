@@ -18,7 +18,9 @@ from vectorstore import PROJECT_ROOT, load_config
 from voice import SpeechToText, TextToSpeech
 
 sys.path.insert(0, str(PROJECT_ROOT))  # so the eval/ package can be imported
-st.set_page_config(page_title="RAGForge", page_icon="📄")
+st.set_page_config(
+    page_title="RAGForge", page_icon="📄", initial_sidebar_state="expanded"
+)
 st.title("RAGForge")
 
 # ---- 1. Upload + ingest ----
@@ -71,12 +73,14 @@ if recording:
         st.session_state.heard = digest
 
 read_aloud = st.checkbox("Read answers aloud")
-score_answers = st.checkbox(
-    "Score each answer with the RAG triad (deepeval; adds a little time per answer)"
-)
-if score_answers:
+with st.sidebar:
+    st.header("RAG triad")
+    score_answers = st.checkbox(
+        "Score each new answer",
+        help="deepeval + a local judge; adds about a minute per answer",
+    )
     st.caption(
-        f"Judge: {load_config()['judge_model']} (an Ollama model; the answer is scored on this machine)."
+        f"Judge: {load_config()['judge_model']} (an Ollama model, runs on this machine)."
     )
 if st.button("Clear chat"):
     rag.memory.clear()
@@ -161,3 +165,39 @@ for index, message in enumerate(messages):
 
 if read_aloud and question and messages and messages[-1]["role"] == "assistant":
     st.audio(TextToSpeech().speak(messages[-1]["text"]), autoplay=True)
+
+
+# ---- 4. Sidebar: the triad scores, always in view ----
+def average(scored: list[dict], name: str) -> float | None:
+    values = [m["triad"][name]["score"] for m in scored]
+    values = [v for v in values if v is not None]  # a failed judge call is left out
+    return sum(values) / len(values) if values else None
+
+
+def show_score(name: str, value: float | None) -> None:
+    st.metric(name, "n/a" if value is None else f"{value:.2f}")
+
+
+with st.sidebar:
+    scored = [m for m in messages if "triad" in m]
+    if not scored:
+        st.info(
+            "No scored answers yet. Tick the box above for new answers, "
+            "or click 'Score this answer' under an answer."
+        )
+    else:
+        latest = scored[-1]
+        st.subheader("Latest answer")
+        st.caption(latest["question"])
+        for name, result in latest["triad"].items():
+            show_score(name, result["score"])
+        with st.expander("Why these scores"):
+            for name, result in latest["triad"].items():
+                st.markdown(f"**{name}:** {result['reason']}")
+        if len(scored) > 1:
+            st.subheader(f"Average of {len(scored)} answers")
+            for name in latest["triad"]:
+                show_score(name, average(scored, name))
+        st.caption(
+            "0 = bad, 1 = good. A small local judge is noisy: use it as a guide."
+        )
