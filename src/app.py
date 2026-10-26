@@ -83,6 +83,19 @@ if st.button("Clear chat"):
     st.session_state.messages = []
 messages = st.session_state.setdefault("messages", [])
 
+
+def score_turn(question: str, answer: str, chunks: list) -> dict:
+    """The RAG-triad scores for one answer (the judge loads the first time)."""
+    with st.spinner(
+        "Scoring the answer (context relevance, groundedness, answer relevance)..."
+    ):
+        if "triad" not in st.session_state:
+            from eval.rag_triad_eval import TriadEvaluator
+
+            st.session_state.triad = TriadEvaluator()
+        return st.session_state.triad.evaluate(question, answer, chunks)
+
+
 question = st.chat_input("Ask a question about the documents") or st.session_state.pop(
     "spoken", None
 )
@@ -92,21 +105,13 @@ if question and question.strip():
         answer, chunks = rag.ask(question.strip())
     turn = {
         "role": "assistant",
+        "question": question.strip(),
         "text": answer,
         "chunks": chunks,
         "query": rag.last_query,
     }
     if score_answers:
-        with st.spinner(
-            "Scoring the answer (context relevance, groundedness, answer relevance)..."
-        ):
-            if "triad" not in st.session_state:
-                from eval.rag_triad_eval import TriadEvaluator
-
-                st.session_state.triad = TriadEvaluator()
-            turn["triad"] = st.session_state.triad.evaluate(
-                question.strip(), answer, chunks
-            )
+        turn["triad"] = score_turn(question.strip(), answer, chunks)
     messages.append(turn)
 
 
@@ -122,7 +127,7 @@ def show_triad(triad: dict) -> None:
             st.markdown(f"**{name}:** {result['reason']}")
 
 
-def show_answer(message: dict) -> None:
+def show_answer(message: dict, index: int) -> None:
     answer, chunks = message["text"], message["chunks"]
     st.write(answer)
     if message["query"] != previous_question:
@@ -134,6 +139,9 @@ def show_answer(message: dict) -> None:
         st.write("**Citations:** " + ", ".join(labels))
     if "triad" in message:
         show_triad(message["triad"])
+    elif st.button("Score this answer (RAG triad)", key=f"score_{index}"):
+        message["triad"] = score_turn(message["question"], answer, chunks)
+        st.rerun()
     with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
         for rank, chunk in enumerate(chunks, start=1):
             score = chunk.metadata.get("rerank_score")
@@ -143,13 +151,13 @@ def show_answer(message: dict) -> None:
 
 
 previous_question = ""
-for message in messages:
+for index, message in enumerate(messages):
     with st.chat_message(message["role"]):
         if message["role"] == "user":
             st.write(message["text"])
             previous_question = message["text"]
         else:
-            show_answer(message)
+            show_answer(message, index)
 
 if read_aloud and question and messages and messages[-1]["role"] == "assistant":
     st.audio(TextToSpeech().speak(messages[-1]["text"]), autoplay=True)

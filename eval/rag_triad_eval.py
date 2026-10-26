@@ -46,7 +46,7 @@ class Judge(DeepEvalBaseLLM):
         self.model_id = model
         self.chat = OllamaChat(
             model,
-            max_new_tokens=1024,
+            max_new_tokens=4096,  # a verdict per statement in 5 chunks is long; cut-off JSON is invalid
             host=config.get("ollama_host"),
             num_ctx=config["ollama_num_ctx"],
         )
