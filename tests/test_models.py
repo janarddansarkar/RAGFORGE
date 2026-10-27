@@ -176,3 +176,21 @@ def test_stream_yields_the_pieces_of_the_reply():
     chat = OllamaChat("any")
     chat.__dict__["client"] = FakeClient()  # cached_property: put the fake in place
     assert list(chat.stream("hi")) == ["Hel", "lo"]
+
+
+def test_cross_encoder_rerank_scores_all_pairs_at_once_and_sorts():
+    from langchain_core.documents import Document
+
+    retriever = Retriever.__new__(Retriever)
+    retriever.config = {"reranker_type": "cross_encoder"}
+    seen = []
+    retriever.__dict__["cross_encoder"] = SimpleNamespace(
+        score=lambda pairs: seen.append(pairs) or [0.2, 0.9, 0.5]
+    )
+    docs = [Document(id=k, page_content=k) for k in "abc"]
+    ranked = retriever.rerank("q", docs, k=2)
+    assert [d.id for d in ranked] == ["b", "c"]
+    assert ranked[0].metadata["rerank_score"] == 0.9
+    assert seen == [
+        [("q", "a"), ("q", "b"), ("q", "c")]
+    ]  # one batch, not one call each
