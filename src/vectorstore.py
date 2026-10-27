@@ -28,6 +28,10 @@ def load_config() -> dict:
     Folder paths become absolute, relative to the project."""
     with open(PROJECT_ROOT / "config.toml", "rb") as f:
         config = tomllib.load(f)
+    with open(PROJECT_ROOT / "providers.toml", "rb") as f:
+        config["providers"] = tomllib.load(
+            f
+        )  # the models and prices of the cloud providers
     if BEST_CONFIG_FILE.exists():
         config.update(json.loads(BEST_CONFIG_FILE.read_text())["settings"])
     config["data_dir"] = PROJECT_ROOT / config["data_dir"]

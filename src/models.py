@@ -161,17 +161,72 @@ class OllamaChat(OllamaModel):
         return sum(digit * weight for digit, weight in weights.items()) / total / 9
 
 
+class UsageTracker:
+    """Counts the tokens every cloud call used, and what they cost at the prices in providers.toml.
+    One tracker belongs to one conversation (it is made by use_providers). mark() / cost(since)
+    give the cost of a stretch of calls, such as one question."""
+
+    def __init__(self, providers: dict):
+        self.providers = providers
+        self.calls: list[
+            tuple[str, str, int, int]
+        ] = []  # provider, model, tokens in, out
+
+    def add(self, provider: str, model: str, tokens_in: int, tokens_out: int) -> None:
+        self.calls.append((provider, model, tokens_in, tokens_out))
+
+    def mark(self) -> int:
+        return len(self.calls)
+
+    def cost(self, since: int = 0) -> dict:
+        """{"dollars", "tokens_in", "tokens_out"} for the calls made after mark() returned `since`."""
+        total = {"dollars": 0.0, "tokens_in": 0, "tokens_out": 0}
+        for provider, model, tokens_in, tokens_out in self.calls[since:]:
+            price = self.providers[provider].get("prices", {}).get(model, {})
+            total["dollars"] += (
+                tokens_in * price.get("input", 0) + tokens_out * price.get("output", 0)
+            ) / 1_000_000
+            total["tokens_in"] += tokens_in
+            total["tokens_out"] += tokens_out
+        return total
+
+    @staticmethod
+    def estimate(text: str) -> int:
+        """Tokens in a text when the provider did not say: about 4 characters each."""
+        return max(1, len(text) // 4)
+
+
 class CloudModel:
     """What every cloud model needs: a client for the provider's OpenAI-compatible endpoint,
     and plain errors for the things a user will meet (a wrong key, a rate limit)."""
 
-    def __init__(self, provider: str, model: str, settings: dict, api_key: str | None):
+    def __init__(
+        self,
+        provider: str,
+        model: str,
+        settings: dict,
+        api_key: str | None,
+        usage: UsageTracker | None = None,
+    ):
         if not api_key:
             raise RuntimeError(f"Enter your {provider} API key first.")
         self.provider = provider
         self.model = model
         self.settings = settings  # the [providers.<name>] table of config.toml
         self.api_key = api_key
+        self.usage = usage
+
+    def record(self, used, sent: str, received: str = "") -> None:
+        """Count one call. `used` is the provider's usage report, or None: then it is estimated."""
+        if self.usage is None:
+            return
+        if used is not None:
+            tokens_in = used.prompt_tokens
+            tokens_out = getattr(used, "completion_tokens", 0) or 0
+        else:
+            tokens_in = UsageTracker.estimate(sent)
+            tokens_out = UsageTracker.estimate(received) if received else 0
+        self.usage.add(self.provider, self.model, tokens_in, tokens_out)
 
     @cached_property
     def client(self) -> openai.OpenAI:
@@ -210,9 +265,9 @@ class CloudEmbeddings(CloudModel, Embeddings):
         vectors: list[list[float]] = []
         for start in range(0, len(texts), 32):
             with self.friendly_errors():
-                reply = self.client.embeddings.create(
-                    model=self.model, input=texts[start : start + 32]
-                )
+                batch = texts[start : start + 32]
+                reply = self.client.embeddings.create(model=self.model, input=batch)
+            self.record(getattr(reply, "usage", None), " ".join(batch))
             vectors += [list(item.embedding) for item in reply.data]
         return vectors
 
@@ -230,8 +285,9 @@ class CloudChat(CloudModel):
         settings: dict,
         api_key: str | None,
         max_new_tokens: int = 256,
+        usage: UsageTracker | None = None,
     ):
-        super().__init__(provider, model, settings, api_key)
+        super().__init__(provider, model, settings, api_key, usage)
         self.max_new_tokens = max_new_tokens
 
     def request(self, prompt: str, max_new_tokens: int | None, **extra) -> dict:
@@ -265,16 +321,27 @@ class CloudChat(CloudModel):
             reply = self.client.chat.completions.create(
                 **self.request(prompt, max_new_tokens, **extra)
             )
-        return AIMessage(content=str(reply.choices[0].message.content or "").strip())
+        text = str(reply.choices[0].message.content or "").strip()
+        self.record(getattr(reply, "usage", None), prompt, text)
+        return AIMessage(content=text)
 
     def stream(self, prompt: str, max_new_tokens: int | None = None):
         """Like invoke(), but yields the reply piece by piece as the model writes it."""
+        extra = {"stream": True}
+        if self.settings["stream_usage"]:
+            extra["stream_options"] = {
+                "include_usage": True
+            }  # a last chunk with the counts
+        used, pieces = None, []
         with self.friendly_errors():
             for part in self.client.chat.completions.create(
-                **self.request(prompt, max_new_tokens, stream=True)
+                **self.request(prompt, max_new_tokens, **extra)
             ):
+                used = getattr(part, "usage", None) or used
                 if part.choices and part.choices[0].delta.content:
+                    pieces.append(part.choices[0].delta.content)
                     yield part.choices[0].delta.content
+        self.record(used, prompt, "".join(pieces))
 
     def digit_score(self, prompt: str) -> float:
         """Ask for one digit (0-9) and return it as 0-1. Where the provider returns
@@ -288,6 +355,7 @@ class CloudChat(CloudModel):
             reply = self.client.chat.completions.create(
                 **self.request(prompt, 1, logprobs=True, top_logprobs=10)
             )
+        self.record(getattr(reply, "usage", None), prompt, "0")
         content = reply.choices[0].logprobs.content if reply.choices[0].logprobs else []
         weights: dict[int, float] = {}
         for choice in content[0].top_logprobs if content else []:
@@ -323,6 +391,7 @@ def use_providers(
         "embedding_provider": embedding_provider,
         "embedding_api_key": embedding_key,
         "embedding_model": providers[embedding_provider]["embedding_model"],
+        "usage": UsageTracker(providers),  # this conversation's token and cost count
         **{
             name: chat[name]
             for name in ("llm_model", "reranker_model", "guard_model", "judge_model")
@@ -338,6 +407,7 @@ def make_embeddings(config: dict) -> OllamaEmbeddings | CloudEmbeddings:
             config["embedding_model"],
             config["providers"][provider],
             config.get("embedding_api_key"),
+            config.get("usage"),
         )
     return OllamaEmbeddings(
         config["embedding_model"],
@@ -355,6 +425,7 @@ def make_llm(config: dict) -> OllamaChat | CloudChat:
             config["providers"][provider],
             config.get("chat_api_key"),
             config["max_new_tokens"],
+            config.get("usage"),
         )
     return OllamaChat(
         config["llm_model"],

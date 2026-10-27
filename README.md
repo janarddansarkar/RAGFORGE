@@ -24,7 +24,7 @@ model to score each chunk 0-10 (ties keep the search order).
 
 ## Bring your own API key (web app)
 
-In the web app's sidebar the user picks a provider (OpenAI, Gemini or Anthropic) and pastes their own key; a second provider can be chosen for embeddings (Anthropic has no embeddings API). The key is held in that browser session's memory only and is never written to disk. It pays for everything the app asks a model: embeddings, contextual chunk notes, query rewriting, reranking, the answer, the input guard and the RAG-triad judge. Models per provider are in the `[providers.*]` tables of `config.toml`. The command line scripts and the eval still use Ollama (`chat_provider = "ollama"`).
+In the web app's sidebar the user picks a provider (OpenAI, Gemini or Anthropic) and pastes their own key; a second provider can be chosen for embeddings (Anthropic has no embeddings API). The key is held in that browser session's memory only and is never written to disk. It pays for everything the app asks a model: embeddings, contextual chunk notes, query rewriting, reranking, the answer, the input guard and the RAG-triad judge. The models and their prices per provider are in `providers.toml`. The UI shows the approximate cost of every turn and of the whole conversation (list prices, from the token counts the providers report). The command line scripts and the eval still use Ollama (`chat_provider = "ollama"`).
 
 ## How it works
 

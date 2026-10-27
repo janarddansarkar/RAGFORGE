@@ -1,0 +1,74 @@
+# Production model setup for the web app, one table per cloud provider the user can bring a key for.
+# The `openai` SDK talks to all of them through their OpenAI-compatible endpoints.
+#
+# Which model does what (the user's key pays for all of it):
+#   embedding_model  chunks, questions and the session cache are turned into vectors
+#   llm_model        answers, contextual chunk notes, question rewriting
+#   reranker_model   scores every candidate chunk 0-10 (about 20 tiny calls per question)
+#   guard_model      checks each question for prompt injection
+#   judge_model      scores each answer (the RAG triad)
+#
+# token_param: how the provider names the reply length limit.
+# json_mode: supports response_format json_object.   logprobs: returns token probabilities
+# (the reranker then scores like the Ollama one).    stream_usage: reports token counts while
+# streaming (otherwise the cost of the streamed answer is estimated at 4 characters per token).
+#
+# [<provider>.prices."<model>"]: US dollars per 1 million tokens, used for the cost shown in the UI.
+# They are list prices copied from the providers' pages and the UI shows them as approximate:
+# check them when you change a model. A model with no price here is counted as free.
+# Leave embedding_model out for a provider with no embeddings API.
+
+[openai]
+base_url = "https://api.openai.com/v1"
+token_param = "max_completion_tokens"
+json_mode = true
+logprobs = true
+stream_usage = true
+embedding_model = "text-embedding-3-small"
+llm_model = "gpt-4o-mini"
+reranker_model = "gpt-4o-mini"
+guard_model = "gpt-4o-mini"
+judge_model = "gpt-4o-mini"
+
+[openai.prices."gpt-4o-mini"]
+input = 0.15
+output = 0.60
+
+[openai.prices."text-embedding-3-small"]
+input = 0.02
+output = 0.0
+
+[gemini]
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+token_param = "max_tokens"
+json_mode = true
+logprobs = false
+stream_usage = false
+embedding_model = "gemini-embedding-001"
+llm_model = "gemini-2.5-flash-lite"
+reranker_model = "gemini-2.5-flash-lite"
+guard_model = "gemini-2.5-flash-lite"
+judge_model = "gemini-2.5-flash-lite"
+
+[gemini.prices."gemini-2.5-flash-lite"]
+input = 0.10
+output = 0.40
+
+[gemini.prices."gemini-embedding-001"]
+input = 0.15  # not confirmed against Google's page: check it
+output = 0.0
+
+[anthropic]
+base_url = "https://api.anthropic.com/v1/"
+token_param = "max_tokens"
+json_mode = false
+logprobs = false
+stream_usage = false
+llm_model = "claude-haiku-5-5"
+reranker_model = "claude-haiku-5-5"
+guard_model = "claude-haiku-5-5"
+judge_model = "claude-haiku-5-5"
+
+[anthropic.prices."claude-haiku-5-5"]  # prompts up to 100k tokens; longer ones cost 5x more
+input = 0.10
+output = 0.50

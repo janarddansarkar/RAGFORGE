@@ -12,6 +12,7 @@ from models import (
     CloudEmbeddings,
     OllamaChat,
     OllamaEmbeddings,
+    UsageTracker,
     make_embeddings,
     make_llm,
     use_providers,
@@ -22,6 +23,8 @@ OPENAI = {
     "token_param": "max_completion_tokens",
     "json_mode": True,
     "logprobs": True,
+    "stream_usage": True,
+    "prices": {"chat": {"input": 1.0, "output": 2.0}, "emb": {"input": 0.5}},
     "embedding_model": "emb",
     "llm_model": "chat",
     "reranker_model": "rerank",
@@ -33,6 +36,7 @@ ANTHROPIC = {
     "token_param": "max_tokens",
     "json_mode": False,
     "logprobs": False,
+    "stream_usage": False,
 }
 CONFIG = {
     "providers": {"openai": OPENAI, "anthropic": ANTHROPIC},
@@ -166,3 +170,67 @@ def test_factories_pick_the_provider():
     cloud = use_providers(CONFIG, "openai", "k", "openai", "k")
     assert isinstance(make_llm(cloud), CloudChat)
     assert isinstance(make_embeddings(cloud), CloudEmbeddings)
+
+
+def test_usage_costs_are_tokens_times_the_price_per_million():
+    tracker = UsageTracker({"openai": OPENAI})
+    tracker.add("openai", "chat", 1_000_000, 500_000)  # 1.0 + 1.0
+    start = tracker.mark()
+    tracker.add("openai", "emb", 2_000_000, 0)  # 1.0
+    tracker.add("openai", "unpriced-model", 10, 10)  # counted as free
+    assert tracker.cost()["dollars"] == pytest.approx(3.0)
+    assert tracker.cost(start)["dollars"] == pytest.approx(1.0)
+    assert tracker.cost(start)["tokens_in"] == 2_000_010
+
+
+def usage_chat(**kwargs):
+    model = chat(**kwargs)[0]
+    model.usage = UsageTracker({"p": OPENAI})
+    return model
+
+
+def test_a_reported_usage_is_counted_and_a_missing_one_is_estimated():
+    model = usage_chat()
+    model.client.chat.completions.create = lambda **kw: SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="abcdefgh"))],
+        usage=SimpleNamespace(prompt_tokens=7, completion_tokens=3),
+    )
+    model.invoke("hello")
+    assert model.usage.calls[-1] == ("p", "chat", 7, 3)
+    unreported = usage_chat(reply="abcdefgh")  # fake replies carry no usage
+    unreported.invoke("x" * 40)
+    assert unreported.usage.calls[-1] == ("p", "chat", 10, 2)
+
+
+def test_streaming_counts_the_call_once_it_has_finished():
+    model = usage_chat()
+    assert "".join(model.stream("x" * 40)) == "ab"
+    assert model.usage.calls == [("p", "chat", 10, 1)]
+
+
+def test_use_providers_gives_each_conversation_its_own_tracker():
+    one = use_providers(CONFIG, "openai", "k", "openai", "k")
+    two = use_providers(CONFIG, "openai", "k", "openai", "k")
+    assert one["usage"] is not two["usage"]
+    assert make_llm(one).usage is one["usage"]
+    assert make_embeddings(one).usage is one["usage"]
+
+
+def test_every_model_in_providers_toml_has_settings_and_a_price():
+    from vectorstore import load_config
+
+    for name, table in load_config()["providers"].items():
+        for key in ("base_url", "token_param", "json_mode", "logprobs", "stream_usage"):
+            assert key in table, f"{name} is missing {key}"
+        models = {
+            table[k]
+            for k in (
+                "embedding_model",
+                "llm_model",
+                "reranker_model",
+                "guard_model",
+                "judge_model",
+            )
+            if k in table
+        }
+        assert models <= set(table["prices"]), f"{name}: a model has no price"

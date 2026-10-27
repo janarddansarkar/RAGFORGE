@@ -7,7 +7,7 @@ vs_dir = "vs"           # Chroma vector store
 # ---- Which provider serves the models ----
 # ollama: local and free (the command line scripts and the eval). openai / gemini / anthropic: the
 # web app asks each user for their own API key (kept in memory only, never saved) and uses the models
-# of the [providers.*] tables at the end of this file instead of the ones below.
+# of the ones in providers.toml instead of the ones below.
 chat_provider = "ollama"       # answers, query transforms, reranker, guard, judge
 embedding_provider = "ollama"  # embeddings (anthropic has none)
 
@@ -101,43 +101,6 @@ tie_margin = 0.01             # within this of the best counts as a tie; the fas
 # ---- eval/generator_eval.py ----
 # The judge should be a different, stronger model than the generator (llm_model).
 judge_model = "mistral:7b"  # also scores the RAG triad live in the UI (eval/rag_triad_eval.py)
-
-# ---- Cloud providers (the `openai` SDK talks to all of them through their OpenAI-compatible endpoints) ----
-# token_param: how the provider names the reply length limit. json_mode: supports response_format
-# json_object. logprobs: returns token probabilities (the reranker then scores like the Ollama one).
-# Model names are defaults: change them here when a provider retires one. Leave embedding_model out
-# for a provider with no embeddings API.
-[providers.openai]
-base_url = "https://api.openai.com/v1"
-token_param = "max_completion_tokens"
-json_mode = true
-logprobs = true
-embedding_model = "text-embedding-3-small"
-llm_model = "gpt-4o-mini"
-reranker_model = "gpt-4o-mini"
-guard_model = "gpt-4o-mini"
-judge_model = "gpt-4o-mini"
-
-[providers.gemini]
-base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-token_param = "max_tokens"
-json_mode = true
-logprobs = false
-embedding_model = "gemini-embedding-001"
-llm_model = "gemini-2.5-flash-lite"
-reranker_model = "gemini-2.5-flash-lite"
-guard_model = "gemini-2.5-flash-lite"
-judge_model = "gemini-2.5-flash-lite"
-
-[providers.anthropic]
-base_url = "https://api.anthropic.com/v1/"
-token_param = "max_tokens"
-json_mode = false
-logprobs = false
-llm_model = "claude-haiku-5-5"
-reranker_model = "claude-haiku-5-5"
-guard_model = "claude-haiku-5-5"
-judge_model = "claude-haiku-5-5"
 
 # Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
 # Keep this at the end of the file (a TOML array of tables).

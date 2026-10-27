@@ -102,6 +102,7 @@ if uploaded and st.button("Ingest"):
             st.session_state.rag = DocumentRAG(list(paths.values()), config=user_config)
             st.session_state.ingested = ", ".join(paths)
             st.session_state.messages = []
+            st.session_state.index_cost = user_config["usage"].cost()  # embedding etc.
 
 rag = st.session_state.get("rag")
 if rag is None:
@@ -134,6 +135,28 @@ if st.button("Clear chat"):
     rag.memory.clear()
     st.session_state.messages = []
 messages = st.session_state.setdefault("messages", [])
+
+
+usage = rag.config["usage"]  # this conversation's token and cost count
+
+
+def money(dollars: float) -> str:
+    """Dollars for a small amount: 4 decimals under a cent's tenth, else 3 (always approximate)."""
+    return f"~${dollars:.4f}" if dollars < 0.1 else f"~${dollars:.2f}"
+
+
+def cost_line(cost: dict) -> str:
+    return f"{money(cost['dollars'])} ({cost['tokens_in']:,} tokens in, {cost['tokens_out']:,} out)"
+
+
+def add_cost(message: dict, since: int) -> None:
+    """Add the cost of the calls made since mark `since` to this answer's cost."""
+    spent = usage.cost(since)
+    total = message.setdefault(
+        "cost", {"dollars": 0.0, "tokens_in": 0, "tokens_out": 0}
+    )
+    for key in total:
+        total[key] += spent[key]
 
 
 def score_turn(question: str, answer: str, chunks: list) -> dict:
@@ -198,8 +221,12 @@ def show_answer(message: dict, index: int, streamed: bool = False) -> None:
     elif not streamed and st.button(
         "Score this answer (RAG triad)", key=f"score_{index}"
     ):
+        mark = usage.mark()
         message["triad"] = score_turn(message["question"], answer, chunks)
+        add_cost(message, mark)
         st.rerun()
+    if "cost" in message:
+        st.caption(f"Cost of this turn: {cost_line(message['cost'])}")
     with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
         for rank, chunk in enumerate(chunks, start=1):
             st.markdown(f"**[{rank}] {Report.label(chunk)}**")
@@ -221,6 +248,7 @@ question = st.chat_input("Ask a question about the documents") or st.session_sta
 )
 if question and question.strip():
     question = question.strip()
+    turn_start = usage.mark()  # the turn's cost: from the guard to the triad scores
     stream = rag.ask_stream(question)
     try:
         with st.spinner("Checking, retrieving and answering..."):
@@ -257,6 +285,8 @@ if question and question.strip():
                     entry["triad"] = turn["triad"]
                     rag.generator.cache.save()
             show_triad(turn["triad"])
+            add_cost(turn, turn_start)
+            st.caption(f"Cost of this turn: {cost_line(turn['cost'])}")
 
 if read_aloud and question and messages and messages[-1]["role"] == "assistant":
     st.audio(TextToSpeech().speak(messages[-1]["text"]), autoplay=True)
@@ -293,6 +323,18 @@ with st.sidebar:
         st.caption(
             "0 = bad, 1 = good. A small local judge is noisy: use it as a guide."
         )
+
+    st.divider()
+    st.subheader("Cost so far")
+    everything = usage.cost()
+    indexing = st.session_state.get("index_cost", {"dollars": 0.0})
+    st.metric("This conversation", money(everything["dollars"]))
+    st.caption(
+        f"Indexing the documents {money(indexing['dollars'])} + questions "
+        f"{money(everything['dollars'] - indexing['dollars'])}. "
+        f"{everything['tokens_in']:,} tokens in, {everything['tokens_out']:,} out. "
+        "Approximate: list prices from providers.toml."
+    )
 
     # The session's chat history: every question asked since the last Ingest, newest last.
     st.divider()
