@@ -12,6 +12,7 @@ re-indexes it. (The CLI takes one file; DocumentRAG and the web UI take several.
 
 import argparse
 import hashlib
+import re
 import sys
 import textwrap
 from pathlib import Path
@@ -110,16 +111,25 @@ class Report:
     def label(chunk: Document) -> str:
         return f"{chunk.metadata['source']} p.{chunk.metadata['page']}"
 
+    @classmethod
+    def cited(cls, answer: str, chunks: list[Document]) -> list[str]:
+        """The pages the answer actually cites ([LoRA p.10]), in rank order. When it cites
+        none that we can match, every retrieved page (what the answer was written from)."""
+        found = []
+        for chunk in chunks:
+            tag = f"{chunk.metadata['source'].removesuffix('.pdf')} p.{chunk.metadata['page']}"
+            if re.search(re.escape(tag) + r"(?!\d)", answer):
+                found.append(cls.label(chunk))
+        return list(dict.fromkeys(found or (cls.label(c) for c in chunks)))
+
     def show(self, question: str, answer: str, chunks: list[Document]) -> None:
         print(f"\nQ: {question}\n\nAnswer:\n{textwrap.indent(answer, '  ')}")
 
-        print("\nCitations (the pages the answer was written from):")
+        print("\nCitations (the pages the answer cites):")
         if REFUSAL in answer.lower().replace("\u2019", "'"):
             print("  none - the document does not answer this question")
         else:
-            for label in dict.fromkeys(
-                self.label(c) for c in chunks
-            ):  # unique, in rank order
+            for label in self.cited(answer, chunks):
                 print(f"  - {label}")
 
         print(f"\nTop {len(chunks)} chunks:")

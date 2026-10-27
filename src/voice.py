@@ -8,6 +8,7 @@ downloaded the first time (stt_model in config.toml; "small" is about 500 MB).
 
 import io
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -34,6 +35,11 @@ class SpeechToText:
 
 
 class TextToSpeech:
+    @staticmethod
+    def available() -> bool:
+        """Reading aloud needs macOS's `say`."""
+        return shutil.which("say") is not None
+
     @staticmethod
     def spoken(text: str) -> str:
         """The answer without what a person wouldn't say aloud: [LoRA p.4] tags and markdown."""
