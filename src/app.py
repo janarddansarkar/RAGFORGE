@@ -9,6 +9,7 @@ with its citations and the retrieved + reranked chunks behind it.
 import hashlib
 import sys
 import tempfile
+import uuid
 from itertools import chain
 from pathlib import Path
 
@@ -59,6 +60,7 @@ if uploaded and st.button("Ingest"):
             st.session_state.rag = DocumentRAG(list(paths.values()))
             st.session_state.ingested = ", ".join(paths)
             st.session_state.messages = []
+            st.session_state.conversation_id = uuid.uuid4().hex  # ties ratings together
 
 rag = st.session_state.get("rag")
 if rag is None:
@@ -139,9 +141,43 @@ def score_line(chunk) -> str:
     return " | ".join(parts) or "no scores"
 
 
+def retry_note(reasons: list[str]) -> str:
+    return "Second try after your thumbs down" + (
+        f" ({', '.join(reasons)})" if reasons else ""
+    )
+
+
+def show_feedback(message: dict, index: int) -> None:
+    """Thumbs up / down on an answer, kept in the session cache next to the answer. A thumbs
+    down asks what was wrong, and the same question then gets a fresh answer."""
+    cache, entry = rag.generator.cache, message.get("cache_entry")
+    if not cache or not entry:
+        return  # without the session cache there is nowhere to keep it
+    key = f"{st.session_state.conversation_id}_{index}"  # a new conversation starts unrated
+    choice = st.feedback("thumbs", key=f"thumbs_{key}")
+    if choice is None:
+        return
+    rating, reasons = ("up", []) if choice == 1 else ("down", [])
+    if rating == "down":
+        reasons = st.pills(
+            "What was wrong?", cache.REASONS, selection_mode="multi", key=f"why_{key}"
+        )
+    saved = {"rating": rating, "reasons": list(reasons)}
+    if entry.get("feedback") != saved:
+        cache.rate(entry, rating, saved["reasons"])
+    st.caption("Thanks, your feedback is saved for this session.")
+    if rating == "down" and index == len(messages) - 1:  # only the latest answer
+        label = "Try again" + (" with these reasons" if reasons else "")
+        if st.button(label, key=f"retry_{key}"):
+            st.session_state.retry = {"index": index, "reasons": saved["reasons"]}
+            st.rerun()
+
+
 def show_answer(message: dict, index: int, streamed: bool = False) -> None:
     """streamed=True: the answer text is already on screen and the caller scores it."""
     answer, chunks = message["text"], message["chunks"]
+    if message.get("retry_reasons") is not None and not streamed:
+        st.caption(retry_note(message["retry_reasons"]))
     if not streamed:
         st.write(answer)
     if message["query"] != previous_question:
@@ -162,6 +198,8 @@ def show_answer(message: dict, index: int, streamed: bool = False) -> None:
             st.markdown(f"**[{rank}] {Report.label(chunk)}**")
             st.caption(score_line(chunk))
             st.write(chunk.page_content)
+    if not streamed:
+        show_feedback(message, index)
 
 
 previous_question = ""
@@ -173,10 +211,57 @@ for index, message in enumerate(messages):
         else:
             show_answer(message, index)
 
+
+def answer_turn(question: str, stream, first: str, retry_reasons=None) -> None:
+    """Show one answer as it streams, then its citations, scores, cost and thumbs.
+    retry_reasons is None for a new question and the thumbs-down reasons for a second try."""
+    global previous_question
+    if retry_reasons is None:
+        messages.append({"role": "user", "text": question})
+        with st.chat_message("user"):
+            st.write(question)
+    with st.chat_message("assistant"):
+        if retry_reasons is not None:
+            st.caption(retry_note(retry_reasons))
+        answer = st.write_stream(chain([first], stream)).strip()
+        turn = {
+            "role": "assistant",
+            "question": question,
+            "text": answer,
+            "chunks": rag.last_chunks,
+            "query": rag.last_query,
+        }
+        if retry_reasons is not None:
+            turn["retry_reasons"] = retry_reasons
+        messages.append(turn)
+        previous_question = question
+        show_answer(turn, len(messages) - 1, streamed=True)  # citations and chunks now
+        entry = rag.generator.cache_entry  # the cache keeps the scores with the answer
+        if entry and entry["triad"]:
+            turn["triad"] = entry["triad"]
+        else:
+            turn["triad"] = score_turn(question, answer, turn["chunks"])
+            if entry:
+                entry["triad"] = turn["triad"]
+                rag.generator.cache.save()
+        show_triad(turn["triad"])
+        turn["cache_entry"] = entry
+        show_feedback(turn, len(messages) - 1)
+
+
+retry = st.session_state.pop("retry", None)
 question = st.chat_input("Ask a question about the documents") or st.session_state.pop(
     "spoken", None
 )
-if question and question.strip():
+if retry and retry["index"] == len(messages) - 1:
+    # A thumbs down: answer the same question again, in the way the reasons ask for.
+    previous = messages[retry["index"]]
+    question = previous["question"]
+    stream = rag.retry_stream(previous, retry["reasons"])
+    with st.spinner("Trying again..."):
+        first = next(stream, "")
+    answer_turn(question, stream, first, retry["reasons"])
+elif question and question.strip():
     question = question.strip()
     stream = rag.ask_stream(question)
     try:
@@ -186,34 +271,7 @@ if question and question.strip():
         st.warning(str(blocked))
         question = None  # nothing was asked: no scoring, no reading aloud
     else:
-        messages.append({"role": "user", "text": question})
-        with st.chat_message("user"):
-            st.write(question)
-        with st.chat_message("assistant"):
-            answer = st.write_stream(chain([first], stream)).strip()
-            turn = {
-                "role": "assistant",
-                "question": question,
-                "text": answer,
-                "chunks": rag.last_chunks,
-                "query": rag.last_query,
-            }
-            messages.append(turn)
-            previous_question = question
-            show_answer(
-                turn, len(messages) - 1, streamed=True
-            )  # citations and chunks now
-            entry = (
-                rag.generator.cache_entry
-            )  # the cache keeps the scores with the answer
-            if entry and entry["triad"]:
-                turn["triad"] = entry["triad"]
-            else:
-                turn["triad"] = score_turn(question, answer, turn["chunks"])
-                if entry:
-                    entry["triad"] = turn["triad"]
-                    rag.generator.cache.save()
-            show_triad(turn["triad"])
+        answer_turn(question, stream, first)
 
 if read_aloud and question and messages and messages[-1]["role"] == "assistant":
     st.audio(TextToSpeech().speak(messages[-1]["text"]), autoplay=True)

@@ -60,7 +60,7 @@ def test_answer_prompt_is_unchanged_without_history():
     generator.retriever = SimpleNamespace(llm=FakeLLM("ok"))
     generator.answer_from("Q?", [])
     assert generator.retriever.llm.prompts[0] == ANSWER_PROMPT.format(
-        passages="", history="", question="Q?"
+        passages="", history="", extra="", question="Q?"
     )
     assert "Conversation so far" not in generator.retriever.llm.prompts[0]
     generator.answer_from("Q?", [], history="User: a\nAssistant: b")
@@ -86,3 +86,20 @@ def test_chat_stream_gives_the_same_answer_as_chat_and_updates_memory():
     assert generator.last_query == "What rank?"
     answer, chunks, query = generator.chat("What rank?", ConversationMemory())
     assert answer == "It is r = 8 [LoRA p.4]" and chunks == [] and query == "What rank?"
+
+
+def test_a_question_asked_before_word_for_word_is_not_rewritten():
+    llm = FakeLLM("r = 4 [LoRA p.10]")  # would be used if the model were asked
+    memory = ConversationMemory()
+    memory.add("What rank r does LoRA use?", "r = 4 [LoRA p.10]")
+    assert memory.standalone("what rank r does lora use?", llm) == (
+        "what rank r does lora use?"
+    )
+    assert llm.prompts == []  # no model call at all
+
+
+def test_a_rewrite_that_is_really_an_answer_falls_back_to_the_question():
+    memory = ConversationMemory()
+    memory.add("What is NF4?", "A 4-bit data type [QLoRA p.3]")
+    reply = FakeLLM("r = 4 [LoRA p.26], [LoRA p.10]")
+    assert memory.standalone("And the rank?", reply) == "And the rank?"

@@ -96,6 +96,12 @@ class DocumentRAG:
         )
         self.last_query = self.generator.last_query
 
+    def retry_stream(self, previous: dict, reasons: list[str]):
+        """Like ask_stream(), for a second try at an answer that got a thumbs down
+        (see Generator.retry_stream)."""
+        yield from self.generator.retry_stream(previous, reasons, self.memory, self.k)
+        self.last_query = self.generator.last_query
+
     @property
     def last_chunks(self) -> list[Document]:
         return self.generator.last_chunks

@@ -255,6 +255,16 @@ class Retriever:
         )
         return self.rerank(query, candidates[:n], k)
 
+    def retrieve_wider(self, query: str, k: int) -> list[Document]:
+        """A second try after a bad answer: the question is also searched in other words
+        (multi-query) and twice as many candidates go to the reranker."""
+        normal = self.config
+        self.config = {**normal, "fetch_k": normal["fetch_k"] * 2}
+        try:
+            return self.multi_query_hybrid_rerank(query, k)
+        finally:
+            self.config = normal
+
     # ENTRY POINT ---- retrieve(query, method="hybrid_rerank")
     def retrieve(
         self, query: str, method: str = "hybrid_rerank", k: int | None = None
