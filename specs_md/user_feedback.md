@@ -93,10 +93,22 @@ question was asked again, the 4B model once turned it into the text of the previ
 (`r = 4 [LoRA p.26], [LoRA p.10]`), which broke both the cache lookup and the search. Now a question asked before
 word for word is not rewritten at all, and a rewrite that contains a citation like `[LoRA p.10]` is rejected.
 
+## Another fix found while testing: the context note leaked into answers
+
+With contextual chunking (`contextual = true`) every stored chunk is an LLM-written note followed by the document's
+own text. The note helps the search, but the answer model treated it as evidence and quoted it (for the W-9 form it
+answered "What is Form W-9 used for?" with an invented story about foreign partners). Now each chunk also keeps its
+own text in `metadata["chunk_text"]`: the note is still embedded, searched and reranked as before, but the answer
+prompt, the terminal report and the RAG-triad judge use only the text (`chunk_body()` / `chunk_note()` in
+`src/chunking.py`), and the UI shows the note as a separate caption. Contextual stores are named
+`contextual_body_...`, so indexes built before this change are rebuilt on first use (the cached notes are reused, so
+it is quick). Chunks from an older store, without `chunk_text`, still work and are used as they are.
+
 ## Files
 
 | file | role |
 |---|---|
+| `src/chunking.py` | `chunk_body`, `chunk_note`, `split_parts` (note and text kept apart), the `contextual_body_` store name |
 | `src/cache.py` | `SessionCache.rate()` stores the thumbs, `disliked()`, `REASONS`, `find()` skips disliked entries |
 | `src/generator.py` | `retry_stream`, `retry_llm`, `RETRY_NOTES`, `RETRIEVAL_REASONS`, `build_prompt(..., extra)` |
 | `src/retriever.py` | `retrieve_wider` |
@@ -124,6 +136,12 @@ word for word is not rewritten at all, and a rewrite that contains a citation li
   reasons were stored, the question was then answered afresh with a different answer, "Wrong or missing source" ran a
   wider search (7 chunks, new pages), "Too long" reused the chunks, and the cache file was deleted on a new upload.
   The RAG-triad judge was stubbed in the replay runs to keep them fast.
+- Retry model check (LoRA paper, "Wrong citation" + "Incomplete"): `mistral:7b` reused the same chunks, ran no new
+  search, and dropped the wrong `[p.4]` citation.
+- IRS W-9 form (`test_docs/irs_w9_form.pdf`, 6 pages): five factual questions answered correctly with the right
+  pages (24% backup withholding, the $50 penalty, Form W-8, the SSN), an out-of-scope question refused, a prompt
+  injection blocked by the guard, and Try again worked. After the context-note fix the answers no longer start with
+  note text. "What is Form W-9 used for?" is still a little messy: a small model quoting awkwardly.
 
 ## Ideas for later
 
