@@ -6,14 +6,29 @@
     "chunk_size": 600,
     "chunk_overlap": 90,
     "embedding_model": "all-minilm",
-    "default_method": "hybrid",
+    "default_method": "hybrid_rerank",
+    "reranker_type": "cross_encoder",
     "reranker_model": "qwen2.5:3b",
+    "cross_encoder_model": "mixedbread-ai/mxbai-rerank-base-v1",
     "llm_model": "gemma3:4b",
     "top_k": 5,
     "max_new_tokens": 256
   },
   "held_out": {
     "best": {
+      "Recall@1": 0.5666666666666667,
+      "Recall@3": 0.8,
+      "Recall@5": 0.8666666666666667,
+      "Recall@10": 0.9666666666666667,
+      "Precision@5": 0.41333333333333333,
+      "MRR": 0.7873015873015873,
+      "HitRate@1": 0.6666666666666666,
+      "HitRate@3": 0.9333333333333333,
+      "HitRate@5": 0.9333333333333333,
+      "HitRate@10": 1.0,
+      "sec/query": 0.484850777799996
+    },
+    "current": {
       "Recall@1": 0.43333333333333335,
       "Recall@3": 0.5666666666666667,
       "Recall@5": 0.8333333333333334,
@@ -24,20 +39,7 @@
       "HitRate@3": 0.6,
       "HitRate@5": 0.8666666666666667,
       "HitRate@10": 1.0,
-      "sec/query": 0.006717802733328426
-    },
-    "current": {
-      "Recall@1": 0.3,
-      "Recall@3": 0.7,
-      "Recall@5": 0.8333333333333334,
-      "Recall@10": 0.9333333333333333,
-      "Precision@5": 0.2800000000000001,
-      "MRR": 0.5506349206349206,
-      "HitRate@1": 0.3333333333333333,
-      "HitRate@3": 0.8,
-      "HitRate@5": 0.9333333333333333,
-      "HitRate@10": 1.0,
-      "sec/query": 1.6868220444666804
+      "sec/query": 0.006513680533316801
     }
   }
 }

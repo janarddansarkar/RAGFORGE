@@ -10,7 +10,9 @@ ollama_num_ctx = 8192                   # context window; Ollama's default (4096
 embedding_model = "bge-m3"  # changing it requires: uv run python src/vectorstore.py --rebuild
 llm_model = "qwen2.5:3b"    # contextual notes, query transforms, answers
 max_new_tokens = 256        # longest reply the LLM writes
-reranker_model = "qwen2.5:3b"  # an LLM scores each chunk 0-10 (Ollama has no cross-encoder reranker)
+reranker_type = "llm"          # llm: a chat model scores each chunk 0-10 | cross_encoder: a Hugging Face model scores all chunks in one batch
+reranker_model = "qwen2.5:3b"  # the chat model when reranker_type = "llm" (Ollama has no cross-encoder reranker)
+cross_encoder_model = "BAAI/bge-reranker-v2-m3"  # when reranker_type = "cross_encoder"; downloaded from Hugging Face on first use
 stt_model = "small"            # faster-whisper model (tiny | base | small | medium) that hears spoken questions in the UI
 
 # ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
@@ -62,6 +64,10 @@ rerankers = [                    # stage 3: Ollama chat models that rerank (an L
     "qwen2.5:1.5b",
     "qwen2.5:3b",
     "llama3.2:3b",
+]
+cross_encoders = [               # stage 4: Hugging Face cross-encoders compared with the LLM rerankers
+    "BAAI/bge-reranker-v2-m3",
+    "mixedbread-ai/mxbai-rerank-base-v1",
 ]
 embedders = [                    # stage 2: Ollama embedding models
     "bge-m3",

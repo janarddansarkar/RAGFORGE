@@ -108,6 +108,14 @@ class Retriever:
             }
         )
 
+    @cached_property
+    def cross_encoder(self):
+        """A Hugging Face cross-encoder (reranker_type = "cross_encoder"), downloaded the first
+        time it is used. It reads (question, chunk) together and returns one score per pair."""
+        from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+
+        return HuggingFaceCrossEncoder(model_name=self.config["cross_encoder_model"])
+
     # 1. SEARCH ---- the two basic ways to find chunks
     def dense(self, query: str, k: int) -> list[Document]:
         """Vector search: finds chunks with similar meaning."""
@@ -136,12 +144,16 @@ class Retriever:
         return sorted(docs.values(), key=lambda d: scores[str(d.id)], reverse=True)
 
     def rerank(self, query: str, docs: list[Document], k: int) -> list[Document]:
-        """An LLM reads (question, chunk) together and scores the match from 0 to 1.
-        Ollama has no cross-encoder, so this asks a chat model; equal scores keep their
+        """Score every (question, chunk) pair from 0 to 1 and keep the best k. The scorer is
+        a cross-encoder (reranker_type = "cross_encoder": one batch, no LLM calls) or, as
+        Ollama has no cross-encoder, a chat model asked for a number. Equal scores keep their
         incoming order (sorted() is stable), so ties fall back to the fusion ranking."""
         if not docs:
             return []
-        scores = [self._relevance(query, d.page_content) for d in docs]
+        if self.config.get("reranker_type", "llm") == "cross_encoder":
+            scores = self.cross_encoder.score([(query, d.page_content) for d in docs])
+        else:
+            scores = [self._relevance(query, d.page_content) for d in docs]
         ranked = sorted(zip(docs, scores), key=lambda pair: pair[1], reverse=True)
         # New Documents, so the score doesn't leak into the shared BM25 chunks.
         return [

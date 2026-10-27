@@ -5,10 +5,13 @@ from eval.find_best import STAGES, BestConfigSearch, drop_missing, models_needed
 CONFIG = {
     "embedding_model": "bge-m3",
     "llm_model": "qwen2.5:3b",
+    "reranker_type": "llm",
     "reranker_model": "qwen2.5:3b",
+    "cross_encoder_model": "BAAI/bge-reranker-v2-m3",
     "judge_model": "mistral:7b",
     "embedders": ["bge-m3", "nomic-embed-text"],
     "rerankers": ["qwen2.5:1.5b", "llama3.2:3b"],
+    "cross_encoders": ["BAAI/bge-reranker-v2-m3"],
     "generators": ["qwen2.5:3b", "gemma3:4b"],
 }
 
@@ -75,3 +78,24 @@ def test_a_pick_that_loses_on_held_out_questions_is_not_kept():
     assert result["retrieval"] == "kept current settings"
     assert result["settings"]["chunk_size"] == 1000
     assert result["settings"]["top_k"] == 5
+
+
+def test_reranker_stage_compares_no_reranker_llms_and_cross_encoders():
+    search = BestConfigSearch.__new__(BestConfigSearch)
+    search.config = CONFIG
+    seen = {}
+
+    def stub(title, candidates):
+        seen.update(candidates)
+        return "cross-encoder BAAI/bge-reranker-v2-m3"
+
+    search.retrieval_stage = stub
+    result = search.stage_reranker({**CONFIG, "default_method": "hybrid"})
+    assert list(seen) == [
+        "no reranker (hybrid)",
+        "LLM qwen2.5:1.5b",
+        "LLM llama3.2:3b",
+        "cross-encoder BAAI/bge-reranker-v2-m3",
+    ]
+    assert result["default_method"] == "hybrid_rerank"  # the winner reranks
+    assert result["reranker_type"] == "cross_encoder"

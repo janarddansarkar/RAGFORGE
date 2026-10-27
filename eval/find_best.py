@@ -3,7 +3,8 @@
   1. chunking   - build / reuse a store per [[chunking_variants]], score the default method
   2. embedder   - compare the Ollama embedding models in `embedders` (one store each)
   3. method     - compare the pipelines in `search_methods`
-  4. reranker   - compare the Ollama rerankers (LLMs that score chunks) in `rerankers` (only if the method reranks)
+  4. reranker   - compare no reranker, the Ollama rerankers (LLMs that score chunks) in `rerankers` and the
+                  Hugging Face cross-encoders in `cross_encoders`; the winner decides whether to rerank at all
   5. chunk_size - compare `chunk_sizes`: retrieval on the golden questions plus the context
                   relevance of the top-3 / top-5 chunks (deepeval + the judge); picks chunk size and top_k
   6. generator  - compare the answer models in `generators` on the golden pages (oracle mode),
@@ -54,7 +55,9 @@ RETRIEVAL_SETTINGS = (
     "contextual",
     "embedding_model",
     "default_method",
+    "reranker_type",
     "reranker_model",
+    "cross_encoder_model",
     "chunk_size",
     "chunk_overlap",
     "top_k",
@@ -68,7 +71,9 @@ SETTINGS = (
     "chunk_overlap",
     "embedding_model",
     "default_method",
+    "reranker_type",
     "reranker_model",
+    "cross_encoder_model",
     "llm_model",
     "top_k",
     "max_new_tokens",
@@ -175,16 +180,25 @@ class BestConfigSearch:
         return {**config, "default_method": winner}
 
     def stage_reranker(self, config: dict) -> dict:
-        if not config["default_method"].endswith("rerank"):
-            print("\n(4. reranker skipped: the winning method does not rerank)")
-            return config
+        """No reranker (the current method) against every LLM and cross-encoder reranker."""
         method = config["default_method"]
-        candidates = {
-            m: ({**config, "reranker_model": m}, method)
-            for m in self.config["rerankers"]
-        }
-        winner = self.retrieval_stage(f"4. reranker ({method})", candidates)
-        return candidates[winner][0]
+        rerank_method = method if method.endswith("rerank") else "hybrid_rerank"
+        candidates = {}
+        if rerank_method != method:
+            candidates[f"no reranker ({method})"] = (config, method)
+        for model in self.config["rerankers"]:
+            llm = {**config, "reranker_type": "llm", "reranker_model": model}
+            candidates[f"LLM {model}"] = (llm, rerank_method)
+        for model in self.config["cross_encoders"]:
+            encoder = {
+                **config,
+                "reranker_type": "cross_encoder",
+                "cross_encoder_model": model,
+            }
+            candidates[f"cross-encoder {model}"] = (encoder, rerank_method)
+        winner = self.retrieval_stage(f"4. reranker ({rerank_method})", candidates)
+        chosen, chosen_method = candidates[winner]
+        return {**chosen, "default_method": chosen_method}
 
     def stage_chunk_size(self, config: dict) -> dict:
         """Chunk size and top_k: the most relevant context that does not cost recall."""
