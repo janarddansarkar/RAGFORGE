@@ -1,6 +1,6 @@
 # RAGForge
 
-Ask questions about PDFs and images. Everything runs **locally and free**: embeddings, reranker,
+Ask questions about PDFs. Everything runs **locally and free**: embeddings, reranker,
 answer model and the evaluation judge are [Ollama](https://ollama.com) models, and spoken questions use
 faster-whisper (no API keys, no per-call cost). Each model is downloaded once, then works offline.
 
@@ -35,7 +35,7 @@ question -> hybrid search (dense + BM25, fused) -> reranker -> top-k chunks -> a
 | `src/vectorstore.py` | builds and opens the Chroma store; `load_config()` |
 | `src/retriever.py` | dense, BM25, hybrid, reranked and LLM-assisted retrieval |
 | `src/generator.py` | answers a question from chunks |
-| `src/rag.py` | puts it together for PDFs and images (scans are read with Tesseract: `brew install tesseract`) |
+| `src/rag.py` | puts it together for PDFs (scanned pages are read with Tesseract: `brew install tesseract`) |
 | `src/rag_pipeline.py` | the full pipeline over `documents/`, using the best settings from `best_config.json` |
 | `src/app.py` | Streamlit UI: upload one or more PDFs, Ingest, ask, see answer + citations + reranked chunks (`uv run streamlit run src/app.py`) |
 | `src/voice.py` | speech to text (faster-whisper, on CPU) for spoken questions, macOS `say` for reading answers aloud |

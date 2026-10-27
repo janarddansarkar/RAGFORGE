@@ -147,8 +147,6 @@ class ContextualChunker(Chunker):
 
 
 class ChunkingPipeline:
-    IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
-
     def __init__(self, chunker: Chunker, data_dir: Path):
         self.chunker = chunker
         self.data_dir = data_dir
@@ -182,18 +180,13 @@ class ChunkingPipeline:
             chunker = ContextualChunker(chunker, llm, cache_file)
         return cls(chunker, config["data_dir"])
 
-    # 1. LOAD ---- one Document per PDF page, or per image file
+    # 1. LOAD ---- one Document per PDF page
     def load_pages(self) -> list[Document]:
         pages = []
         for path in sorted(self.data_dir.iterdir()):
-            suffix = path.suffix.lower()
-            if suffix == ".pdf":
-                texts = self._pdf_texts(path)
-            elif suffix in self.IMAGE_SUFFIXES:
-                texts = [self._ocr(pymupdf.open(path)[0])]
-            else:
+            if path.suffix.lower() != ".pdf":
                 continue
-            for page_num, text in enumerate(texts, start=1):
+            for page_num, text in enumerate(self._pdf_texts(path), start=1):
                 text = self._clean(text)
                 if text:  # skip blank pages
                     pages.append(
@@ -233,8 +226,6 @@ class ChunkingPipeline:
         for page in self.load_pages():
             source = Path(page.metadata["source"])
             stem = source.stem.strip().replace(" ", "_")
-            if source.suffix.lower() != ".pdf":
-                stem += "_img"  # so a.pdf and a.jpg never share chunk IDs
             for i, text in enumerate(self.chunker.split_page(page)):
                 chunk_id = f"{stem}_p{page.metadata['page']}_{i}"
                 chunks.append(
