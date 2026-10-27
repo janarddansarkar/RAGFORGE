@@ -34,6 +34,7 @@ from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase
 from langchain_core.documents import Document
 
+from chunking import chunk_body
 from models import OllamaChat
 from vectorstore import load_config
 
@@ -99,7 +100,8 @@ class TriadEvaluator:
         case = LLMTestCase(
             input=question,
             actual_output=answer,
-            retrieval_context=[chunk.page_content for chunk in chunks],
+            # the document's own text, not the context note: the answer must be grounded in it
+            retrieval_context=[chunk_body(chunk) for chunk in chunks],
         )
         results = {}
         for name, metric_class in self.METRICS.items():

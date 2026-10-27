@@ -5,12 +5,15 @@ Try it:                 uv run python src/generator.py "What rank r does LoRA us
 """
 
 import sys
+from functools import cached_property
 
 from langchain_core.documents import Document
 
 from cache import SessionCache
+from chunking import chunk_body
 from guardrails import InputGuard
 from memory import ConversationMemory
+from models import make_llm
 from retriever import Retriever
 from vectorstore import load_config
 
@@ -24,12 +27,17 @@ exactly as written, and never cite a label that is not above a passage.
 Question: {question}"""
 
 
-# A thumbs down names what was wrong (cache.SessionCache.REASONS). The first two mean the
-# chunks were wrong, so the retry searches again, wider. The others change how the answer is
-# written from the chunks. Every retry also shows the model the answer that was rejected.
-RETRIEVAL_REASONS = ("Wrong or missing source", "Wrong citation")
+# A thumbs down names what was wrong (cache.SessionCache.REASONS). A wrong or missing source
+# means the chunks were wrong, so the retry searches again, wider. The others change how the
+# answer is written from the same chunks. Every retry also shows the model the answer that was
+# rejected, and writes the new one with the (stronger) retry_model from config.toml.
+RETRIEVAL_REASONS = ("Wrong or missing source",)
 RETRY_NOTES = {
-    "Wrong citation": "Cite each statement with the label of the passage that states it.",
+    "Wrong citation": (
+        "Cite a passage only for a fact or number that appears in that passage's own text; "
+        "if two passages are needed, cite each one for what it says. Do not cite a passage "
+        "that merely mentions the topic."
+    ),
     "Made something up": "Use only facts stated in the passages; leave out any detail that is not there.",
     "Incomplete": "Cover every part of the question, with the details the passages give.",
     "Too long": "Answer in at most two sentences.",
@@ -51,6 +59,17 @@ class Generator:
         self.cache_entry: dict | None = None  # the cache entry behind the last answer
         self.last_chunks: list[Document] = []  # set by chat_stream() when it finishes
         self.last_query = ""
+
+    @cached_property
+    def retry_llm(self):
+        """The model that writes a second try (retry_model in config.toml; empty = the usual
+        answer model). A stronger one follows "do not repeat it" and the notes better."""
+        model = self.config.get("retry_model")
+        return (
+            make_llm({**self.config, "llm_model": model})
+            if model
+            else self.retriever.llm
+        )
 
     @staticmethod
     def label(chunk: Document) -> str:
@@ -144,7 +163,7 @@ class Generator:
         elif "Too long" in reasons:
             limit //= 3
         pieces = []
-        for piece in self.retriever.llm.stream(prompt, max_new_tokens=limit):
+        for piece in self.retry_llm.stream(prompt, max_new_tokens=limit):
             pieces.append(piece)
             yield piece
         answer = "".join(pieces).strip()
@@ -158,7 +177,7 @@ class Generator:
         self, question: str, chunks: list[Document], history: str = "", extra: str = ""
     ) -> str:
         """The answer prompt. history is the recent conversation, for context only."""
-        passages = "\n\n".join(f"[{self.label(c)}]\n{c.page_content}" for c in chunks)
+        passages = "\n\n".join(f"[{self.label(c)}]\n{chunk_body(c)}" for c in chunks)
         conversation = (
             f"\n\nConversation so far (for context only, not a source):\n{history}"
             if history

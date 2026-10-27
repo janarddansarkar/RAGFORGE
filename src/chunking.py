@@ -27,6 +27,18 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from models import OllamaChat, make_embeddings, make_llm
 
 
+def chunk_body(chunk: Document) -> str:
+    """The text the document really says. With contextual chunking a stored chunk is an LLM
+    note followed by this text; the note helps the search, but answers must come from the text."""
+    return chunk.metadata.get("chunk_text", chunk.page_content)
+
+
+def chunk_note(chunk: Document) -> str:
+    """The context note in front of a chunk's text ("" when it has none)."""
+    body = chunk_body(chunk)
+    return chunk.page_content[: -len(body)].strip() if body else ""
+
+
 class Chunker(ABC):
     """Splits the text of ONE page into chunk strings."""
 
@@ -37,6 +49,10 @@ class Chunker(ABC):
 
     @abstractmethod
     def split_page(self, page: Document) -> list[str]: ...
+
+    def split_parts(self, page: Document) -> list[tuple[str, str]]:
+        """The page's chunks as (context note, text) pairs; the note is "" unless an LLM wrote one."""
+        return [("", text) for text in self.split_page(page)]
 
 
 class RecursiveChunker(Chunker):
@@ -122,14 +138,20 @@ class ContextualChunker(Chunker):
 
     @property
     def name(self) -> str:
-        return f"contextual_{self.base.name}"
+        # "body": a chunk also keeps its own text apart from the note (see chunk_body), so
+        # stores built before that change have another name and are rebuilt (notes are reused).
+        return f"contextual_body_{self.base.name}"
+
+    def split_parts(self, page: Document) -> list[tuple[str, str]]:
+        parts = [
+            (self._context_note(page, chunk), chunk)
+            for chunk in self.base.split_page(page)
+        ]
+        self.cache_file.write_text(json.dumps(self.cache))
+        return parts
 
     def split_page(self, page: Document) -> list[str]:
-        chunks = []
-        for chunk in self.base.split_page(page):
-            chunks.append(f"{self._context_note(page, chunk)}\n\n{chunk}")
-        self.cache_file.write_text(json.dumps(self.cache))
-        return chunks
+        return [f"{note}\n\n{chunk}" for note, chunk in self.split_parts(page)]
 
     def _context_note(self, page: Document, chunk: str) -> str:
         key = hashlib.sha1(
@@ -226,17 +248,16 @@ class ChunkingPipeline:
         for page in self.load_pages():
             source = Path(page.metadata["source"])
             stem = source.stem.strip().replace(" ", "_")
-            for i, text in enumerate(self.chunker.split_page(page)):
+            for i, (note, text) in enumerate(self.chunker.split_parts(page)):
                 chunk_id = f"{stem}_p{page.metadata['page']}_{i}"
+                metadata = {**page.metadata, "chunk_index": i, "chunk_id": chunk_id}
+                if note:
+                    metadata["chunk_text"] = text  # the note stays out of the answers
                 chunks.append(
                     Document(
                         id=chunk_id,
-                        page_content=text,
-                        metadata={
-                            **page.metadata,
-                            "chunk_index": i,
-                            "chunk_id": chunk_id,
-                        },
+                        page_content=f"{note}\n\n{text}" if note else text,
+                        metadata=metadata,
                     )
                 )
         return chunks

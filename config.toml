@@ -14,6 +14,7 @@ max_new_tokens = 256        # longest reply the LLM writes
 reranker_type = "llm"          # llm: a chat model scores each chunk 0-10 | cross_encoder: a Hugging Face model scores all chunks in one batch
 reranker_model = "qwen2.5:3b"  # the chat model when reranker_type = "llm" (Ollama has no cross-encoder reranker)
 cross_encoder_model = "BAAI/bge-reranker-v2-m3"  # when reranker_type = "cross_encoder"; downloaded from Hugging Face on first use
+retry_model = "mistral:7b"     # writes the second try after a thumbs down (stronger than llm_model; "" = use llm_model)
 guard_model = "mistral:7b"     # checks every question for prompt injection and other malicious input (src/guardrails.py)
 stt_model = "small"            # faster-whisper model (tiny | base | small | medium) that hears spoken questions in the UI
 

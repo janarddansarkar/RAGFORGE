@@ -61,11 +61,18 @@ Code: `Generator.retry_stream` in `src/generator.py` (called through `DocumentRA
 | reason | search again? | what changes for the answer |
 |---|---|---|
 | Wrong or missing source | **yes, wider** | new chunks (see below) |
-| Wrong citation | **yes, wider** | note: cite each statement with the label of the passage that states it |
+| Wrong citation | no, same chunks | note: cite a passage only for a fact or number that appears in that passage's own text; do not cite a passage that merely mentions the topic |
 | Made something up | no, same chunks | note: use only facts stated in the passages; leave out any detail that is not there |
 | Incomplete | no, same chunks | note: cover every part of the question; the reply may be twice as long (`max_new_tokens` x 2) |
 | Too long | no, same chunks | note: answer in at most two sentences; the reply limit is cut to a third (`max_new_tokens` / 3), because a small model can ignore the note |
 | none chosen | yes, wider | only the "do not repeat" instruction |
+
+A wrong citation is a writing problem, not a search problem: an early version searched again for it, and the wider
+search only added unrelated chunks (pages 6 and 2) while the same wrong citation came back.
+
+**A stronger model writes the second try.** `retry_model` in `config.toml` (default `mistral:7b`; empty = the usual
+`llm_model`) is used only for retries, because the small answer model (`gemma3:4b`) ignored "do not repeat it" and
+repeated a wrong citation. It is loaded the first time a retry is needed, so that retry is slower.
 
 Every retry also shows the model the rejected answer ("Do not repeat it") and puts the extra notes **before** the
 question in the prompt. The chat history in the prompt leaves out the rejected turn, so it appears only once.
@@ -91,7 +98,7 @@ word for word is not rewritten at all, and a rewrite that contains a citation li
 | file | role |
 |---|---|
 | `src/cache.py` | `SessionCache.rate()` stores the thumbs, `disliked()`, `REASONS`, `find()` skips disliked entries |
-| `src/generator.py` | `retry_stream`, `RETRY_NOTES`, `RETRIEVAL_REASONS`, `build_prompt(..., extra)` |
+| `src/generator.py` | `retry_stream`, `retry_llm`, `RETRY_NOTES`, `RETRIEVAL_REASONS`, `build_prompt(..., extra)` |
 | `src/retriever.py` | `retrieve_wider` |
 | `src/rag.py` | `DocumentRAG.retry_stream` |
 | `src/memory.py` | `replace_last_answer`, `history(skip_last)`, the repeated-question and citation guards |
@@ -105,7 +112,7 @@ word for word is not rewritten at all, and a rewrite that contains a citation li
 - A repeated question answered from the cache shares the earlier entry, so it has one rating per cached answer,
   not one per displayed message.
 - Only the latest answer can be retried.
-- A small local model (`gemma3:4b`) may ignore the extra notes; the token limit is the only hard control.
+- Even the retry model can ignore the extra notes; the token limit is the only hard control, and nothing checks that a cited page really contains the cited number.
 - Cloud use (`main`) would add API cost for the retry: a wider search is about 20 more reranker calls if the
   reranker is an LLM (none with the cross-encoder) plus the rewrite and the answer.
 

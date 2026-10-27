@@ -33,9 +33,10 @@ def make_generator():
         generator.seen.limits.append(max_new_tokens)
         yield from ("new ", "answer")
 
-    generator.retriever = SimpleNamespace(
-        retrieve_wider=wider, llm=SimpleNamespace(stream=stream)
-    )
+    generator.retriever = SimpleNamespace(retrieve_wider=wider)
+    generator.retry_llm = SimpleNamespace(
+        stream=stream
+    )  # the model that writes a second try
     generator.cache = SimpleNamespace(
         add=lambda q, a, c: generator.seen.added.append((q, a, c)) or {"answer": a}
     )
@@ -60,6 +61,28 @@ def test_wrong_source_searches_again_wider_and_uses_the_new_chunks():
     assert generator.seen.searches == [("LoRA rank r", 7)]  # k + 2
     assert "new chunk" in generator.seen.prompts[0]
     assert generator.last_chunks == NEW
+
+
+def test_wrong_citation_keeps_the_chunks_and_asks_for_strict_citing():
+    generator, _, _ = retry(["Wrong citation"])
+    assert generator.seen.searches == []  # a citation mistake is not a search problem
+    prompt = generator.seen.prompts[0]
+    assert "old chunk" in prompt and "that merely mentions the topic" in prompt
+
+
+def test_the_retry_model_comes_from_config_and_falls_back_to_the_answer_model():
+    from unittest.mock import patch
+
+    answer_model = object()
+    generator = Generator.__new__(Generator)
+    generator.retriever = SimpleNamespace(llm=answer_model)
+    generator.config = {"retry_model": ""}
+    assert generator.retry_llm is answer_model
+    generator = Generator.__new__(Generator)
+    generator.retriever = SimpleNamespace(llm=answer_model)
+    generator.config = {"retry_model": "mistral:7b", "llm_model": "gemma3:4b"}
+    with patch("generator.make_llm", lambda config: config["llm_model"]) as _:
+        assert generator.retry_llm == "mistral:7b"
 
 
 def test_no_reason_also_searches_again():
@@ -93,7 +116,7 @@ def test_the_extra_instructions_come_before_the_question():
 
 
 def test_the_new_answer_is_cached_and_replaces_the_old_one_in_the_memory():
-    generator, memory, _ = retry(["Wrong citation"])
+    generator, memory, _ = retry(["Wrong or missing source"])
     assert generator.seen.added == [("LoRA rank r", "new answer", NEW)]
     assert generator.cache_entry == {"answer": "new answer"}
     assert memory.turns == [("What rank r?", "new answer")]  # one turn, new answer

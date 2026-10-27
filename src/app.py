@@ -15,6 +15,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from chunking import chunk_body, chunk_note
 from guardrails import InputBlocked
 from rag import REFUSAL, DocumentRAG, Report
 from vectorstore import PROJECT_ROOT, load_config
@@ -197,7 +198,11 @@ def show_answer(message: dict, index: int, streamed: bool = False) -> None:
         for rank, chunk in enumerate(chunks, start=1):
             st.markdown(f"**[{rank}] {Report.label(chunk)}**")
             st.caption(score_line(chunk))
-            st.write(chunk.page_content)
+            st.write(chunk_body(chunk))
+            if chunk_note(chunk):
+                st.caption(
+                    f"Context note (helps the search, not the answer): {chunk_note(chunk)}"
+                )
     if not streamed:
         show_feedback(message, index)
 
