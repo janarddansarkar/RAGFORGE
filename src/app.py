@@ -35,6 +35,8 @@ uploaded = st.file_uploader(
 # A different set of uploads starts fresh: forget the old documents, answer and question.
 files = tuple(file.file_id for file in uploaded)
 if files != st.session_state.get("files"):
+    if st.session_state.get("rag"):
+        st.session_state.rag.close()  # the old conversation's cache goes with it
     for key in ("rag", "ingested", "messages", "spoken", "heard"):
         st.session_state.pop(key, None)
     st.session_state.fresh = st.session_state.get("fresh", 0) + 1  # new recorder, empty
@@ -43,6 +45,8 @@ if files != st.session_state.get("files"):
 if uploaded and st.button("Ingest"):
     # DocumentRAG wants real file paths; keep the original names so citations read well.
     # A name uploaded twice is dropped (the first one wins).
+    if st.session_state.get("rag"):
+        st.session_state.rag.close()  # re-ingesting starts a new conversation
     folder = Path(tempfile.mkdtemp())
     paths = {}
     for file in uploaded:

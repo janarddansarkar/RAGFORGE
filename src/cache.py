@@ -4,9 +4,10 @@ No answer-model call and no search: the question is embedded (a small, quick cal
 embedding model), compared with the earlier questions, and a close enough match returns
 the saved answer, chunks and (if there was one) the RAG-triad scores.
 
-The cache lives for one session only. Starting a session (making a SessionCache) deletes
-the old file, and the file is also removed when the program exits. The questions are kept
-in memory too, so another session wiping the file never changes the answers you get.
+Each SessionCache is private to one set of uploaded documents: it writes its own file in
+its own temporary folder, so no two caches (other users, or the same user's earlier
+documents) ever share or wipe each other. The app calls destroy() when the documents are
+replaced; the file is also removed when the program exits.
 
 Try it:  uv run python src/cache.py     (a small demo with no models)
 """
@@ -14,24 +15,25 @@ Try it:  uv run python src/cache.py     (a small demo with no models)
 import atexit
 import json
 import math
+import shutil
+import tempfile
 from pathlib import Path
 
 from langchain_core.documents import Document
 
 from models import make_embeddings
-from vectorstore import PROJECT_ROOT, load_config
-
-CACHE_FILE = PROJECT_ROOT / "cache" / "session_cache.json"
+from vectorstore import load_config
 
 
 class SessionCache:
-    def __init__(self, config: dict | None = None, file: Path = CACHE_FILE):
+    def __init__(self, config: dict | None = None, file: Path | None = None):
         self.config = config or load_config()
         self.threshold = self.config["cache_threshold"]
         self.embeddings = make_embeddings(self.config)
-        self.file = file
+        self.file = (
+            file or Path(tempfile.mkdtemp(prefix="ragforge_cache_")) / "cache.json"
+        )
         self.entries: list[dict] = []
-        self.file.unlink(missing_ok=True)  # a new session starts empty
         atexit.register(self.destroy)
 
     @staticmethod
@@ -78,12 +80,15 @@ class SessionCache:
         self.file.write_text(json.dumps(readable, indent=1))
 
     def destroy(self) -> None:
+        """Delete this cache's file (and its private folder) and forget the entries."""
+        self.entries = []
         self.file.unlink(missing_ok=True)
+        if self.file.parent.name.startswith("ragforge_cache_"):
+            shutil.rmtree(self.file.parent, ignore_errors=True)
 
 
 # TRY IT ---- python src/cache.py
 if __name__ == "__main__":
-    import tempfile
 
     class WordEmbeddings:  # a toy embedder: a vector of letter counts
         def embed_query(self, text: str) -> list[float]:

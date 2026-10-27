@@ -63,6 +63,11 @@ class DocumentRAG:
         self.memory = ConversationMemory(self.config["memory_turns"])
         self.last_query = ""  # what the last question was rewritten to, for display
 
+    def close(self) -> None:
+        """The documents are being replaced: delete this conversation's cache."""
+        if self.generator.cache:
+            self.generator.cache.destroy()
+
     @staticmethod
     def config_for(pdfs: list[Path], base: dict) -> dict:
         """A config whose data and store folders belong to exactly this set of documents."""
