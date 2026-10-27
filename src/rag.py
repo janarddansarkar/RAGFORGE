@@ -19,6 +19,7 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 
+from chunking import chunk_body
 from generator import Generator
 from guardrails import InputBlocked
 from memory import ConversationMemory
@@ -96,6 +97,12 @@ class DocumentRAG:
         )
         self.last_query = self.generator.last_query
 
+    def retry_stream(self, previous: dict, reasons: list[str]):
+        """Like ask_stream(), for a second try at an answer that got a thumbs down
+        (see Generator.retry_stream)."""
+        yield from self.generator.retry_stream(previous, reasons, self.memory, self.k)
+        self.last_query = self.generator.last_query
+
     @property
     def last_chunks(self) -> list[Document]:
         return self.generator.last_chunks
@@ -137,7 +144,7 @@ class Report:
             score = chunk.metadata.get("rerank_score")
             score_text = f"   rerank score {score:.2f}" if score is not None else ""
             print(f"\n  [{rank}] {self.label(chunk)}{score_text}")
-            text = " ".join(chunk.page_content.split())
+            text = " ".join(chunk_body(chunk).split())
             text = text if self.full or len(text) <= 400 else text[:400] + " ..."
             print(textwrap.indent(textwrap.fill(text, width=88), "      "))
         print()
