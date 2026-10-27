@@ -34,21 +34,23 @@ from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase
 from langchain_core.documents import Document
 
-from models import OllamaChat
+from models import make_llm
 from vectorstore import load_config
 
 
 class Judge(DeepEvalBaseLLM):
-    """Lets deepeval use an Ollama model as its judge (deepeval defaults to OpenAI).
+    """Lets deepeval use our own model (Ollama or a cloud provider) as its judge (deepeval defaults to OpenAI).
     Ollama can force the reply to match the metric's JSON schema, so JSON rarely breaks."""
 
     def __init__(self, model: str, config: dict):
         self.model_id = model
-        self.chat = OllamaChat(
-            model,
-            max_new_tokens=4096,  # a verdict per statement in 5 chunks is long; cut-off JSON is invalid
-            host=config.get("ollama_host"),
-            num_ctx=config["ollama_num_ctx"],
+        self.chat = make_llm(
+            {
+                **config,
+                "llm_model": model,
+                # a verdict per statement in 5 chunks is long; cut-off JSON is invalid
+                "max_new_tokens": 4096,
+            }
         )
 
     def load_model(self):
@@ -89,8 +91,13 @@ class TriadEvaluator:
         "Answer relevance": AnswerRelevancyMetric,
     }
 
-    def __init__(self, judge_model: str | None = None, threshold: float = 0.5):
-        config = load_config()
+    def __init__(
+        self,
+        judge_model: str | None = None,
+        threshold: float = 0.5,
+        config: dict | None = None,
+    ):
+        config = config or load_config()
         self.judge = Judge(judge_model or config["judge_model"], config)
         self.threshold = threshold
 

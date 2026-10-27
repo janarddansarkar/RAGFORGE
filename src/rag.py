@@ -37,6 +37,7 @@ class DocumentRAG:
         pdfs: Path | list[Path],
         k: int | None = None,
         method: str | None = None,
+        config: dict | None = None,
     ):
         self.pdfs = [pdfs] if isinstance(pdfs, Path) else list(pdfs)
         if not self.pdfs:
@@ -44,7 +45,7 @@ class DocumentRAG:
         for pdf in self.pdfs:
             if pdf.suffix.lower() not in self.SUFFIXES or not pdf.is_file():
                 raise SystemExit(f"Not a PDF file: {pdf}")
-        base = load_config()
+        base = config or load_config()  # config: e.g. from models.use_providers()
         self.k = k or base["top_k"]
         self.method = method or base["default_method"]
         self.config = self.config_for(self.pdfs, base)

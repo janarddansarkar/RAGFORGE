@@ -12,6 +12,7 @@ dependencies = [
     "langchain-text-splitters>=1.1.2",
     "langgraph>=1.2.12",
     "ollama>=0.6.3",
+    "openai>=1.0",
     "pymupdf>=1.28.2",
     "rank-bm25>=0.2.2",
     "streamlit>=1.66.1",

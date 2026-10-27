@@ -18,7 +18,7 @@ import sys
 
 from pydantic import BaseModel
 
-from models import OllamaChat
+from models import make_llm
 from vectorstore import load_config
 
 
@@ -90,11 +90,12 @@ class InputGuard:
     def __init__(self, config: dict | None = None):
         self.config = config or load_config()
         self.max_chars = self.config["guard_max_chars"]
-        self.llm = OllamaChat(
-            self.config["guard_model"],
-            max_new_tokens=100,
-            host=self.config.get("ollama_host"),
-            num_ctx=self.config["ollama_num_ctx"],
+        self.llm = make_llm(
+            {
+                **self.config,
+                "llm_model": self.config["guard_model"],
+                "max_new_tokens": 100,
+            }
         )
 
     @staticmethod

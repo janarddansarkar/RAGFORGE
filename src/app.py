@@ -15,6 +15,7 @@ from pathlib import Path
 import streamlit as st
 
 from guardrails import InputBlocked
+from models import make_embeddings, make_llm, use_providers
 from rag import REFUSAL, DocumentRAG, Report
 from vectorstore import PROJECT_ROOT, load_config
 from voice import SpeechToText, TextToSpeech
@@ -24,6 +25,36 @@ st.set_page_config(
     page_title="RAGForge", page_icon="📄", initial_sidebar_state="expanded"
 )
 st.title("RAGForge")
+
+# ---- 0. The user's own API keys: kept in this browser session's memory only, never saved ----
+config = load_config()
+CHAT_PROVIDERS = [name for name in config["providers"]]
+EMBEDDING_PROVIDERS = [
+    name for name, table in config["providers"].items() if "embedding_model" in table
+]
+with st.sidebar:
+    st.header("Your API keys")
+    st.caption(
+        "Bring your own key. It is used for this session only and is never written to disk."
+    )
+    chat_provider = st.selectbox("Answers, reranking and scoring", CHAT_PROVIDERS)
+    chat_key = st.text_input(
+        f"{chat_provider} API key", type="password", key="chat_key"
+    )
+    embedding_provider = st.selectbox(
+        "Embeddings",
+        EMBEDDING_PROVIDERS,
+        index=EMBEDDING_PROVIDERS.index(chat_provider)
+        if chat_provider in EMBEDDING_PROVIDERS
+        else 0,
+    )
+    if embedding_provider == chat_provider:
+        embedding_key = chat_key  # one provider, one key
+    else:
+        embedding_key = st.text_input(
+            f"{embedding_provider} API key", type="password", key="embedding_key"
+        )
+    st.caption("Changing these takes effect at the next Ingest.")
 
 # ---- 1. Upload + ingest ----
 uploaded = st.file_uploader(
@@ -37,12 +68,24 @@ files = tuple(file.file_id for file in uploaded)
 if files != st.session_state.get("files"):
     if st.session_state.get("rag"):
         st.session_state.rag.close()  # the old conversation's cache goes with it
-    for key in ("rag", "ingested", "messages", "spoken", "heard"):
+    for key in ("rag", "ingested", "messages", "spoken", "heard", "triad"):
         st.session_state.pop(key, None)
     st.session_state.fresh = st.session_state.get("fresh", 0) + 1  # new recorder, empty
     st.session_state.files = files
 
 if uploaded and st.button("Ingest"):
+    if not chat_key or not embedding_key:
+        st.error("Enter your API key(s) in the sidebar first.")
+        st.stop()
+    user_config = use_providers(
+        config, chat_provider, chat_key, embedding_provider, embedding_key
+    )
+    try:  # a tiny call to each provider: a wrong key shows now, not in the middle of indexing
+        make_embeddings(user_config).embed_query("test")
+        make_llm(user_config).invoke("Reply with OK.", max_new_tokens=5)
+    except RuntimeError as error:
+        st.error(str(error))
+        st.stop()
     # DocumentRAG wants real file paths; keep the original names so citations read well.
     # A name uploaded twice is dropped (the first one wins).
     if st.session_state.get("rag"):
@@ -54,7 +97,7 @@ if uploaded and st.button("Ingest"):
             paths[file.name] = folder / file.name
             paths[file.name].write_bytes(file.getvalue())
     with st.spinner("Preparing the vector store (a minute or so the first time)..."):
-        st.session_state.rag = DocumentRAG(list(paths.values()))
+        st.session_state.rag = DocumentRAG(list(paths.values()), config=user_config)
         st.session_state.ingested = ", ".join(paths)
         st.session_state.messages = []
 
@@ -82,8 +125,8 @@ read_aloud = st.checkbox("Read answers aloud")
 with st.sidebar:
     st.header("RAG triad")
     st.caption(
-        f"Every answer is scored by {load_config()['judge_model']} (an Ollama model, "
-        "runs on this machine). The scores appear about a minute after the answer."
+        f"Every answer is scored by {rag.config['judge_model']} ({rag.config['chat_provider']}, "
+        "using your key). The scores appear shortly after the answer."
     )
 if st.button("Clear chat"):
     rag.memory.clear()
@@ -99,7 +142,7 @@ def score_turn(question: str, answer: str, chunks: list) -> dict:
         if "triad" not in st.session_state:
             from eval.rag_triad_eval import TriadEvaluator
 
-            st.session_state.triad = TriadEvaluator()
+            st.session_state.triad = TriadEvaluator(config=rag.config)
         return st.session_state.triad.evaluate(question, answer, chunks)
 
 
