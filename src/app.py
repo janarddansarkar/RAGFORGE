@@ -90,16 +90,18 @@ if uploaded and st.button("Ingest"):
     # A name uploaded twice is dropped (the first one wins).
     if st.session_state.get("rag"):
         st.session_state.rag.close()  # re-ingesting starts a new conversation
-    folder = Path(tempfile.mkdtemp())
-    paths = {}
-    for file in uploaded:
-        if file.name not in paths:
-            paths[file.name] = folder / file.name
-            paths[file.name].write_bytes(file.getvalue())
-    with st.spinner("Preparing the vector store (a minute or so the first time)..."):
-        st.session_state.rag = DocumentRAG(list(paths.values()), config=user_config)
-        st.session_state.ingested = ", ".join(paths)
-        st.session_state.messages = []
+    with tempfile.TemporaryDirectory() as folder:  # DocumentRAG keeps its own copy
+        paths = {}
+        for file in uploaded:
+            if file.name not in paths:
+                paths[file.name] = Path(folder) / file.name
+                paths[file.name].write_bytes(file.getvalue())
+        with st.spinner(
+            "Preparing the vector store (a minute or so the first time)..."
+        ):
+            st.session_state.rag = DocumentRAG(list(paths.values()), config=user_config)
+            st.session_state.ingested = ", ".join(paths)
+            st.session_state.messages = []
 
 rag = st.session_state.get("rag")
 if rag is None:
@@ -121,7 +123,7 @@ if recording:
             st.session_state.spoken = st.session_state.stt.transcribe(audio)
         st.session_state.heard = digest
 
-read_aloud = st.checkbox("Read answers aloud")
+read_aloud = TextToSpeech.available() and st.checkbox("Read answers aloud")
 with st.sidebar:
     st.header("RAG triad")
     st.caption(
@@ -190,8 +192,7 @@ def show_answer(message: dict, index: int, streamed: bool = False) -> None:
     if REFUSAL in answer.lower().replace("\u2019", "'"):
         st.write("**Citations:** none - the document does not answer this question.")
     else:
-        labels = dict.fromkeys(Report.label(c) for c in chunks)
-        st.write("**Citations:** " + ", ".join(labels))
+        st.write("**Citations:** " + ", ".join(Report.cited(answer, chunks)))
     if "triad" in message:
         show_triad(message["triad"])
     elif not streamed and st.button(
