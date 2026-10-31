@@ -11,6 +11,7 @@ import sys
 import tomllib
 from pathlib import Path
 
+from dotenv import load_dotenv
 from langchain_chroma import Chroma
 
 from chunking import ChunkingPipeline
@@ -25,7 +26,8 @@ BEST_CONFIG_FILE = PROJECT_ROOT / "best_config.json"
 
 def load_config() -> dict:
     """Read config.toml, then lay the settings eval/find_best.py found best on top of it.
-    Folder paths become absolute, relative to the project."""
+    Folder paths become absolute, relative to the project. Also reads API keys from ./.env."""
+    load_dotenv(PROJECT_ROOT / ".env")
     with open(PROJECT_ROOT / "config.toml", "rb") as f:
         config = tomllib.load(f)
     with open(PROJECT_ROOT / "providers.toml", "rb") as f:

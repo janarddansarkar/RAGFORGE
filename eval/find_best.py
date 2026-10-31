@@ -41,6 +41,7 @@ RETRIEVAL_SETTINGS = (
     "contextual",
     "embedding_model",
     "default_method",
+    "reranker_type",
     "reranker_model",
 )
 
@@ -50,6 +51,7 @@ SETTINGS = (
     "contextual",
     "embedding_model",
     "default_method",
+    "reranker_type",
     "reranker_model",
     "llm_model",
     "top_k",
