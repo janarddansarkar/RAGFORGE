@@ -7,7 +7,7 @@ providers.toml. It prints what the run cost at the end.
 The reranker stage compares the local cross-encoder (free) with an LLM reranker (one API call
 per chunk), because that choice matters more for cost than which LLM does the scoring.
 
-Output (the Ollama results in best_config.json are NOT touched):
+Output (best_config.json is NOT touched):
   eval/find_best_report_api.json   every stage's numbers
   best_config_api.json             the winning settings; copy it over best_config.json to use it
 
@@ -47,7 +47,7 @@ def api_key(provider: str) -> str:
 
 
 class ApiBestConfigSearch(BestConfigSearch):
-    """BestConfigSearch with the candidates taken from the provider instead of Ollama."""
+    """BestConfigSearch with the candidates taken from the provider instead of the config.toml lists."""
 
     def __init__(self, config: dict, embedders: list[str], generators: list[str]):
         super().__init__(config)

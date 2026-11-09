@@ -1,4 +1,4 @@
-"""RAG triad judge with a fake Ollama chat: the JSON check, schema forwarding and one repair."""
+"""RAG triad judge with a fake chat: the JSON check, schema forwarding and one repair."""
 
 from types import SimpleNamespace
 
@@ -35,7 +35,7 @@ def test_valid_json_is_returned_after_one_call_and_the_schema_is_forwarded():
     assert len(judge.chat.prompts) == 1
     assert judge.chat.schemas == [
         dict
-    ]  # Ollama is told the schema, so JSON stays valid
+    ]  # the model is told the schema, so JSON stays valid
 
 
 def test_broken_json_is_repaired_once():

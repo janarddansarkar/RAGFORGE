@@ -1,12 +1,8 @@
 """Models: the embedder and the LLM that the config asks for.
 
-Two kinds of provider:
-  - ollama (https://ollama.com): free, runs on your own machine or a server you control
-    (ollama_host in config.toml). Pull a model once with `ollama pull <name>`. The default,
-    used by the command line scripts and the eval.
-  - a cloud provider (openai, gemini, anthropic): the user brings their own API key. All three
-    are reached with the `openai` SDK through their OpenAI-compatible endpoints (the
-    [providers.*] tables in config.toml). The key lives in memory only (see use_providers).
+Every model is reached at a cloud provider (openai, gemini or anthropic) with the user's own
+API key. All three are served by the `openai` SDK through their OpenAI-compatible endpoints
+(the [providers.*] tables in providers.toml). The key lives in memory only (see use_providers).
 
 Everything else calls make_embeddings(config) / make_llm(config).
 An LLM has .model (its name), .invoke(prompt).content (the reply) and .stream(prompt).
@@ -18,147 +14,9 @@ import re
 from contextlib import contextmanager
 from functools import cached_property
 
-import httpx
-import ollama
 import openai
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage
-
-DEFAULT_HOST = "http://localhost:11434"
-
-
-class OllamaModel:
-    """What every Ollama model needs: a client, and clear errors when Ollama is not ready."""
-
-    def __init__(
-        self, model: str, host: str | None = None, keep_alive: str | None = None
-    ):
-        self.model = model
-        self.host = host or DEFAULT_HOST
-        self.keep_alive = (
-            keep_alive  # how long Ollama keeps the model loaded after a call
-        )
-
-    @cached_property
-    def client(self) -> ollama.Client:
-        return ollama.Client(host=self.host, timeout=600)
-
-    @contextmanager
-    def friendly_errors(self):
-        """Turn Ollama's errors into plain advice."""
-        try:
-            yield
-        except ollama.ResponseError as error:
-            if error.status_code == 404:
-                raise RuntimeError(
-                    f"Ollama does not have the model '{self.model}'. "
-                    f"Download it with: ollama pull {self.model}"
-                ) from error
-            raise
-        except (httpx.ConnectError, ConnectionError) as error:
-            raise RuntimeError(
-                f"Cannot reach Ollama at {self.host}. Start it with: ollama serve"
-            ) from error
-
-    def call(self, method: str, **kwargs):
-        """Run a client method (chat, embed), turning Ollama's errors into plain advice."""
-        kwargs = {"keep_alive": self.keep_alive, **kwargs}
-        with self.friendly_errors():
-            return getattr(self.client, method)(model=self.model, **kwargs)
-
-    def unload(self) -> None:
-        """Free the model's memory now instead of after Ollama's idle timeout."""
-        self.call("generate", prompt="", keep_alive=0)
-
-
-class OllamaEmbeddings(OllamaModel, Embeddings):
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        vectors: list[list[float]] = []
-        for start in range(0, len(texts), 32):  # a few at a time keeps requests small
-            reply = self.call("embed", input=texts[start : start + 32])
-            vectors += [list(vector) for vector in reply.embeddings]
-        return vectors
-
-    def embed_query(self, text: str) -> list[float]:
-        return self.embed_documents([text])[0]
-
-
-class OllamaChat(OllamaModel):
-    """A chat model on Ollama; temperature 0, so answers are repeatable."""
-
-    def __init__(
-        self,
-        model: str,
-        max_new_tokens: int = 256,
-        host: str | None = None,
-        num_ctx: int = 8192,
-        keep_alive: str | None = None,
-    ):
-        super().__init__(model, host, keep_alive)
-        self.max_new_tokens = max_new_tokens
-        self.num_ctx = (
-            num_ctx  # Ollama's default window (4096) is too small for 5 chunks
-        )
-
-    def invoke(
-        self, prompt: str, max_new_tokens: int | None = None, schema=None
-    ) -> AIMessage:
-        """schema (a pydantic class or a JSON schema dict) makes the reply valid JSON."""
-        if schema is not None and hasattr(schema, "model_json_schema"):
-            schema = schema.model_json_schema()
-        reply = self.call(
-            "chat",
-            messages=[{"role": "user", "content": prompt}],
-            format=schema,
-            think=False,  # no hidden reasoning: replies stay short and parseable
-            options={
-                "temperature": 0,
-                "num_predict": max_new_tokens or self.max_new_tokens,
-                "num_ctx": self.num_ctx,
-            },
-        )
-        return AIMessage(content=str(reply.message.content or "").strip())
-
-    def stream(self, prompt: str, max_new_tokens: int | None = None):
-        """Like invoke(), but yields the reply piece by piece as the model writes it."""
-        with self.friendly_errors():
-            for part in self.client.chat(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                stream=True,
-                think=False,
-                keep_alive=self.keep_alive,
-                options={
-                    "temperature": 0,
-                    "num_predict": max_new_tokens or self.max_new_tokens,
-                    "num_ctx": self.num_ctx,
-                },
-            ):
-                if part.message.content:
-                    yield part.message.content
-
-    def digit_score(self, prompt: str) -> float:
-        """Ask for one digit (0-9) and return it as 0-1: the average of the digits the model
-        considered, weighted by their probability, so unsure answers fall between digits."""
-        reply = self.call(
-            "chat",
-            messages=[{"role": "user", "content": prompt}],
-            think=False,
-            logprobs=True,
-            top_logprobs=10,
-            options={"temperature": 0, "num_predict": 1, "num_ctx": self.num_ctx},
-        )
-        weights: dict[int, float] = {}
-        for choice in reply.logprobs[0].top_logprobs if reply.logprobs else []:
-            token = choice.token.strip()
-            if len(token) == 1 and token in "0123456789":  # not look-alikes such as '₀'
-                weights[int(token)] = weights.get(int(token), 0.0) + math.exp(
-                    choice.logprob
-                )
-        total = sum(weights.values())
-        if not total:
-            return 0.0
-        return sum(digit * weight for digit, weight in weights.items()) / total / 9
 
 
 class UsageTracker:
@@ -345,7 +203,7 @@ class CloudChat(CloudModel):
 
     def digit_score(self, prompt: str) -> float:
         """Ask for one digit (0-9) and return it as 0-1. Where the provider returns
-        probabilities this is the probability-weighted average (as OllamaChat does);
+        probabilities this is the probability-weighted average;
         otherwise it is just the digit the model wrote."""
         if not self.settings["logprobs"]:
             reply = str(self.invoke(prompt, max_new_tokens=5).content)
@@ -399,38 +257,24 @@ def use_providers(
     }
 
 
-def make_embeddings(config: dict) -> OllamaEmbeddings | CloudEmbeddings:
-    provider = config.get("embedding_provider", "ollama")
-    if provider != "ollama":
-        return CloudEmbeddings(
-            provider,
-            config["embedding_model"],
-            config["providers"][provider],
-            config.get("embedding_api_key"),
-            config.get("usage"),
-        )
-    return OllamaEmbeddings(
+def make_embeddings(config: dict) -> CloudEmbeddings:
+    provider = config["embedding_provider"]
+    return CloudEmbeddings(
+        provider,
         config["embedding_model"],
-        config.get("ollama_host"),
-        config.get("ollama_keep_alive"),
+        config["providers"][provider],
+        config.get("embedding_api_key"),
+        config.get("usage"),
     )
 
 
-def make_llm(config: dict) -> OllamaChat | CloudChat:
-    provider = config.get("chat_provider", "ollama")
-    if provider != "ollama":
-        return CloudChat(
-            provider,
-            config["llm_model"],
-            config["providers"][provider],
-            config.get("chat_api_key"),
-            config["max_new_tokens"],
-            config.get("usage"),
-        )
-    return OllamaChat(
+def make_llm(config: dict) -> CloudChat:
+    provider = config["chat_provider"]
+    return CloudChat(
+        provider,
         config["llm_model"],
+        config["providers"][provider],
+        config.get("chat_api_key"),
         config["max_new_tokens"],
-        config.get("ollama_host"),
-        config["ollama_num_ctx"],
-        config.get("ollama_keep_alive"),
+        config.get("usage"),
     )

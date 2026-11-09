@@ -10,8 +10,6 @@ import pytest
 from models import (
     CloudChat,
     CloudEmbeddings,
-    OllamaChat,
-    OllamaEmbeddings,
     UsageTracker,
     make_embeddings,
     make_llm,
@@ -43,7 +41,6 @@ CONFIG = {
     "embedding_model": "local-emb",
     "llm_model": "local-chat",
     "max_new_tokens": 256,
-    "ollama_num_ctx": 4096,
 }
 
 
@@ -165,8 +162,6 @@ def test_use_providers_swaps_models_and_keeps_keys_in_the_copy_only():
 
 
 def test_factories_pick_the_provider():
-    assert isinstance(make_llm(CONFIG), OllamaChat)
-    assert isinstance(make_embeddings(CONFIG), OllamaEmbeddings)
     cloud = use_providers(CONFIG, "openai", "k", "openai", "k")
     assert isinstance(make_llm(cloud), CloudChat)
     assert isinstance(make_embeddings(cloud), CloudEmbeddings)

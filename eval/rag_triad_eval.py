@@ -5,8 +5,8 @@
   Answer relevance  - does the answer address the question?                 (question -> answer)
 
 It needs no golden data: give it the question asked, the top-k chunks retrieved and the answer
-generated (the web UI does this after every answer). The judge is an Ollama model (judge_model
-in config.toml), so nothing leaves your machine. Judges are noisy; read the scores as a guide.
+generated (the web UI does this after every answer). The judge is a chat model (judge_model
+in providers.toml), called with your API key. Judges are noisy; read the scores as a guide.
 
 Run:  uv run python eval/rag_triad_eval.py "What rank r does LoRA use?" [--judge ID]
       (asks the question over ./documents with rag_pipeline.py, then scores the answer)
@@ -39,8 +39,8 @@ from vectorstore import load_config
 
 
 class Judge(DeepEvalBaseLLM):
-    """Lets deepeval use our own model (Ollama or a cloud provider) as its judge (deepeval defaults to OpenAI).
-    Ollama can force the reply to match the metric's JSON schema, so JSON rarely breaks."""
+    """Lets deepeval use our own model (a cloud provider) as its judge (deepeval defaults to OpenAI).
+    The reply is asked to match the metric's JSON schema, so JSON rarely breaks."""
 
     def __init__(self, model: str, config: dict):
         self.model_id = model
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("question", nargs="+")
     parser.add_argument(
-        "--judge", help="Ollama model for the judge (default: judge_model)"
+        "--judge", help="chat model for the judge (default: judge_model)"
     )
     args = parser.parse_args()
 

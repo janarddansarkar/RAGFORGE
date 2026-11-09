@@ -15,7 +15,7 @@ from functools import cached_property
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
-from models import OllamaChat, make_llm
+from models import CloudChat, make_llm
 from vectorstore import VectorStore, load_config
 
 REWRITE_PROMPT = """Rewrite the question below into a clear, specific search query \
@@ -95,11 +95,11 @@ class Retriever:
 
     # The LLM and reranker are loaded only the first time a pipeline needs them.
     @cached_property
-    def llm(self) -> OllamaChat:
+    def llm(self) -> CloudChat:
         return make_llm(self.config)
 
     @cached_property
-    def reranker(self) -> OllamaChat:
+    def reranker(self) -> CloudChat:
         """The model that scores chunks: it only ever writes a number, so replies are tiny."""
         return make_llm(
             {
@@ -164,8 +164,8 @@ class Retriever:
 
     def rerank(self, query: str, docs: list[Document], k: int) -> list[Document]:
         """Score every (question, chunk) pair from 0 to 1 and keep the best k. The scorer is
-        a cross-encoder (reranker_type = "cross_encoder": one batch, no LLM calls) or, as
-        Ollama has no cross-encoder, a chat model asked for a number. Equal scores keep their
+        a cross-encoder (reranker_type = "cross_encoder": one batch, no LLM calls) or, otherwise,
+        a chat model asked for a number. Equal scores keep their
         incoming order (sorted() is stable), so ties fall back to the fusion ranking."""
         if not docs:
             return []

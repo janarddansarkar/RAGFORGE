@@ -191,7 +191,7 @@ class GeneratorEval:
         return samples
 
     def release_generator(self) -> None:
-        """Unload the generator from Ollama's memory, so a large judge fits next to it."""
+        """Free the generator's memory (a no-op for a cloud model)."""
         self.generator.retriever.llm.unload()
         if (
             self.generator.retriever.config["reranker_model"]
@@ -279,8 +279,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--oracle", action="store_true", help="give the generator the golden pages"
     )
-    parser.add_argument("--generator", help="Ollama model to use instead of llm_model")
-    parser.add_argument("--judge", help="Ollama model to use instead of judge_model")
+    parser.add_argument("--generator", help="chat model to use instead of llm_model (a model of chat_provider)")
+    parser.add_argument("--judge", help="chat model to use instead of judge_model (a model of chat_provider)")
     args = parser.parse_args()
 
     config = load_config()

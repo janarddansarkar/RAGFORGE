@@ -6,6 +6,7 @@ Run once (and again after adding PDFs or changing the embedding model):
 """
 
 import json
+import os
 import re
 import sys
 import tomllib
@@ -15,7 +16,7 @@ from dotenv import load_dotenv
 from langchain_chroma import Chroma
 
 from chunking import ChunkingPipeline
-from models import make_embeddings
+from models import make_embeddings, use_providers
 
 # The project folder (RAGForge/), so paths work from any working directory.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,10 @@ BEST_CONFIG_FILE = PROJECT_ROOT / "best_config.json"
 
 def load_config() -> dict:
     """Read config.toml, then lay the settings eval/find_best.py found best on top of it.
-    Folder paths become absolute, relative to the project. Also reads API keys from ./.env."""
+    Folder paths become absolute, relative to the project. The models are the ones in
+    providers.toml for chat_provider / embedding_provider, with the API keys from ./.env
+    (OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY). The web app does not use those keys:
+    it replaces them with the ones each user types in (see use_providers)."""
     load_dotenv(PROJECT_ROOT / ".env")
     with open(PROJECT_ROOT / "config.toml", "rb") as f:
         config = tomllib.load(f)
@@ -38,7 +42,14 @@ def load_config() -> dict:
         config.update(json.loads(BEST_CONFIG_FILE.read_text())["settings"])
     config["data_dir"] = PROJECT_ROOT / config["data_dir"]
     config["vs_dir"] = PROJECT_ROOT / config["vs_dir"]
-    return config
+    chat, embedding = config["chat_provider"], config["embedding_provider"]
+    return use_providers(  # after best_config.json, so its model names never win
+        config,
+        chat,
+        os.environ.get(f"{chat.upper()}_API_KEY"),
+        embedding,
+        os.environ.get(f"{embedding.upper()}_API_KEY"),
+    )
 
 
 class VectorStore:

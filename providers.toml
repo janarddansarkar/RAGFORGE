@@ -10,7 +10,7 @@
 #
 # token_param: how the provider names the reply length limit.
 # json_mode: supports response_format json_object.   logprobs: returns token probabilities
-# (the reranker then scores like the Ollama one).    stream_usage: reports token counts while
+# (the reranker then scores by probability).    stream_usage: reports token counts while
 # streaming (otherwise the cost of the streamed answer is estimated at 4 characters per token).
 #
 # [<provider>.prices."<model>"]: US dollars per 1 million tokens, used for the cost shown in the UI.
