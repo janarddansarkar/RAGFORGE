@@ -29,8 +29,8 @@ The flow between them: run experiments on `offline-eval`, copy the winning setti
 
 ```bash
 git clone -b dev https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
-# install Ollama (https://ollama.com) and uv (https://docs.astral.sh/uv/), and start Ollama
-./setup.sh      # installs the Python packages and downloads the Ollama models the settings use (skips ones you have)
+# install uv first (https://docs.astral.sh/uv/)
+./setup.sh      # offers to install and start Ollama if needed, installs the Python packages, downloads the Ollama models (skips ones you have)
 ./run.sh        # the web app at http://localhost:8501
 uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"   # or the command line
 ```
