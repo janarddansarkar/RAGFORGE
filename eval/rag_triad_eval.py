@@ -136,9 +136,7 @@ if __name__ == "__main__":
     answer, chunks = pipeline.ask(question)
     print(f"\nQ: {question}\nA: {answer}\n")
     for name, result in (
-        TriadEvaluator(args.judge, args.backend)
-        .evaluate(question, answer, chunks)
-        .items()
+        TriadEvaluator(args.judge).evaluate(question, answer, chunks).items()
     ):
         score = "n/a" if result["score"] is None else f"{result['score']:.2f}"
         print(f"{name:18} {score}   {result['reason']}")
