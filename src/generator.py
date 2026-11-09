@@ -17,10 +17,18 @@ from models import make_llm
 from retriever import Retriever
 from vectorstore import load_config
 
-ANSWER_PROMPT = """Answer the question using ONLY the passages below. \
-If they do not contain the answer, say "I can't find that in the documents." \
-Be brief. Cite each passage you used by copying the label in square brackets above it, \
-exactly as written, and never cite a label that is not above a passage.
+ANSWER_PROMPT = """Answer the question using ONLY the passages below.
+- Answer the question that was asked, directly and in your own words, in one or two sentences \
+(a list, a formula or several numbers may need more). Stop once the question is answered: add no \
+other facts. Do not copy a passage word for word, and do not mention passages that do not answer \
+the question.
+- Give the exact facts the question asks for: the numbers, names, formulas and every item of a \
+list. If it asks for three things, give three.
+- The passages come from PDFs and may have broken lines or stray symbols; write formulas and \
+numbers cleanly.
+- If the passages do not contain the answer, say "I can't find that in the documents."
+- After each fact, cite the passage it came from by copying the label in square brackets above \
+it, exactly as written. Never cite a label that is not above a passage.
 
 {passages}{history}{extra}
 
