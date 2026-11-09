@@ -36,9 +36,9 @@ uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"   # or 
 ```
 
 `setup.sh` reads the model names from `config.toml` and `best_config.json` (`uv run python src/needed_models.py`
-prints them). With the default settings it downloads about 8 GB (`all-minilm`, `gemma3:4b`, `mistral:7b`, the last one
-for the guard, the retry and the judge) and wants about 16 GB of RAM. For a stricter judge set `judge_model = "qwen3:14b"`
-(another 9 GB, best with 24 GB RAM) and run `./setup.sh` again.
+prints them). With the default settings it downloads about 17 GB (`all-minilm`, `gemma3:4b`, `mistral:7b` for the guard
+and the retry, `qwen3:14b` for the judge) and wants about 24 GB of RAM. On a smaller machine set
+`judge_model = "mistral:7b"` in `config.toml` (about 8 GB in total, 16 GB of RAM) and run `./setup.sh` again.
 
 The first question downloads the reranker (`mixedbread-ai/mxbai-rerank-base-v1`, about 1 GB) from Hugging Face.
 Scanned pages need Tesseract (`brew install tesseract`).
