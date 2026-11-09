@@ -97,7 +97,7 @@ tie_margin = 0.01             # within this of the best counts as a tie; the fas
 
 # ---- eval/generator_eval.py ----
 # The judge should be a different, stronger model than the generator (llm_model).
-judge_model = "qwen3:14b"  # also scores the RAG triad live in the UI (eval/rag_triad_eval.py)
+judge_model = "mistral:7b"  # also scores the RAG triad live in the UI (eval/rag_triad_eval.py). qwen3:14b is a stricter judge (9 GB, wants 24 GB RAM)
 
 # Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
 # Keep this at the end of the file (a TOML array of tables).

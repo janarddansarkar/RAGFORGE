@@ -28,12 +28,17 @@ The flow between them: run experiments on `offline-eval`, copy the winning setti
 **`dev` and `offline-eval` (local, Ollama)**
 
 ```bash
-ollama serve                                   # if Ollama is not already running
-ollama pull all-minilm gemma3:4b mistral:7b    # embeddings, answers, guard + judge (see best_config.json / config.toml)
-uv sync
-uv run streamlit run src/app.py                # the web app
+git clone -b dev https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
+# install Ollama (https://ollama.com) and uv (https://docs.astral.sh/uv/), and start Ollama
+./setup.sh      # installs the Python packages and downloads the Ollama models the settings use (skips ones you have)
+./run.sh        # the web app at http://localhost:8501
 uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"   # or the command line
 ```
+
+`setup.sh` reads the model names from `config.toml` and `best_config.json` (`uv run python src/needed_models.py`
+prints them). With the default settings it downloads about 8 GB (`all-minilm`, `gemma3:4b`, `mistral:7b`, the last one
+for the guard, the retry and the judge) and wants about 16 GB of RAM. For a stricter judge set `judge_model = "qwen3:14b"`
+(another 9 GB, best with 24 GB RAM) and run `./setup.sh` again.
 
 The first question downloads the reranker (`mixedbread-ai/mxbai-rerank-base-v1`, about 1 GB) from Hugging Face.
 Scanned pages need Tesseract (`brew install tesseract`).
