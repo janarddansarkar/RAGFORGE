@@ -26,7 +26,7 @@ RAGForge answers questions about uploaded PDFs with page citations, runs entirel
 | Generation | Writes a cited answer from the passages only, streamed | `qwen3:14b`, prompt told today's date |
 | Scoring | Scores each answer live (RAG triad) | DeepEval with a judge model, `mistral:7b` |
 
-Branches: `dev` is the free local version and the one this write-up describes, `main` is a hosted version where each user brings their own API key, `offline-eval` is the evaluation lab (the staged settings search and the chunk-size sweep; it lacks the clock, input guard and session cache), and `user_feedback` holds the thumbs-down retry work. The code uses plain classes throughout, including the evaluation code, so each metric and experiment can be read and rerun on its own.
+Three branches: `dev` is the free local version (Ollama only) and the one this write-up describes, `main` is identical to `dev` for now (it is meant to become a bring-your-own-key cloud version later; the earlier BYOK work is kept as the tag `byok-snapshot`), and `offline-eval` is the evaluation lab (the staged settings search and the chunk-size sweep; it lacks the clock, input guard and session cache). The thumbs-down retry is part of `dev`. The code uses plain classes throughout, including the evaluation code, so each metric and experiment can be read and rerun on its own.
 
 ## How I evaluate it
 

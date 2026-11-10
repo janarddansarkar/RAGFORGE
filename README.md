@@ -16,16 +16,14 @@ framework that finds the best settings for it.
 
 | branch | purpose | models run on | who it is for |
 |---|---|---|---|
-| **`main`** | The **hosted version**. Each user brings their own API key (OpenAI, Gemini or Anthropic) and the key pays for embeddings, answers, the guard and the judge. Shows the **cost** of every turn and of the whole conversation. | the user's cloud provider, plus a local cross-encoder and Whisper | people using a deployed app |
-| **`dev`** | The **local, free version** and the day-to-day development branch. Everything runs on your machine with [Ollama](https://ollama.com); no keys, no per-call cost, works offline once models are downloaded. New features land here first and are then ported to `main`. | Ollama, plus a local cross-encoder and Whisper | developers, local use, demos |
-| **`offline-eval`** | The **evaluation lab**. Holds the full `eval/find_best.py` search (chunking, embedder, retrieval method, reranker, chunk size and top-k, generator) and the chunk-size sweep. Its output, `best_config.json`, is copied to `dev` and `main`. It has the core pipeline but not the session cache, input guard or timing script. | Ollama (the judge and candidates), plus Hugging Face cross-encoders | tuning settings, comparing models |
+| **`dev`** | The **local, free version** and the day-to-day development branch. Everything runs on your machine with [Ollama](https://ollama.com); no keys, no per-call cost, works offline once models are downloaded. Includes the thumbs up/down and retry, the session cache, the input guard, the date clock and the RAG triad. | Ollama, plus a local cross-encoder and Whisper | developers, local use, demos |
+| **`main`** | Identical to `dev` for now. It is meant to become the bring-your-own-key (BYOK) cloud version later. The earlier BYOK work is kept as the tag `byok-snapshot`. | same as `dev` | same as `dev` |
+| **`offline-eval`** | The **evaluation lab**. Holds the full `eval/find_best.py` search (chunking, embedder, retrieval method, reranker, chunk size and top-k, generator) and the chunk-size sweep. Its output, `best_config.json`, is copied to `dev`. It has the core pipeline but not the session cache, input guard or timing script. | Ollama (the judge and candidates), plus Hugging Face cross-encoders | tuning settings, comparing models |
 
-The flow between them: run experiments on `offline-eval`, copy the winning settings and code into `dev`, then port to `main`.
-`dev` and `offline-eval` split from a common commit and `main` was fast-forwarded from `dev`, so changes between them are cherry-picked by hand rather than merged.
+The flow between them: run experiments on `offline-eval`, copy the winning settings and code into `dev`, then update `main` to match.
+`dev` and `offline-eval` split from a common commit, so changes between them are cherry-picked by hand rather than merged.
 
-### Running each branch
-
-**`dev` and `offline-eval` (local, Ollama)**
+### Running it (`dev`, `main` and `offline-eval`)
 
 ```bash
 git clone -b dev https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
@@ -42,18 +40,6 @@ prints them). With the default settings it downloads about 14 GB (`all-minilm`, 
 
 The first question downloads the reranker (`mixedbread-ai/mxbai-rerank-base-v1`, about 1 GB) from Hugging Face.
 Scanned pages need Tesseract (`brew install tesseract`).
-
-**`main` (bring your own key)**
-
-```bash
-uv sync
-uv run streamlit run src/app.py
-```
-
-In the sidebar pick a provider and paste your key. The key stays in that browser session's memory and is never written
-to disk. Anthropic has no embeddings API, so choose OpenAI or Gemini for embeddings. The models and their prices per
-provider are in `providers.toml`; the sidebar shows an approximate cost per turn and for the conversation.
-The command line scripts and the eval on `main` still use Ollama (`chat_provider = "ollama"` in `config.toml`).
 
 ## How it works
 
@@ -125,7 +111,7 @@ what `best_config.json` uses. On the 15 held-out queries the pick scored MRR 0.7
 
 - With 45 questions, gaps of a few hundredths are noise.
 - The judge model must differ from the answer model, so a model never grades its own answers.
-- Each answer has a thumbs up/down. A thumbs down asks what was wrong and offers a reason-based second try; the ratings live in the session cache and disappear with it (`user_feedback` branch, details in `specs_md/user_feedback.md`).
+- Each answer has a thumbs up/down. A thumbs down asks what was wrong and offers a reason-based second try; the ratings live in the session cache and disappear with it (details in `specs_md/user_feedback.md`).
 - Only PDFs are accepted (scanned PDF pages are read with OCR); standalone images are not supported.
 - Uploaded documents are indexed in `vs_docs/`, named by a hash of the files; the session cache lives in its own temporary
   folder and is deleted when the documents are replaced or the program exits.

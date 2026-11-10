@@ -1,7 +1,7 @@
 # User feedback (thumbs up / down) and the retry
 
 How the thumbs on an answer work, what they change, and where the code is. Written for future reference.
-Branch: `user_feedback` (built from `dev`). Not ported to `main` yet.
+Branch: this work is on `dev` (and `main`, which matches it); the separate `user_feedback` branch no longer exists.
 
 ## The idea in one paragraph
 
