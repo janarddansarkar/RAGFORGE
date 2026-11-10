@@ -166,7 +166,7 @@ Contextual chunks help weak retrievers (BM25 MRR 0.67 to 0.76); once a reranker 
 | 250 / 38 | 1077 | 0.93 | 0.65 |
 | 150 / 22 | 2030 | 0.83 | 0.66 |
 
-Smaller chunks rank better but multiply the chunk count. The sweep ran in October with an earlier reranker setup (hence Recall@1 of 0.27 to 0.30, far below the 0.76 above). By Recall@5 the best size was 250 and by MRR 150, so 600 / 90 is a middle choice that keeps chunk count and indexing time moderate, not the sweep's top scorer.
+Smaller chunks rank better but multiply the chunk count. The sweep ran in October with an earlier reranker setup (hence Recall@1 of only 0.27 to 0.41, below the 0.76 above). By Recall@5 the best size was 250 and by MRR 150, so 600 / 90 is a middle choice that keeps chunk count and indexing time moderate, not the sweep's top scorer.
 
 **Chosen configuration:** recursive chunks 600 / 90 with contextual notes, `all-minilm` embeddings, hybrid search (dense + BM25, RRF) with `mxbai-rerank-base-v1` (20 candidates, top 5), `qwen3:14b` answering, `mistral:7b` judging (kept separate from the answer model).
 

@@ -4,7 +4,7 @@
     uv run python eval/time_pipeline.py --n 5 --no-triad
 
 Stages: guard, retrieve (search only), rerank (the extra time of the reranker),
-answer (the whole answer, and time to the first text when streaming), triad (the judge).
+answer (the whole answer, start to finish), triad (the judge).
 """
 
 import argparse
