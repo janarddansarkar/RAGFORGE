@@ -303,7 +303,7 @@
   {
     "id": "A14",
     "query": "What BLEU scores did the Transformer big model achieve on WMT 2014 English-German and English-French?",
-    "golden_ans": "It achieved 28.4 BLEU on English-German and 41.8 BLEU on English-French.",
+    "golden_ans": "It achieved 28.4 BLEU on English-German and 41.8 BLEU on English-French (the abstract and Table 2). The text of Section 6.1 gives 41.0 for English-French, so either 41.8 or 41.0 is accepted for English-French.",
     "section": "Abstract, §6.1, Table 2",
     "source": "Attention Is All You Need — pp.1,8"
   },
