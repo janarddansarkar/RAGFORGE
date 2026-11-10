@@ -8,7 +8,6 @@
     "embedding_model": "all-minilm",
     "default_method": "hybrid_rerank",
     "reranker_type": "cross_encoder",
-    "reranker_model": "qwen2.5:3b",
     "cross_encoder_model": "mixedbread-ai/mxbai-rerank-base-v1",
     "llm_model": "qwen3:14b",
     "top_k": 5,

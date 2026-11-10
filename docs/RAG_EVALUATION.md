@@ -24,14 +24,16 @@ How each eval uses it:
 | --- | --- | --- |
 | Retriever and reranker | The question and the golden pages | The question is run through the retriever; Recall, Precision, HitRate and MRR compare the ranked chunks' pages with the golden pages |
 | Generator | The question and the golden answer | The pipeline answers the question; the judge compares the answer with the golden answer (correctness, semantic similarity) and checks the golden answer against the retrieved passages (context recall) |
-| Oracle mode | The golden pages | The chunks on those pages (the first 5, in document order) are given to the generator instead of retrieved chunks |
+| Oracle mode | The golden pages | The first 5 chunks on those pages, in document order, are given to the generator instead of retrieved chunks |
 | `find_best.py` | All questions, split 2 : 1 | Two of every three tune each stage; the remaining third checks the retrieval pick |
 | RAG triad | The question only | No golden answer is needed |
 
-When a check against the PDFs shows a reference answer is wrong or incomplete, the golden file is updated and later runs use the new reference.
+Further points on the evaluation:
+
+- **Golden updates:** when a check against the PDFs shows a reference answer is wrong or incomplete, the golden file is updated and later runs use the new reference.
 - **Page-based relevance:** chunk IDs change whenever chunking changes, so a retrieved chunk counts as relevant if it comes from the right document and one of the golden pages. This keeps scores comparable across chunking strategies.
 - **Per-component evals:** the retriever, reranker and generator are scored separately (section 2), so a bad answer can be traced to the stage that caused it.
-- **Oracle mode:** the generator is given the chunks on the golden pages (the first 5, in document order) instead of retrieved chunks. Comparing a normal run with an oracle run separates what retrieval costs from what the generator can do on its own.
+- **Oracle mode:** comparing a normal run with an oracle run separates what retrieval costs from what the generator can do on its own.
 - **Whole pipeline:** scored end to end with the RAG triad, which needs no golden answers.
 - **Saved runs:** every generator run writes a timestamped JSON file to `eval/generator_runs/` with its settings, average scores and per-question rows. The retriever, reranker and chunking evals each keep one results file that the next run overwrites.
 
@@ -148,6 +150,8 @@ Separate comparisons I ran on the retriever (hybrid + rerank unless stated):
 | ms-marco-MiniLM-L-6-v2 | 0.74 | 0.89 | 0.93 |
 
 Bigger was not better. I chose `mxbai-rerank-base-v1`: within 0.01 MRR of the best and the highest HitRate@5.
+
+Saved October run (`eval/chunking_results.json`). The current `config.toml` no longer lists the token and 1000 / 150 variants, so this table cannot be regenerated as shown.
 
 | Chunking | Dense MRR | BM25 MRR | Hybrid + rerank MRR |
 | --- | --- | --- | --- |
