@@ -82,7 +82,7 @@ How to read them together:
 | High on both, low answer relevance | True to the text but answers something else |
 | All three high | Healthy, but not proof of correctness |
 
-Limits: groundedness only penalises claims that contradict the context, so an invented figure nothing contradicts still scores 1.00. Context relevance penalises answers that need calculation across chunks even when retrieval worked. All three depend on one judge and are slow (about two minutes per question with a 14B judge), so I use them for spot checks, not every run. The triad run over all 45 questions did not finish.
+Limits: groundedness only penalises claims that contradict the context, so an invented figure nothing contradicts still scores 1.00. Context relevance penalises answers that need calculation across chunks even when retrieval worked. All three depend on one judge and are slow (3 questions took about 3 minutes with the 7B judge, generation included; I did not time a 14B judge), so I use them for spot checks, not every run. The triad has been run only on 3 questions (section 3); the run over all 45 did not finish.
 
 ## 3. Results
 
@@ -118,6 +118,19 @@ Same generator (`qwen3:14b`), three judges:
 Hand-checking the nine answers the strict judge marked wrong against the PDFs: five were real failures (the answer model copied a nearby sentence or listed loosely related citations instead of answering; one was a retrieval miss), two were judge errors, two were borderline. For one question the golden answer itself contradicted the paper (abstract and Table 2 say 41.8 BLEU, Section 6.1 says 41.0), so it now accepts both.
 
 Prompt rewrite and model change (`gemma3:4b` to `qwen3:14b`), same judge: answer relevancy 0.62 to 0.84, correctness 0.73 to 0.80. Both changed together, so the run cannot say which helped; the cost was 4.3 seconds per answer against 2.0.
+
+### RAG triad spot check (first 3 golden questions)
+
+Saved run `eval/triad_runs/2026-11-10_233525.json`: `qwen3:14b` answering, `mistral:7b` judging, threshold 0.5.
+
+| Question | Context relevance | Groundedness | Answer relevance |
+| --- | --- | --- | --- |
+| L01 what problem LoRA solves | 0.22 | 0.50 | 1.00 |
+| L02 what LoRA does to the pretrained weights | 0.75 | 0.50 | 0.50 |
+| L03 how the LoRA update is parameterized | 0.22 | 0.67 | 0.50 |
+| Average | 0.40 | 0.56 | 0.67 |
+
+These scores reflect the judge more than the pipeline. L02's answer was correct ("LoRA freezes the pre-trained model weights"), yet groundedness was 0.50: the judge's reason says the output "appears to modify" the weights, which is wrong. Its answer relevance was 0.50 for a direct answer. Context relevance was 0.22 on L01 and L03 although the retrieved pages were the right ones, because every unrelated sentence in the chunks counts against the score. With 3 questions this is an anecdote, but it shows the triad can mislead in both directions: it passed an invented figure in the resume check, and here `mistral:7b` penalised correct answers.
 
 ## 4. Best configuration selection
 
@@ -186,7 +199,7 @@ Smaller chunks rank better but multiply the chunk count. The sweep ran in Octobe
 
 - 45 questions over three papers; scanned PDFs, long documents and tables are untested.
 - No trusted judge: the local judges were too weak, too lenient or self-grading, and I have no human labels to measure any judge's agreement with a person.
-- The input guard and the judge have no accuracy metric. The triad run over all 45 questions did not finish.
+- The input guard and the judge have no accuracy metric. The triad has been run only on 3 questions (section 3); the run over all 45 did not finish.
 - Chunking and reranker comparisons ran in October with other embedding models; retrieval-method numbers are from 10 November. Compare rows within a table, not across tables.
 - With 45 questions, gaps of a few hundredths are noise.
 
