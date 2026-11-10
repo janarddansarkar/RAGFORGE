@@ -26,7 +26,7 @@ RAGForge answers questions about uploaded PDFs with page citations, runs entirel
 | Generation | Writes a cited answer from the passages only, streamed | `qwen3:14b`, prompt told today's date |
 | Scoring | Scores each answer live (RAG triad) | DeepEval with a judge model, `mistral:7b` |
 
-Three branches serve three purposes. `dev` is the free local version, `main` is a hosted version where each user brings their own API key, and `offline-eval` holds the evaluation lab that searches for the best settings. The code uses plain classes throughout, including the evaluation code, so each metric and experiment can be read and rerun on its own.
+Branches: `dev` is the free local version and the one this write-up describes, `main` is a hosted version where each user brings their own API key, `offline-eval` is the evaluation lab (the staged settings search and the chunk-size sweep; it lacks the clock, input guard and session cache), and `user_feedback` holds the thumbs-down retry work. The code uses plain classes throughout, including the evaluation code, so each metric and experiment can be read and rerun on its own.
 
 ## How I evaluate it
 
@@ -49,7 +49,7 @@ Golden-data metrics score retrieval, reranking and generation one at a time, whi
 
 **Oracle mode.** The generator can be given the golden pages instead of retrieved chunks. Comparing a normal run with an oracle run separates what retrieval costs from what the generator can do on its own.
 
-**Saved, comparable runs.** Every run writes a JSON file with the settings that produced it, the average scores, and every per-question row with the answer. I can re-read any past run and diff it against a new one.
+**Saved, comparable runs.** Every generator run writes a timestamped JSON file in `eval/generator_runs/` with the settings that produced it, the average scores, and every per-question row with the answer, so I can re-read any past run and diff it against a new one. The retriever, reranker and chunking evals each keep one results file that the next run overwrites. One caveat: the saved settings list `reranker_model`, which only applies when the reranker type is `llm`; the runs here used the `mxbai` cross-encoder.
 
 **Staged search with a held-out check.** `find_best.py` tunes chunking, embedder, retrieval method, reranker and generator one stage at a time on two of every three questions, then confirms the winner on the rest. Near-ties go to the faster option.
 
@@ -172,7 +172,7 @@ Contextual chunks (an LLM-written note per chunk) help weak retrievers: BM25 MRR
 
 ### Which chunk size
 
-Smaller chunks improve ranking (MRR 0.51 at 1000 characters, 0.66 at 150) but create many more chunks to store and judge. Context relevance was scored by an LLM judge on only 8 sampled questions, and it does not move steadily with size (0.37, 0.52, 0.37, 0.45, 0.52), so I treat it as noise and not as a ranking. The sweep selected 600 / 90.
+Smaller chunks improve ranking (MRR 0.51 at 1000 characters, 0.66 at 150) but create many more chunks to store and judge. Context relevance was scored by an LLM judge on only 8 sampled questions, and it does not move steadily with size (0.37, 0.52, 0.37, 0.45, 0.52), so I treat it as noise and not as a ranking. The sweep ran in October with an earlier reranker setup (hence Recall@1 of 0.27 to 0.30, far below the 0.76 above). By Recall@5 the best size was 250 and by MRR it was 150, so 600 / 90 is a middle choice that keeps the chunk count and indexing time moderate, not the sweep's top scorer.
 
 | Chunk size / overlap | Chunks stored | Recall@5 | MRR | Context relevance (top 5) |
 | --- | --- | --- | --- | --- |
@@ -288,7 +288,7 @@ The retrieval results are solid for the three papers tested, but the generation 
 
 ## Reproduce it
 
-The scores above come from these commands on the `dev` branch (the chunk-size sweep lives on `offline-eval`). Each run writes a JSON file with its settings and per-question rows. The resume experiment used a short one-off script that is not in the repository.
+The scores above come from these commands on the `dev` branch (only the chunk-size sweep lives solely on `offline-eval`). Each run writes a JSON file with its settings and per-question rows. The resume experiment used a short one-off script that is not in the repository.
 
 ```bash
 git clone -b dev https://github.com/janarddansarkar/RAGFORGE.git
@@ -310,4 +310,4 @@ uv run python eval/time_pipeline.py
 uv run pytest
 ```
 
-On `offline-eval`: `uv run python eval/chunk_size_sweep.py` and `uv run python eval/find_best.py` run the staged search.
+`uv run python eval/find_best.py` (on `dev` and `offline-eval`) runs the staged search; `uv run python eval/chunk_size_sweep.py` exists only on `offline-eval`.
