@@ -24,14 +24,14 @@ How each eval uses it:
 | --- | --- | --- |
 | Retriever and reranker | The question and the golden pages | The question is run through the retriever; Recall, Precision, HitRate and MRR compare the ranked chunks' pages with the golden pages |
 | Generator | The question and the golden answer | The pipeline answers the question; the judge compares the answer with the golden answer (correctness, semantic similarity) and checks the golden answer against the retrieved passages (context recall) |
-| Oracle mode | The golden pages | Those pages are given to the generator instead of retrieved chunks |
-| `find_best.py` | All questions, split 2 : 1 | Two of every three tune each stage; the remaining third checks the winner |
+| Oracle mode | The golden pages | The chunks on those pages (the first 5, in document order) are given to the generator instead of retrieved chunks |
+| `find_best.py` | All questions, split 2 : 1 | Two of every three tune each stage; the remaining third checks the retrieval pick |
 | RAG triad | The question only | No golden answer is needed |
 
 When a check against the PDFs shows a reference answer is wrong or incomplete, the golden file is updated and later runs use the new reference.
 - **Page-based relevance:** chunk IDs change whenever chunking changes, so a retrieved chunk counts as relevant if it comes from the right document and one of the golden pages. This keeps scores comparable across chunking strategies.
 - **Per-component evals:** the retriever, reranker and generator are scored separately (section 2), so a bad answer can be traced to the stage that caused it.
-- **Oracle mode:** the generator is given the golden pages instead of retrieved chunks. Comparing a normal run with an oracle run separates what retrieval costs from what the generator can do on its own.
+- **Oracle mode:** the generator is given the chunks on the golden pages (the first 5, in document order) instead of retrieved chunks. Comparing a normal run with an oracle run separates what retrieval costs from what the generator can do on its own.
 - **Whole pipeline:** scored end to end with the RAG triad, which needs no golden answers.
 - **Saved runs:** every generator run writes a timestamped JSON file to `eval/generator_runs/` with its settings, average scores and per-question rows. The retriever, reranker and chunking evals each keep one results file that the next run overwrites.
 
@@ -126,12 +126,12 @@ Prompt rewrite and model change (`gemma3:4b` to `qwen3:14b`), same judge: answer
 | 1. Chunking | recursive, semantic, contextual recursive | MRR |
 | 2. Embedder | `bge-m3`, `nomic-embed-text`, `mxbai-embed-large`, `all-minilm` | MRR |
 | 3. Retrieval method | dense, bm25, hybrid, dense/hybrid + rerank, plus rewrite, multi-query and HyDE variants | MRR |
-| 4. Reranker | LLM rerankers (when the method reranks) | MRR |
+| 4. Reranker | Ollama LLM rerankers (when the method reranks); the cross-encoders were compared separately, below | MRR |
 | 5. Generator | `qwen3:14b`, `qwen2.5:3b`, `llama3.2:3b`, `gemma3:4b`, in oracle mode | answer correctness (judge) |
 
 Rules that keep the choice honest:
 
-- Stages 1 to 4 tune on two of every three golden questions; the retrieval pick is then checked on the held-out third.
+- Stages 1 to 4 tune on two of every three golden questions; the retrieval pick is then checked on the held-out third. Stage 5 (generator) is scored on all 45 questions, with no held-out check.
 - Anything within a tie margin of the best (0.01 on retrieval, 0.03 on generator) counts as a tie and the faster option wins.
 - If the pick is worse than the current settings on the held-out questions, the current settings are kept.
 - Every stage's numbers are written to `eval/find_best_report.json`.
