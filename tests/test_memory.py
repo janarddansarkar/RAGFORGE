@@ -2,6 +2,7 @@
 
 from types import SimpleNamespace
 
+from clock import Clock
 from generator import ANSWER_PROMPT, Generator
 from memory import MAX_ANSWER_CHARS, ConversationMemory
 
@@ -60,7 +61,7 @@ def test_answer_prompt_is_unchanged_without_history():
     generator.retriever = SimpleNamespace(llm=FakeLLM("ok"))
     generator.answer_from("Q?", [])
     assert generator.retriever.llm.prompts[0] == ANSWER_PROMPT.format(
-        passages="", history="", extra="", question="Q?"
+        today=Clock.today(), passages="", history="", extra="", question="Q?"
     )
     assert "Conversation so far" not in generator.retriever.llm.prompts[0]
     generator.answer_from("Q?", [], history="User: a\nAssistant: b")

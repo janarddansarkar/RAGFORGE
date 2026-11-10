@@ -11,13 +11,17 @@ from langchain_core.documents import Document
 
 from cache import SessionCache
 from chunking import chunk_body
+from clock import Clock
 from guardrails import InputGuard
 from memory import ConversationMemory
 from models import make_llm
 from retriever import Retriever
 from vectorstore import load_config
 
-ANSWER_PROMPT = """Answer the question using ONLY the passages below.
+ANSWER_PROMPT = """Answer the question using ONLY the passages below. Today's date is {today}: \
+use it when a passage says "present" or "current", or the question is about the time up to now \
+(for example how long someone has worked somewhere), and work such durations out from the dates \
+in the passages.
 - Answer the question that was asked, directly and in your own words, in one or two sentences \
 (a list, a formula or several numbers may need more). Stop once the question is answered: add no \
 other facts. Do not copy a passage word for word, and do not mention passages that do not answer \
@@ -192,7 +196,11 @@ class Generator:
             else ""
         )
         return ANSWER_PROMPT.format(
-            passages=passages, history=conversation, extra=extra, question=question
+            today=Clock.today(),
+            passages=passages,
+            history=conversation,
+            extra=extra,
+            question=question,
         )
 
     def answer_from(
