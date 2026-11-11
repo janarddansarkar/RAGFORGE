@@ -1,10 +1,10 @@
-"""RAG pipeline: the whole system in one place, using the best settings found by the evaluation.
+"""RAG pipeline: the whole system in one place, using the tuned settings.
 
     uv run python src/rag_pipeline.py "What rank r does LoRA use?"
     uv run python src/rag_pipeline.py                 # no question: ask several, empty line quits
     uv run python src/rag_pipeline.py --settings      # only show the settings in use
 
-The settings come from best_config.json (written by eval/find_best.py) laid over config.toml:
+The settings come from best_config.json (the tuned settings) laid over config.toml:
 chunking -> embedding model -> retrieval method + reranker -> top-k -> generator.
 It answers from the PDFs in ./documents. (For a single PDF of your own, use src/rag.py.)
 """

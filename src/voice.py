@@ -1,37 +1,38 @@
-"""Voice: turn speech into a question (faster-whisper) and an answer into speech (macOS `say`).
+"""Voice: turn speech into a question (a hosted speech-to-text API) and an answer into speech (macOS `say`).
 
     uv run python src/voice.py "What rank r does LoRA use?"   # speaks it, then transcribes it back
 
-faster-whisper is Whisper running on CPU (no PyTorch): free, and offline once the model has
-downloaded the first time (stt_model in config.toml; "small" is about 500 MB).
+stt_model in config.toml is a LiteLLM name such as openai/whisper-1 (needs that provider's key).
+Providers without speech-to-text leave it empty, and the app hides voice input.
 """
 
-import io
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
-from functools import cached_property
 from pathlib import Path
 
+from models import api_key_for
 from vectorstore import load_config
 
 
 class SpeechToText:
-    def __init__(self, model: str):
+    def __init__(self, model: str, api_key: str | None = None, tracker=None):
         self.model = model
-
-    @cached_property
-    def recognizer(self):
-        from faster_whisper import WhisperModel
-
-        return WhisperModel(self.model, device="cpu", compute_type="int8")
+        self.api_key = api_key
+        self.tracker = tracker  # counts the calls (see usage.py)
 
     def transcribe(self, audio: bytes) -> str:
         """The words in the audio (WAV, MP3, ...)."""
-        segments, _ = self.recognizer.transcribe(io.BytesIO(audio), beam_size=1)
-        return " ".join(segment.text.strip() for segment in segments).strip()
+        import litellm
+
+        reply = litellm.transcription(
+            model=self.model, file=("audio.wav", audio), api_key=self.api_key
+        )
+        if self.tracker:
+            self.tracker.record("voice", self.model, reply, "transcription")
+        return reply.text.strip()
 
 
 class TextToSpeech:
@@ -63,4 +64,10 @@ if __name__ == "__main__":
     sentence = " ".join(sys.argv[1:]) or "What rank r does LoRA use?"
     audio = TextToSpeech().speak(sentence)
     print(f"Spoke {len(audio)} bytes of audio")
-    print("Heard:", SpeechToText(load_config()["stt_model"]).transcribe(audio))
+    config = load_config()
+    print(
+        "Heard:",
+        SpeechToText(
+            config["stt_model"], api_key_for(config, config["stt_model"])
+        ).transcribe(audio),
+    )

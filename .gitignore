@@ -8,11 +8,9 @@ __pycache__/
 .deepeval/
 vs/
 .DS_Store
-vs_ollama_backup/
 vs_docs/
 my_documents/
 cache/
 .agents/
 .claude/
 test_docs/
-eval/chunk_size_sweep_results.json

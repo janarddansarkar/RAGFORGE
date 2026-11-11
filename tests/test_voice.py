@@ -17,20 +17,20 @@ def test_speak_returns_wav_audio():
     assert TextToSpeech().speak("hello there")[:4] == b"RIFF"
 
 
-def test_transcribe_joins_the_segments_with_a_fake_recognizer():
+def test_transcribe_sends_the_audio_and_the_key_to_the_speech_api(monkeypatch):
     from types import SimpleNamespace
+
+    import litellm
 
     from voice import SpeechToText
 
-    speech = SpeechToText("small")
-    fake = SimpleNamespace(
-        transcribe=lambda audio, beam_size: (
-            [
-                SimpleNamespace(text=" What rank "),
-                SimpleNamespace(text="does LoRA use? "),
-            ],
-            None,
-        )
+    sent = {}
+    monkeypatch.setattr(
+        litellm,
+        "transcription",
+        lambda **kwargs: sent.update(kwargs) or SimpleNamespace(text=" What rank? "),
     )
-    speech.__dict__["recognizer"] = fake  # replaces the cached model
-    assert speech.transcribe(b"audio") == "What rank does LoRA use?"
+    assert (
+        SpeechToText("openai/whisper-1", "sk-me").transcribe(b"audio") == "What rank?"
+    )
+    assert sent["model"] == "openai/whisper-1" and sent["api_key"] == "sk-me"

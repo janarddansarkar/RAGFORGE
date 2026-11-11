@@ -4,19 +4,20 @@
 data_dir = "documents"  # source PDFs
 vs_dir = "vs"           # Chroma vector store
 
-# ---- Models (all served by Ollama: free, local, offline once pulled with `ollama pull <name>`) ----
-ollama_host = "http://localhost:11434"  # a server's Ollama works too (it has no login: keep it private)
-ollama_keep_alive = "30m"               # how long Ollama keeps a model in memory after use (its default, 5m, reloads models between questions)
-ollama_num_ctx = 8192                   # context window; Ollama's default (4096) is too small for 5 chunks
-embedding_model = "all-minilm"  # best on the held-out queries (eval/find_best.py); changing it requires: uv run python src/vectorstore.py --rebuild
-llm_model = "qwen3:14b"     # contextual notes, query transforms, answers (the best at date arithmetic; gemma3:4b is the fast option)
+# ---- Models ----
+# Every model is hosted and called through LiteLLM: write it with a provider prefix
+# (openai/..., anthropic/..., gemini/...). Nothing runs on this machine. These are the defaults
+# for the command line and the evals (set OPENAI_API_KEY, or the key of the provider you use).
+# The web app lets each user pick a provider and bring their own key (src/providers.py).
+embedding_model = "openai/text-embedding-3-small"  # changing it requires: uv run python src/vectorstore.py --rebuild
+llm_model = "openai/gpt-4o"  # contextual notes, query transforms, answers
 max_new_tokens = 256        # longest reply the LLM writes
-reranker_type = "cross_encoder"  # best found by the eval. llm: a chat model scores each chunk 0-10 | cross_encoder: a Hugging Face model scores all chunks in one batch
-reranker_model = "qwen2.5:3b"  # the chat model when reranker_type = "llm" (Ollama has no cross-encoder reranker)
-cross_encoder_model = "mixedbread-ai/mxbai-rerank-base-v1"  # when reranker_type = "cross_encoder"; downloaded from Hugging Face on first use
-retry_model = ""               # writes the second try after a thumbs down ("" = use llm_model; nothing here is stronger than qwen3:14b)
-guard_model = "mistral:7b"     # checks every question for prompt injection and other malicious input (src/guardrails.py)
-stt_model = "small"            # faster-whisper model (tiny | base | small | medium) that hears spoken questions in the UI
+reranker_type = "llm"  # llm: a chat model scores each chunk 0-10 | cross_encoder: a rerank API (cross_encoder_model) scores all chunks in one call
+reranker_model = "openai/gpt-4o-mini"  # the chat model when reranker_type = "llm"
+cross_encoder_model = "cohere/rerank-v3.5"  # when reranker_type = "cross_encoder"; needs a Cohere key
+retry_model = ""               # writes the second try after a thumbs down ("" = use llm_model)
+guard_model = "openai/gpt-4o-mini"  # checks every question for prompt injection and other malicious input (src/guardrails.py)
+stt_model = "openai/whisper-1"  # hears spoken questions in the UI ("" = no voice input)
 
 # ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
 # Each strategy gets its own collection in ./vs, so several can exist side by side.
@@ -31,26 +32,13 @@ semantic_max_chars = 1500        # semantic: hard limit on chunk length
 # ---- Retrieval ----
 # Methods: dense, bm25, hybrid, dense_rerank, hybrid_rerank
 default_method = "hybrid_rerank"  # used by retrieve() when no method is given
-methods = [                       # pipelines the eval / demo run
-    "dense",
-    "bm25",
-    "hybrid",
-    "dense_rerank",
-    "hybrid_rerank",
-]
 top_k = 5        # results returned to the caller
 rerank_workers = 4  # chunks the reranker scores at the same time (1 = one by one)
 fetch_k = 20     # candidates gathered before fusion / reranking
 rrf_k = 60       # RRF constant: score = 1 / (rrf_k + rank)
 
-# ---- Retriever eval ----
-golden_file = "golden_data/rag_retriever_golden_dataset_45.json"
-eval_ks = [1, 3, 5, 10]  # Recall@K and HitRate@K
-precision_k = 5          # Precision@K
-compare_methods = ["dense", "bm25", "hybrid_rerank"]  # retrieval methods used to compare chunking
-
 # ---- Input guardrail (src/guardrails.py) ----
-input_guard = true      # false: skip the check (the eval never uses it)
+input_guard = true      # false: skip the check 
 guard_max_chars = 1000  # longer questions are blocked
 
 # ---- Session cache (src/cache.py) ----
@@ -59,56 +47,3 @@ cache_threshold = 0.95   # how alike two questions must be (cosine, 0-1); higher
 
 memory_turns = 3  # chat: how many past question/answer pairs the model remembers
 num_queries = 3  # multi_query: extra phrasings the LLM writes per question
-
-# ---- eval/find_best.py ----
-# It tunes on 2 of every 3 golden queries and confirms the winner on the rest.
-search_methods = [               # stage 2: pipelines to compare (LLM ones are slow)
-    "dense",
-    "bm25",
-    "hybrid",
-    "dense_rerank",
-    "hybrid_rerank",
-    "rewrite_hybrid_rerank",
-    "multi_query_hybrid_rerank",
-    "hyde_hybrid_rerank",
-]
-rerankers = [                    # stage 3: Ollama chat models that rerank (an LLM scores each chunk 0-10)
-    "qwen2.5:1.5b",
-    "qwen2.5:3b",
-    "llama3.2:3b",
-]
-embedders = [                    # stage 2: Ollama embedding models
-    "bge-m3",
-    "nomic-embed-text",
-    "mxbai-embed-large",
-    "all-minilm",
-]
-generators = [                   # stage 5: Ollama answer models, scored on the golden pages
-    "qwen3:14b",
-    "qwen2.5:3b",
-    "llama3.2:3b",
-    "gemma3:4b",
-]
-generator_metric = "answer_correctness"  # generators are ranked by this
-generator_margin = 0.03                  # within this of the best counts as a tie; the faster one wins
-primary_metric = "MRR"        # candidates are ranked by this
-tie_break_metric = "Recall@5"
-tie_margin = 0.01             # within this of the best counts as a tie; the faster one wins
-
-# ---- eval/generator_eval.py ----
-# The judge should be a different, stronger model than the generator (llm_model).
-judge_model = "mistral:7b"  # also scores the RAG triad live in the UI (eval/rag_triad_eval.py). Keep it a different model from llm_model, so a model never grades its own answers
-
-# Chunking variants for eval/chunking_compare.py (and find_best.py stage 1). Each one overrides the chunking settings above.
-# Keep this at the end of the file (a TOML array of tables).
-[[chunking_variants]]
-chunking_strategy = "recursive"
-contextual = false
-
-[[chunking_variants]]
-chunking_strategy = "semantic"
-contextual = false
-
-[[chunking_variants]]
-chunking_strategy = "recursive"
-contextual = true

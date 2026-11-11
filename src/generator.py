@@ -78,7 +78,7 @@ class Generator:
         answer model). A stronger one follows "do not repeat it" and the notes better."""
         model = self.config.get("retry_model")
         return (
-            make_llm({**self.config, "llm_model": model})
+            make_llm({**self.config, "llm_model": model}, role="retry")
             if model
             else self.retriever.llm
         )

@@ -70,9 +70,9 @@ Code: `Generator.retry_stream` in `src/generator.py` (called through `DocumentRA
 A wrong citation is a writing problem, not a search problem: an early version searched again for it, and the wider
 search only added unrelated chunks (pages 6 and 2) while the same wrong citation came back.
 
-**A stronger model writes the second try.** `retry_model` in `config.toml` (default `mistral:7b`; empty = the usual
-`llm_model`) is used only for retries, because the small answer model (`gemma3:4b`) ignored "do not repeat it" and
-repeated a wrong citation. It is loaded the first time a retry is needed, so that retry is slower.
+**A stronger model writes the second try.** `retry_model` in `config.toml` (empty by default = the usual
+`llm_model`; on `main` the sidebar's answer model) can be set to a stronger model that is used only for retries, because a small answer model ignored "do not repeat it" and
+repeated a wrong citation. A retry is one more model call.
 
 Every retry also shows the model the rejected answer ("Do not repeat it") and puts the extra notes **before** the
 question in the prompt. The chat history in the prompt leaves out the rejected turn, so it appears only once.
@@ -126,7 +126,7 @@ it is quick). Chunks from an older store, without `chunk_text`, still work and a
 - Only the latest answer can be retried.
 - Even the retry model can ignore the extra notes; the token limit is the only hard control, and nothing checks that a cited page really contains the cited number.
 - Cloud use (`main`) would add API cost for the retry: a wider search is about 20 more reranker calls if the
-  reranker is an LLM (none with the cross-encoder) plus the rewrite and the answer.
+  reranker is an LLM (none with a rerank API) plus the rewrite and the answer.
 
 ## How it was tested
 
@@ -136,7 +136,7 @@ it is quick). Chunks from an older store, without `chunk_text`, still work and a
   reasons were stored, the question was then answered afresh with a different answer, "Wrong or missing source" ran a
   wider search (7 chunks, new pages), "Too long" reused the chunks, and the cache file was deleted on a new upload.
   The RAG-triad judge was stubbed in the replay runs to keep them fast.
-- Retry model check (LoRA paper, "Wrong citation" + "Incomplete"): `mistral:7b` reused the same chunks, ran no new
+- Retry model check, run on `dev` with local models (LoRA paper, "Wrong citation" + "Incomplete"): `mistral:7b` reused the same chunks, ran no new
   search, and dropped the wrong `[p.4]` citation.
 - IRS W-9 form (`test_docs/irs_w9_form.pdf`, 6 pages): five factual questions answered correctly with the right
   pages (24% backup withholding, the $50 penalty, Form W-8, the SSN), an out-of-scope question refused, a prompt
@@ -145,7 +145,7 @@ it is quick). Chunks from an older store, without `chunk_text`, still work and a
 
 ## Ideas for later
 
-- Keep ratings beyond the session (with consent) to build a golden set and tune the retriever.
+- Keep ratings beyond the session (with consent) to tune the retriever.
 - Per-chunk thumbs in the "Top chunks" list, for direct relevance labels.
 - Retry more than once, or retry an older answer.
-- Port to `main`: the retry cost should appear in the per-turn cost, and the same cache and UI changes apply.
+- Show the retry's cost (tokens) per turn.

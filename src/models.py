@@ -1,172 +1,227 @@
-"""Models: the embedder, the LLM and the audio model that config.toml asks for.
+"""Models: the embedder, the LLM and the reranker that config.toml asks for.
 
-Every model is served by Ollama (https://ollama.com): free, and it runs on your own machine
-or on a server you control (ollama_host in config.toml). Pull a model once with
-`ollama pull <name>`; after that no internet is needed.
+The LLMs are hosted models, run through LiteLLM (https://docs.litellm.ai/docs/providers): name
+them with a provider prefix, e.g. "anthropic/claude-haiku-5-5". The API key comes from the
+user (config["api_keys"], set by the web UI) or from the provider's environment variable
+(ANTHROPIC_API_KEY, OPENAI_API_KEY, ...).
+
+Embeddings and speech-to-text are hosted too, named the same way ("openai/text-embedding-3-small",
+"openai/whisper-1"). Nothing runs on this machine. The reranker is a chat model that scores each
+chunk, or a rerank API such as "cohere/rerank-v3.5".
 
 Everything else calls make_embeddings(config) / make_llm(config).
 An LLM has .model (its name) and .invoke(prompt).content (the reply).
 """
 
 import math
-from contextlib import contextmanager
-from functools import cached_property
 
-import httpx
-import ollama
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage
 
-DEFAULT_HOST = "http://localhost:11434"
+# A model name that starts with one of these + "/" is a hosted API model, run through LiteLLM.
+API_PROVIDERS = (
+    "anthropic", "openai", "gemini", "cohere", "voyage", "groq",
+    "mistral", "deepseek", "together_ai", "azure", "bedrock", "vertex_ai",
+)  # fmt: skip
 
 
-class OllamaModel:
-    """What every Ollama model needs: a client, and clear errors when Ollama is not ready."""
+def is_api_model(name: str | None) -> bool:
+    """True for "anthropic/claude-haiku-5-5"."""
+    return bool(name) and name.split("/")[0] in API_PROVIDERS
 
-    def __init__(
-        self, model: str, host: str | None = None, keep_alive: str | None = None
-    ):
-        self.model = model
-        self.host = host or DEFAULT_HOST
-        self.keep_alive = (
-            keep_alive  # how long Ollama keeps the model loaded after a call
+
+def api_key_for(config: dict, model: str) -> str | None:
+    """The key the user gave for this model's provider (config["api_keys"], kept in memory
+    only), or None: LiteLLM then reads the provider's environment variable."""
+    return config.get("api_keys", {}).get(model.split("/")[0]) or None
+
+
+def require_prefix(model: str) -> None:
+    if not is_api_model(model):
+        raise ValueError(
+            f"'{model}' has no provider prefix. Write it like "
+            "'anthropic/claude-haiku-5-5' or 'openai/gpt-4o' (see config.toml)."
         )
 
-    @cached_property
-    def client(self) -> ollama.Client:
-        return ollama.Client(host=self.host, timeout=600)
 
-    @contextmanager
-    def friendly_errors(self):
-        """Turn Ollama's errors into plain advice."""
-        try:
-            yield
-        except ollama.ResponseError as error:
-            if error.status_code == 404:
-                raise RuntimeError(
-                    f"Ollama does not have the model '{self.model}'. "
-                    f"Download it with: ollama pull {self.model}"
-                ) from error
-            raise
-        except (httpx.ConnectError, ConnectionError) as error:
-            raise RuntimeError(
-                f"Cannot reach Ollama at {self.host}. Start it with: ollama serve"
-            ) from error
+class LiteLLMEmbeddings(Embeddings):
+    """An embedding model on a hosted API (through LiteLLM)."""
 
-    def call(self, method: str, **kwargs):
-        """Run a client method (chat, embed), turning Ollama's errors into plain advice."""
-        kwargs = {"keep_alive": self.keep_alive, **kwargs}
-        with self.friendly_errors():
-            return getattr(self.client, method)(model=self.model, **kwargs)
+    def __init__(
+        self,
+        model: str,
+        api_key: str | None = None,
+        tracker=None,
+        role: str = "embeddings",
+    ):
+        require_prefix(model)
+        self.model = model
+        self.api_key = api_key
+        self.tracker = tracker  # counts the calls (see usage.py)
+        self.role = role
 
-    def unload(self) -> None:
-        """Free the model's memory now instead of after Ollama's idle timeout."""
-        self.call("generate", prompt="", keep_alive=0)
-
-
-class OllamaEmbeddings(OllamaModel, Embeddings):
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        import litellm
+
         vectors: list[list[float]] = []
-        for start in range(0, len(texts), 32):  # a few at a time keeps requests small
-            reply = self.call("embed", input=texts[start : start + 32])
-            vectors += [list(vector) for vector in reply.embeddings]
+        for start in range(0, len(texts), 32):
+            reply = litellm.embedding(
+                model=self.model, input=texts[start : start + 32], api_key=self.api_key
+            )
+            vectors += [list(item["embedding"]) for item in reply.data]
+            if self.tracker:
+                self.tracker.record(self.role, self.model, reply, "embedding")
         return vectors
 
     def embed_query(self, text: str) -> list[float]:
         return self.embed_documents([text])[0]
 
 
-class OllamaChat(OllamaModel):
-    """A chat model on Ollama; temperature 0, so answers are repeatable."""
+class LiteLLMChat:
+    """A chat model on a hosted API (through LiteLLM); temperature 0, so answers are repeatable."""
 
     def __init__(
         self,
         model: str,
         max_new_tokens: int = 256,
-        host: str | None = None,
-        num_ctx: int = 8192,
-        keep_alive: str | None = None,
+        api_key: str | None = None,
+        tracker=None,
+        role: str = "answer",
     ):
-        super().__init__(model, host, keep_alive)
+        require_prefix(model)
+        self.model = model
         self.max_new_tokens = max_new_tokens
-        self.num_ctx = (
-            num_ctx  # Ollama's default window (4096) is too small for 5 chunks
+        self.api_key = api_key  # the user's own key; sent with every call, never stored
+        self.tracker = tracker  # counts the calls (see usage.py)
+        self.role = role  # what this model is used for, shown in the usage breakdown
+
+    def _complete(self, prompt: str, max_new_tokens: int | None, **extra):
+        import litellm
+
+        litellm.drop_params = (
+            True  # skip settings a provider does not support (e.g. logprobs)
+        )
+        return litellm.completion(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+            max_tokens=max_new_tokens or self.max_new_tokens,
+            api_key=self.api_key,
+            **extra,
         )
 
     def invoke(
         self, prompt: str, max_new_tokens: int | None = None, schema=None
     ) -> AIMessage:
         """schema (a pydantic class or a JSON schema dict) makes the reply valid JSON."""
-        if schema is not None and hasattr(schema, "model_json_schema"):
-            schema = schema.model_json_schema()
-        reply = self.call(
-            "chat",
-            messages=[{"role": "user", "content": prompt}],
-            format=schema,
-            think=False,  # no hidden reasoning: replies stay short and parseable
-            options={
-                "temperature": 0,
-                "num_predict": max_new_tokens or self.max_new_tokens,
-                "num_ctx": self.num_ctx,
-            },
-        )
-        return AIMessage(content=str(reply.message.content or "").strip())
+        extra = {}
+        if schema is not None:
+            if not hasattr(schema, "model_json_schema"):  # a plain JSON schema dict
+                schema = {
+                    "type": "json_schema",
+                    "json_schema": {"name": "reply", "schema": schema},
+                }
+            extra["response_format"] = schema
+        reply = self._complete(prompt, max_new_tokens, **extra)
+        if self.tracker:
+            self.tracker.record(self.role, self.model, reply)
+        return AIMessage(content=str(reply.choices[0].message.content or "").strip())
 
     def stream(self, prompt: str, max_new_tokens: int | None = None):
         """Like invoke(), but yields the reply piece by piece as the model writes it."""
-        with self.friendly_errors():
-            for part in self.client.chat(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
+        parts = []
+        try:
+            for part in self._complete(
+                prompt,
+                max_new_tokens,
                 stream=True,
-                think=False,
-                keep_alive=self.keep_alive,
-                options={
-                    "temperature": 0,
-                    "num_predict": max_new_tokens or self.max_new_tokens,
-                    "num_ctx": self.num_ctx,
-                },
+                stream_options={
+                    "include_usage": True
+                },  # the last piece carries the token counts
             ):
-                if part.message.content:
-                    yield part.message.content
+                parts.append(part)
+                if part.choices and part.choices[0].delta.content:
+                    yield part.choices[0].delta.content
+        finally:
+            self._record_stream(parts, prompt)
+
+    def _record_stream(self, parts: list, prompt: str) -> None:
+        """Count a streamed reply: LiteLLM joins the pieces into one response with its usage."""
+        if not self.tracker or not parts:
+            return
+        import litellm
+
+        try:
+            whole = litellm.stream_chunk_builder(
+                parts, messages=[{"role": "user", "content": prompt}]
+            )
+        except Exception:  # noqa: BLE001
+            whole = None
+        self.tracker.record(self.role, self.model, whole)
 
     def digit_score(self, prompt: str) -> float:
-        """Ask for one digit (0-9) and return it as 0-1: the average of the digits the model
-        considered, weighted by their probability, so unsure answers fall between digits."""
-        reply = self.call(
-            "chat",
-            messages=[{"role": "user", "content": prompt}],
-            think=False,
-            logprobs=True,
-            top_logprobs=10,
-            options={"temperature": 0, "num_predict": 1, "num_ctx": self.num_ctx},
-        )
+        """Ask for one digit (0-9) and return it as 0-1. With logprobs it is the average of the
+        digits the model considered, weighted by probability; providers without logprobs
+        (Anthropic) give the digit they wrote."""
+        reply = self._complete(prompt, 1, logprobs=True, top_logprobs=10)
+        if self.tracker:
+            self.tracker.record(self.role, self.model, reply)
+        choice = reply.choices[0]
         weights: dict[int, float] = {}
-        for choice in reply.logprobs[0].top_logprobs if reply.logprobs else []:
-            token = choice.token.strip()
+        logprobs = getattr(choice, "logprobs", None)
+        for top in logprobs.content[0].top_logprobs if logprobs else []:
+            token = top.token.strip()
             if len(token) == 1 and token in "0123456789":  # not look-alikes such as '₀'
                 weights[int(token)] = weights.get(int(token), 0.0) + math.exp(
-                    choice.logprob
+                    top.logprob
                 )
-        total = sum(weights.values())
-        if not total:
-            return 0.0
-        return sum(digit * weight for digit, weight in weights.items()) / total / 9
+        if not weights:  # no logprobs: use the digit in the reply text
+            text = (choice.message.content or "").strip()[:1]
+            return int(text) / 9 if text in list("0123456789") else 0.0
+        return sum(d * w for d, w in weights.items()) / sum(weights.values()) / 9
 
 
-def make_embeddings(config: dict) -> OllamaEmbeddings:
-    return OllamaEmbeddings(
-        config["embedding_model"],
-        config.get("ollama_host"),
-        config.get("ollama_keep_alive"),
+class LiteLLMReranker:
+    """A hosted rerank API (e.g. cohere/rerank-v3.5). score() matches the cross-encoder's."""
+
+    def __init__(self, model: str, api_key: str | None = None, tracker=None):
+        self.model = model
+        self.api_key = api_key
+        self.tracker = tracker
+
+    def score(self, pairs: list[tuple[str, str]]) -> list[float]:
+        import litellm
+
+        query = pairs[0][0]  # every pair asks the same question
+        reply = litellm.rerank(
+            model=self.model,
+            query=query,
+            documents=[p[1] for p in pairs],
+            api_key=self.api_key,
+        )
+        if self.tracker:
+            self.tracker.record("rerank", self.model, reply, "rerank")
+        scores = [0.0] * len(pairs)
+        for result in reply.results:
+            scores[result["index"]] = float(result["relevance_score"])
+        return scores
+
+
+def make_embeddings(config: dict, role: str = "embeddings") -> Embeddings:
+    model = config["embedding_model"]
+    return LiteLLMEmbeddings(
+        model, api_key_for(config, model), config.get("usage_tracker"), role
     )
 
 
-def make_llm(config: dict) -> OllamaChat:
-    return OllamaChat(
-        config["llm_model"],
+def make_llm(config: dict, role: str = "answer") -> LiteLLMChat:
+    """The chat model in config["llm_model"]. role says what it is used for (answer, guard,
+    judge, ...), so the usage breakdown can tell the jobs apart."""
+    model = config["llm_model"]
+    return LiteLLMChat(
+        model,
         config["max_new_tokens"],
-        config.get("ollama_host"),
-        config["ollama_num_ctx"],
-        config.get("ollama_keep_alive"),
+        api_key_for(config, model),
+        config.get("usage_tracker"),
+        role,
     )

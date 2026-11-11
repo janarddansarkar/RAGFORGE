@@ -5,7 +5,7 @@
   Answer relevance  - does the answer address the question?                 (question -> answer)
 
 It needs no golden data: give it the question asked, the top-k chunks retrieved and the answer
-generated (the web UI does this after every answer). The judge is an Ollama model (judge_model
+generated (the web UI does this after every answer). The judge is a hosted model (judge_model
 in config.toml), so nothing leaves your machine. Judges are noisy; read the scores as a guide.
 
 Run:  uv run python eval/rag_triad_eval.py "What rank r does LoRA use?" [--judge ID]
@@ -35,21 +35,23 @@ from deepeval.test_case import LLMTestCase
 from langchain_core.documents import Document
 
 from chunking import chunk_body
-from models import OllamaChat
+from models import make_llm
 from vectorstore import load_config
 
 
 class Judge(DeepEvalBaseLLM):
-    """Lets deepeval use an Ollama model as its judge (deepeval defaults to OpenAI).
-    Ollama can force the reply to match the metric's JSON schema, so JSON rarely breaks."""
+    """Lets deepeval use a hosted model as its judge (deepeval defaults to OpenAI).
+    The reply is forced to match the metric's JSON schema, so JSON rarely breaks."""
 
     def __init__(self, model: str, config: dict):
         self.model_id = model
-        self.chat = OllamaChat(
-            model,
-            max_new_tokens=4096,  # a verdict per statement in 5 chunks is long; cut-off JSON is invalid
-            host=config.get("ollama_host"),
-            num_ctx=config["ollama_num_ctx"],
+        self.chat = make_llm(
+            {
+                **config,
+                "llm_model": model,
+                "max_new_tokens": 4096,  # a verdict per statement in 5 chunks is long; cut-off JSON is invalid
+            },
+            role="judge",
         )
 
     def load_model(self):
@@ -90,8 +92,13 @@ class TriadEvaluator:
         "Answer relevance": AnswerRelevancyMetric,
     }
 
-    def __init__(self, judge_model: str | None = None, threshold: float = 0.5):
-        config = load_config()
+    def __init__(
+        self,
+        judge_model: str | None = None,
+        threshold: float = 0.5,
+        config: dict | None = None,
+    ):
+        config = config or load_config()
         self.judge = Judge(judge_model or config["judge_model"], config)
         self.threshold = threshold
 
@@ -125,7 +132,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("question", nargs="+")
     parser.add_argument(
-        "--judge", help="Ollama model for the judge (default: judge_model)"
+        "--judge", help="Hosted model for the judge (default: judge_model)"
     )
     args = parser.parse_args()
 

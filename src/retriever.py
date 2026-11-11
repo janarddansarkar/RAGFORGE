@@ -15,7 +15,12 @@ from functools import cached_property
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
-from models import OllamaChat, make_llm
+from models import (
+    LiteLLMChat,
+    LiteLLMReranker,
+    api_key_for,
+    make_llm,
+)
 from vectorstore import VectorStore, load_config
 
 REWRITE_PROMPT = """Rewrite the question below into a clear, specific search query \
@@ -95,27 +100,29 @@ class Retriever:
 
     # The LLM and reranker are loaded only the first time a pipeline needs them.
     @cached_property
-    def llm(self) -> OllamaChat:
+    def llm(self) -> LiteLLMChat:
         return make_llm(self.config)
 
     @cached_property
-    def reranker(self) -> OllamaChat:
+    def reranker(self) -> LiteLLMChat:
         """The model that scores chunks: it only ever writes a number, so replies are tiny."""
         return make_llm(
             {
                 **self.config,
                 "llm_model": self.config["reranker_model"],
                 "max_new_tokens": 4,
-            }
+            },
+            role="rerank",
         )
 
     @cached_property
-    def cross_encoder(self):
-        """A Hugging Face cross-encoder (reranker_type = "cross_encoder"), downloaded the first
-        time it is used. It reads (question, chunk) together and returns one score per pair."""
-        from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-
-        return HuggingFaceCrossEncoder(model_name=self.config["cross_encoder_model"])
+    def cross_encoder(self) -> LiteLLMReranker:
+        """A hosted rerank API (reranker_type = "cross_encoder", e.g. cohere/rerank-v3.5): it
+        reads (question, chunk) together and returns one score per pair, in one call."""
+        model = self.config["cross_encoder_model"]
+        return LiteLLMReranker(
+            model, api_key_for(self.config, model), self.config.get("usage_tracker")
+        )
 
     # 1. SEARCH ---- the two basic ways to find chunks
     def dense(self, query: str, k: int) -> list[Document]:
@@ -165,7 +172,7 @@ class Retriever:
     def rerank(self, query: str, docs: list[Document], k: int) -> list[Document]:
         """Score every (question, chunk) pair from 0 to 1 and keep the best k. The scorer is
         a cross-encoder (reranker_type = "cross_encoder": one batch, no LLM calls) or, as
-        Ollama has no cross-encoder, a chat model asked for a number. Equal scores keep their
+        an LLM that is asked for a number. Equal scores keep their
         incoming order (sorted() is stable), so ties fall back to the fusion ranking."""
         if not docs:
             return []

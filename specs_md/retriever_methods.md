@@ -97,15 +97,15 @@ In the code this is `Retriever.rrf()` in `src/retriever.py`. It adds up `1 / (rr
 
 ### Definition
 
-Get `fetch_k` candidates from dense search, then a **cross-encoder** (`BAAI/bge-reranker-v2-m3`) scores each (query, chunk) pair and re-orders them. The top `k` are returned. The score is stored in the chunk metadata as `rerank_score`.
+Get `fetch_k` candidates from dense search, then a **reranker** scores each (query, chunk) pair and re-orders them. On `main` the reranker is a hosted chat model that rates each chunk 0-10 (`reranker_type = "llm"`, the default), or a hosted rerank API such as `cohere/rerank-v3.5` that scores all chunks in one call (`reranker_type = "cross_encoder"`). The top `k` are returned. The score is stored in the chunk metadata as `rerank_score`.
 
 ### Why it helps
 
-Dense search compares two separately made vectors. A cross-encoder reads the query and the chunk together, so it judges relevance more accurately. It is too slow to run on every chunk, so it only re-orders the small candidate list.
+Dense search compares two separately made vectors. A reranker reads the query and the chunk together, so it judges relevance more accurately. It is too slow and costly to run on every chunk, so it only re-orders the small candidate list.
 
 ### Weaknesses
 
-- Slower: one model call per candidate.
+- Slower and costlier: with an LLM reranker, one model call per candidate (about 20 per question).
 - It can only re-order what dense search already found. A relevant chunk missing from the 20 candidates cannot be recovered.
 
 ---
@@ -114,7 +114,7 @@ Dense search compares two separately made vectors. A cross-encoder reads the que
 
 ### Definition
 
-Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then rerank them with the cross-encoder. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
+Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then rerank them. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
 
 ### Why it helps
 
@@ -134,8 +134,8 @@ Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then 
 | `dense` | meaning | top k | vector similarity | low |
 | `bm25` | keywords | top k | BM25 score | low |
 | `hybrid` | meaning + keywords | 20 + 20 | RRF rank | medium |
-| `dense_rerank` | meaning | top 20 | cross-encoder | medium-high |
-| `hybrid_rerank` | meaning + keywords | 20 + 20 merged | cross-encoder | high |
+| `dense_rerank` | meaning | top 20 | reranker | medium-high |
+| `hybrid_rerank` | meaning + keywords | 20 + 20 merged | reranker | high |
 
 
 ---

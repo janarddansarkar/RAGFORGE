@@ -81,7 +81,9 @@ def test_the_retry_model_comes_from_config_and_falls_back_to_the_answer_model():
     generator = Generator.__new__(Generator)
     generator.retriever = SimpleNamespace(llm=answer_model)
     generator.config = {"retry_model": "mistral:7b", "llm_model": "gemma3:4b"}
-    with patch("generator.make_llm", lambda config: config["llm_model"]) as _:
+    with patch(
+        "generator.make_llm", lambda config, role="answer": config["llm_model"]
+    ) as _:
         assert generator.retry_llm == "mistral:7b"
 
 

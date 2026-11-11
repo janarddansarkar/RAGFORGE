@@ -24,7 +24,7 @@ BEST_CONFIG_FILE = PROJECT_ROOT / "best_config.json"
 
 
 def load_config() -> dict:
-    """Read config.toml, then lay the settings eval/find_best.py found best on top of it.
+    """Read config.toml, then lay the tuned settings from best_config.json on top of it.
     Folder paths become absolute, relative to the project."""
     with open(PROJECT_ROOT / "config.toml", "rb") as f:
         config = tomllib.load(f)

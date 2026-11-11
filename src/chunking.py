@@ -24,7 +24,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from models import OllamaChat, make_embeddings, make_llm
+from models import LiteLLMChat, make_embeddings, make_llm
 
 
 def chunk_body(chunk: Document) -> str:
@@ -127,7 +127,7 @@ Reply with those sentences only."""
 class ContextualChunker(Chunker):
     """Wraps another chunker and puts an LLM-written context note in front of each chunk."""
 
-    def __init__(self, base: Chunker, llm: OllamaChat, cache_file: Path):
+    def __init__(self, base: Chunker, llm: LiteLLMChat, cache_file: Path):
         self.base = base
         self.llm = llm
         self.cache_file = cache_file
@@ -197,7 +197,7 @@ class ChunkingPipeline:
             )
 
         if config["contextual"]:
-            llm = make_llm(config)
+            llm = make_llm(config, role="notes")
             cache_file = config["vs_dir"] / "context_cache.json"
             chunker = ContextualChunker(chunker, llm, cache_file)
         return cls(chunker, config["data_dir"])

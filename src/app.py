@@ -17,8 +17,19 @@ import streamlit as st
 
 from chunking import chunk_body, chunk_note
 from guardrails import InputBlocked
+from models import api_key_for
+from providers import (
+    COMPONENTS,
+    OFF,
+    PROVIDERS,
+    Component,
+    needed_keys,
+    providers_for,
+    settings_for,
+)
 from rag import REFUSAL, DocumentRAG, Report
-from vectorstore import PROJECT_ROOT, load_config
+from usage import ROLE_NAMES, UsageTracker, summarize
+from vectorstore import PROJECT_ROOT
 from voice import SpeechToText, TextToSpeech
 
 sys.path.insert(0, str(PROJECT_ROOT))  # so the eval/ package can be imported
@@ -26,6 +37,67 @@ st.set_page_config(
     page_title="RAGForge", page_icon="📄", initial_sidebar_state="expanded"
 )
 st.title("RAGForge")
+
+# ---- 0. Bring your own key: pick a provider and a model for every component ----
+# The keys live in this browser session's memory only: never saved to disk, never logged,
+# and never shared with other sessions.
+CUSTOM = "Custom..."
+
+
+def choose(component: Component) -> tuple[str, str]:
+    """A provider and a model for one component: (OFF, "") when it is switched off."""
+    st.markdown(f"**{component.label}**")
+    st.caption(component.help)
+    names = providers_for(component.kind)
+    if component.kind == "speech":
+        names = [OFF, *names]  # voice input is optional
+    default = names.index(component.provider)
+    provider = st.selectbox(
+        "Provider",
+        names,
+        default,
+        key=f"provider_{component.key}",
+        label_visibility="collapsed",
+    )
+    if provider == OFF:
+        return OFF, ""
+    models = list(PROVIDERS[provider].models(component.kind))
+    index = models.index(component.model) if component.model in models else 0
+    model = st.selectbox(
+        "Model",
+        [*models, CUSTOM],
+        index,
+        key=f"model_{component.key}_{provider}",
+        label_visibility="collapsed",
+    )
+    if model == CUSTOM:
+        model = st.text_input("Model name", key=f"custom_{component.key}_{provider}")
+    return provider, model.strip()
+
+
+with st.sidebar:
+    st.header("Models")
+    choices = {component.key: choose(component) for component in COMPONENTS}
+    st.divider()
+    keys = {
+        provider: st.text_input(
+            f"Your {provider} API key", type="password", key=f"key_{provider}"
+        )
+        for provider in needed_keys(choices)
+    }
+    st.caption(
+        "Your keys stay in this session's memory only. Your questions and document text "
+        f"are sent to {', '.join(keys)}, and you pay for the calls. Nothing runs on this machine."
+    )
+    if not all(keys.values()) or not all(
+        model for _, model in choices.values() if _ != OFF
+    ):
+        st.info("Choose a model for every component and enter your API key(s).")
+        st.stop()
+    settings = settings_for(choices, keys)
+    # Counts every model call made with the user's keys, for the whole session.
+    tracker = st.session_state.setdefault("usage", UsageTracker())
+    settings["usage_tracker"] = tracker
 
 # ---- 1. Upload + ingest ----
 uploaded = st.file_uploader(
@@ -35,11 +107,21 @@ uploaded = st.file_uploader(
 )
 
 # A different set of uploads starts fresh: forget the old documents, answer and question.
-files = tuple(file.file_id for file in uploaded)
+# Changing the models does the same: the ingested documents were set up with the old ones.
+files = (*(file.file_id for file in uploaded), repr(settings))
 if files != st.session_state.get("files"):
     if st.session_state.get("rag"):
         st.session_state.rag.close()  # the old conversation's cache goes with it
-    for key in ("rag", "ingested", "messages", "spoken", "heard"):
+    for key in (
+        "rag",
+        "ingested",
+        "messages",
+        "spoken",
+        "heard",
+        "triad",
+        "stt",
+        "ingest_calls",
+    ):
         st.session_state.pop(key, None)
     st.session_state.fresh = st.session_state.get("fresh", 0) + 1  # new recorder, empty
     st.session_state.files = files
@@ -55,10 +137,12 @@ if uploaded and st.button("Ingest"):
             if file.name not in paths:
                 paths[file.name] = Path(folder) / file.name
                 paths[file.name].write_bytes(file.getvalue())
+        ingest_start = tracker.mark()
         with st.spinner(
             "Preparing the vector store (a minute or so the first time)..."
         ):
-            st.session_state.rag = DocumentRAG(list(paths.values()))
+            st.session_state.rag = DocumentRAG(list(paths.values()), settings=settings)
+            st.session_state.ingest_calls = tracker.calls[ingest_start:]
             st.session_state.ingested = ", ".join(paths)
             st.session_state.messages = []
             st.session_state.conversation_id = uuid.uuid4().hex  # ties ratings together
@@ -68,10 +152,19 @@ if rag is None:
     st.info("Upload one or more PDFs and click Ingest to begin.")
     st.stop()
 st.success(f"Ready: {st.session_state.ingested}")
+if st.session_state.get("ingest_calls"):
+    st.caption(
+        "Ingest cost: "
+        + summarize(st.session_state.ingest_calls).describe()
+        + " (chunk notes and embeddings; a document already indexed costs nothing)"
+    )
 
 # ---- 2. Ask (typed or spoken); the chat remembers the last few turns ----
-recording = st.audio_input(
-    "Or ask by voice", key=f"voice_{st.session_state.get('fresh', 0)}"
+turn_start = tracker.mark()  # everything the models do from here is this turn's cost
+recording = (
+    st.audio_input("Or ask by voice", key=f"voice_{st.session_state.get('fresh', 0)}")
+    if rag.config["stt_model"]  # not every provider has speech-to-text
+    else None
 )
 if recording:
     audio = recording.getvalue()
@@ -79,7 +172,10 @@ if recording:
     if digest != st.session_state.get("heard"):  # transcribe each recording once
         with st.spinner("Listening..."):
             if "stt" not in st.session_state:
-                st.session_state.stt = SpeechToText(load_config()["stt_model"])
+                st.session_state.stt = SpeechToText(
+                    rag.config["stt_model"],
+                    api_key_for(rag.config, rag.config["stt_model"]),
+                )
             st.session_state.spoken = st.session_state.stt.transcribe(audio)
         st.session_state.heard = digest
 
@@ -87,13 +183,23 @@ read_aloud = TextToSpeech.available() and st.checkbox("Read answers aloud")
 with st.sidebar:
     st.header("RAG triad")
     st.caption(
-        f"Every answer is scored by {load_config()['judge_model']} (an Ollama model, "
-        "runs on this machine). The scores appear about a minute after the answer."
+        f"Every answer is scored by {rag.config['judge_model']}. "
+        "The scores appear after the answer."
     )
 if st.button("Clear chat"):
     rag.memory.clear()
     st.session_state.messages = []
 messages = st.session_state.setdefault("messages", [])
+
+
+def show_usage(calls: list, title: str) -> None:
+    """The calls, tokens and cost of one turn, with a breakdown by component."""
+    total = summarize(calls)
+    st.caption(f"{title}: {total.describe()}")
+    if total.by_role:
+        with st.expander("Cost breakdown"):
+            for role, part in total.by_role.items():
+                st.markdown(f"- **{ROLE_NAMES.get(role, role)}:** {part.describe()}")
 
 
 def score_turn(question: str, answer: str, chunks: list) -> dict:
@@ -104,7 +210,7 @@ def score_turn(question: str, answer: str, chunks: list) -> dict:
         if "triad" not in st.session_state:
             from eval.rag_triad_eval import TriadEvaluator
 
-            st.session_state.triad = TriadEvaluator()
+            st.session_state.triad = TriadEvaluator(config=rag.config)
         return st.session_state.triad.evaluate(question, answer, chunks)
 
 
@@ -189,10 +295,17 @@ def show_answer(message: dict, index: int, streamed: bool = False) -> None:
         st.write("**Citations:** " + ", ".join(Report.cited(answer, chunks)))
     if "triad" in message:
         show_triad(message["triad"])
+        if message.get("usage_calls") and not streamed:
+            show_usage(message["usage_calls"], "This turn")
     elif not streamed and st.button(
         "Score this answer (RAG triad)", key=f"score_{index}"
     ):
+        scoring_start = tracker.mark()
         message["triad"] = score_turn(message["question"], answer, chunks)
+        message["usage_calls"] = [
+            *message.get("usage_calls", []),
+            *tracker.calls[scoring_start:],
+        ]
         st.rerun()
     with st.expander(f"Top {len(chunks)} chunks (retrieved, then reranked)"):
         for rank, chunk in enumerate(chunks, start=1):
@@ -250,6 +363,8 @@ def answer_turn(question: str, stream, first: str, retry_reasons=None) -> None:
                 entry["triad"] = turn["triad"]
                 rag.generator.cache.save()
         show_triad(turn["triad"])
+        turn["usage_calls"] = tracker.calls[turn_start:]
+        show_usage(turn["usage_calls"], "This turn")
         turn["cache_entry"] = entry
         show_feedback(turn, len(messages) - 1)
 
@@ -294,6 +409,25 @@ def show_score(name: str, value: float | None) -> None:
 
 
 with st.sidebar:
+    st.header("Your usage")
+    session = summarize(tracker.calls)
+    columns = st.columns(3)
+    columns[0].metric("Calls", f"{session.calls:,}")
+    columns[1].metric("Tokens", f"{session.input_tokens + session.output_tokens:,}")
+    columns[2].metric("Cost", f"${session.cost:.4f}")
+    st.caption(
+        f"{session.input_tokens:,} tokens in, {session.output_tokens:,} out, this session"
+        + (
+            f". {session.unpriced} call(s) have no known price and are not in the cost."
+            if session.unpriced
+            else "."
+        )
+        + " Costs are estimates from LiteLLM's price list; your provider's bill is the truth."
+    )
+    with st.expander("By component"):
+        for role, part in session.by_role.items():
+            st.markdown(f"- **{ROLE_NAMES.get(role, role)}:** {part.describe()}")
+    st.divider()
     scored = [m for m in messages if "triad" in m]
     if not scored:
         st.info("Scores appear here after the first answer.")
@@ -311,7 +445,7 @@ with st.sidebar:
             for name in latest["triad"]:
                 show_score(name, average(scored, name))
         st.caption(
-            "0 = bad, 1 = good. A small local judge is noisy: use it as a guide."
+            "0 = bad, 1 = good. A small judge model is noisy: use it as a guide."
         )
 
     # The session's chat history: every question asked since the last Ingest, newest last.

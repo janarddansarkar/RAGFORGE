@@ -1,5 +1,18 @@
 # RAGForge — Production-Grade RAG Pipeline Design
 
+> **Status note (`main` branch).** This document is the original, larger production design. The code in this repo
+> deliberately differs from it:
+>
+> - **Models are hosted, not local.** Every model (LLM, embeddings, reranker, judge, speech-to-text) is a hosted API
+>   called through LiteLLM, and the user brings their own key (OpenAI, Anthropic or Gemini; chosen per component in the
+>   app). Where this design says Ollama, a local cross-encoder or `sentence-transformers`, read "a hosted model".
+> - **Evaluation is the RAG triad only.** There is no golden dataset, no offline retriever or generator evaluation and
+>   no experiment search on `main` (those live on the `offline-eval` branch).
+> - **Storage and deployment are simpler:** Chroma in `./vs` / `./vs_docs`, no Postgres, Redis, MinIO or Docker, and no
+>   user accounts or async worker. The design below is a deferred target, not a description of the code.
+>
+> See `README.md` for what `main` actually does.
+
 ## 1. Purpose and Scope
 
 RAGForge is a small-scale, production-grade Retrieval-Augmented Generation (RAG) system that answers questions over user-uploaded PDFs with:
