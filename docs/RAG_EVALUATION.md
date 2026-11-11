@@ -177,6 +177,19 @@ Read them together:
    - **Near-ties:** a candidate within 0.01 MRR of the best (0.03 answer correctness for the generator) counts as a tie, and the faster one wins.
 2. The winning settings are saved to `best_config.json`.
 3. On `dev`, `load_config()` lays `best_config.json` over `config.toml`, and those settings drive the complete pipeline above: 600 / 90 contextual chunks, `all-minilm`, hybrid search, `mxbai-rerank-base-v1`, `qwen3:14b`, and `mistral:7b` as guard and judge.
+4. The final configuration used in the `dev` pipeline is in the table below. `best_config.json` (written by `find_best.py`) overrides `config.toml` for the settings it contains; everything else comes from `config.toml`.
+
+| Component | Setting | Value | Set by |
+| --- | --- | --- | --- |
+| Chunking | Strategy | Recursive, with an LLM context note added to each chunk | `best_config.json` |
+| Chunking | Chunk size / overlap | 600 / 90 characters | `best_config.json` |
+| Embeddings | Model | `all-minilm` | `best_config.json` |
+| Retriever | Method | `hybrid_rerank`: dense + BM25 fused with RRF | `best_config.json` |
+| Retriever | Candidates / RRF constant | 20 / 60 | `config.toml` |
+| Re-ranker | Model | Cross-encoder `mxbai-rerank-base-v1`, top 5 kept | `best_config.json` |
+| Generator | Model / max new tokens | `qwen3:14b` / 256 | `best_config.json` |
+| Input guard | Model | `mistral:7b` | `config.toml` |
+| Judge (generator eval and RAG triad) | Model | `mistral:7b`, kept different from the generator | `config.toml` |
 
 ## Local models and reproduce
 
