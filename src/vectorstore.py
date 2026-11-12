@@ -1,13 +1,10 @@
-"""Vector store: build the Chroma store in ./vs from the PDFs in ./documents.
+"""Vector store: chunk the PDFs in data_dir and keep their embeddings in a Chroma store (vs_dir).
 
-Run once (and again after adding PDFs or changing the embedding model):
-    uv run python src/vectorstore.py            # build if empty
-    uv run python src/vectorstore.py --rebuild  # wipe and build again
+The collection name includes the chunking settings and the embedding model, so changing either
+builds a new store instead of mixing vectors.
 """
 
-import json
 import re
-import sys
 import tomllib
 from pathlib import Path
 
@@ -20,18 +17,10 @@ from models import make_embeddings
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-BEST_CONFIG_FILE = PROJECT_ROOT / "best_config.json"
-
-
 def load_config() -> dict:
-    """Read config.toml, then lay the tuned settings from best_config.json on top of it.
-    Folder paths become absolute, relative to the project."""
+    """Read config.toml. DocumentRAG adds the folders (data_dir, vs_dir) for each set of documents."""
     with open(PROJECT_ROOT / "config.toml", "rb") as f:
         config = tomllib.load(f)
-    if BEST_CONFIG_FILE.exists():
-        config.update(json.loads(BEST_CONFIG_FILE.read_text())["settings"])
-    config["data_dir"] = PROJECT_ROOT / config["data_dir"]
-    config["vs_dir"] = PROJECT_ROOT / config["vs_dir"]
     return config
 
 
@@ -69,12 +58,10 @@ class VectorStore:
         return str(model) if model else None
 
     # BUILD ---- chunk the PDFs (chunking.py) and store their embeddings in Chroma
-    def build(self, rebuild: bool = False) -> None:
-        if self.count() > 0 and not rebuild:
-            print(f"Store already has {self.count()} chunks. Use --rebuild to redo it.")
+    def build(self) -> None:
+        if self.count() > 0:
+            print(f"Store already has {self.count()} chunks.")
             return
-        if rebuild:
-            self.store.reset_collection()
 
         chunks = self.pipeline.chunks()
         if not chunks:
@@ -86,8 +73,3 @@ class VectorStore:
             f"Indexed {len(chunks)} '{self.pipeline.name}' chunks "
             f"with '{self.config['embedding_model']}' into {self.config['vs_dir']}"
         )
-
-
-# BUILD IT ---- python src/vectorstore.py [--rebuild]
-if __name__ == "__main__":
-    VectorStore().build(rebuild="--rebuild" in sys.argv)

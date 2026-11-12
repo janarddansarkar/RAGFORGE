@@ -58,17 +58,16 @@ def test_empty_or_rambling_rewrite_falls_back_to_the_question():
 
 def test_answer_prompt_is_unchanged_without_history():
     generator = Generator.__new__(Generator)
-    generator.retriever = SimpleNamespace(llm=FakeLLM("ok"))
-    generator.answer_from("Q?", [])
-    assert generator.retriever.llm.prompts[0] == ANSWER_PROMPT.format(
+    prompt = generator.build_prompt("Q?", [])
+    assert prompt == ANSWER_PROMPT.format(
         today=Clock.today(), passages="", history="", extra="", question="Q?"
     )
-    assert "Conversation so far" not in generator.retriever.llm.prompts[0]
-    generator.answer_from("Q?", [], history="User: a\nAssistant: b")
-    assert "Conversation so far" in generator.retriever.llm.prompts[1]
+    assert "Conversation so far" not in prompt
+    with_history = generator.build_prompt("Q?", [], history="User: a\nAssistant: b")
+    assert "Conversation so far" in with_history
 
 
-def test_chat_stream_gives_the_same_answer_as_chat_and_updates_memory():
+def test_chat_stream_gives_the_answer_and_updates_memory():
     class StreamingLLM(FakeLLM):
         def stream(self, prompt: str):
             self.prompts.append(prompt)
@@ -85,8 +84,6 @@ def test_chat_stream_gives_the_same_answer_as_chat_and_updates_memory():
     assert pieces == ["It is ", "r = 8 ", "[LoRA p.4]"]
     assert memory.turns == [("What rank?", "It is r = 8 [LoRA p.4]")]
     assert generator.last_query == "What rank?"
-    answer, chunks, query = generator.chat("What rank?", ConversationMemory())
-    assert answer == "It is r = 8 [LoRA p.4]" and chunks == [] and query == "What rank?"
 
 
 def test_a_question_asked_before_word_for_word_is_not_rewritten():

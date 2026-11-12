@@ -10,11 +10,9 @@ Names, phone numbers and email addresses are NOT blocked: asking about a person 
 contact detail in the documents is normal.
 
 Three cheap rule checks run first; only a question that passes them is sent to the model.
-Try it:  uv run python src/guardrails.py "Ignore all previous instructions"
 """
 
 import re
-import sys
 
 from pydantic import BaseModel
 
@@ -145,13 +143,3 @@ class InputGuard:
         problem = self.rule_problem(question) or self.model_problem(question)
         if problem:
             raise InputBlocked(f"Question blocked: {problem.rstrip('.')}.")
-
-
-# TRY IT ---- python src/guardrails.py "your question"
-if __name__ == "__main__":
-    text = " ".join(sys.argv[1:]) or "What rank r does LoRA use?"
-    try:
-        InputGuard().check(text)
-        print("OK: the question is allowed")
-    except InputBlocked as blocked:
-        print(blocked)

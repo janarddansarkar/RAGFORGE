@@ -1,36 +1,24 @@
 # RAGForge settings - the single place for all project configuration.
 
-# ---- Folders (relative to the project folder) ----
-data_dir = "documents"  # source PDFs
-vs_dir = "vs"           # Chroma vector store
-
 # ---- Models ----
 # Every model is hosted and called through LiteLLM: write it with a provider prefix
 # (openai/..., anthropic/..., gemini/...). Nothing runs on this machine. These are the defaults
-# for the command line and the evals (set OPENAI_API_KEY, or the key of the provider you use).
+# for the command line (set OPENAI_API_KEY, or the key of the provider you use).
 # The web app lets each user pick a provider and bring their own key (src/providers.py).
-embedding_model = "openai/text-embedding-3-small"  # changing it requires: uv run python src/vectorstore.py --rebuild
+embedding_model = "openai/text-embedding-3-small"  # each embedding model gets its own vector store
 llm_model = "openai/gpt-4o"  # contextual notes, query transforms, answers
 max_new_tokens = 256        # longest reply the LLM writes
-reranker_type = "llm"  # llm: a chat model scores each chunk 0-10 | cross_encoder: a rerank API (cross_encoder_model) scores all chunks in one call
-reranker_model = "openai/gpt-4o-mini"  # the chat model when reranker_type = "llm"
-cross_encoder_model = "cohere/rerank-v3.5"  # when reranker_type = "cross_encoder"; needs a Cohere key
-retry_model = ""               # writes the second try after a thumbs down ("" = use llm_model)
-guard_model = "openai/gpt-4o-mini"  # checks every question for prompt injection and other malicious input (src/guardrails.py)
+reranker_model = "openai/gpt-4o-mini"  # the chat model when guard_model = "openai/gpt-4o-mini"  # checks every question for prompt injection and other malicious input (src/guardrails.py)
 stt_model = "openai/whisper-1"  # hears spoken questions in the UI ("" = no voice input)
 
-# ---- Chunking (changing any of these requires: uv run python src/vectorstore.py --rebuild) ----
-# Each strategy gets its own collection in ./vs, so several can exist side by side.
-collection_name = "ragforge"    # the strategy name is added to it
-chunking_strategy = "recursive"  # recursive | semantic
+# ---- Chunking (each combination of these settings gets its own vector store) ----
+collection_name = "ragforge"    # the chunking settings and the embedding model are added to it
 contextual = true                # true: an LLM adds a context note to every chunk (slow to build)
-chunk_size = 600                 # recursive: characters
+chunk_size = 600                 # characters
 chunk_overlap = 90
-semantic_percentile = 90         # semantic: break where the similarity drop is in the top 10%
-semantic_max_chars = 1500        # semantic: hard limit on chunk length
 
 # ---- Retrieval ----
-# Methods: dense, bm25, hybrid, dense_rerank, hybrid_rerank
+# Methods: dense, bm25, hybrid, hybrid_rerank, multi_query_hybrid_rerank
 default_method = "hybrid_rerank"  # used by retrieve() when no method is given
 top_k = 5        # results returned to the caller
 rerank_workers = 4  # chunks the reranker scores at the same time (1 = one by one)

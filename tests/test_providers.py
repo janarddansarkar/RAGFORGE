@@ -18,7 +18,6 @@ def test_each_component_can_use_a_different_provider():
     assert settings["judge_model"] == "gemini/gemini-2.0-flash"
     assert settings["guard_model"] == "openai/gpt-4o-mini"
     assert settings["embedding_model"] == "openai/text-embedding-3-small"
-    assert settings["reranker_type"] == "llm"
     assert settings["api_keys"] == {"openai": "o", "anthropic": "a", "gemini": "g"}
 
 

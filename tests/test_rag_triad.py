@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from eval.rag_triad_eval import Judge
+from triad import Judge
 
 
 class FakeChat:

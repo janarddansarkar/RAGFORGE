@@ -2,12 +2,11 @@
 
     uv run streamlit run src/app.py
 
-It uses DocumentRAG from rag.py (the best settings from best_config.json), so the answer comes
+It uses DocumentRAG from rag.py (the settings from config.toml and the sidebar), so the answer comes
 with its citations and the retrieved + reranked chunks behind it.
 """
 
 import hashlib
-import sys
 import tempfile
 import uuid
 from itertools import chain
@@ -29,10 +28,8 @@ from providers import (
 )
 from rag import REFUSAL, DocumentRAG, Report
 from usage import ROLE_NAMES, UsageTracker, summarize
-from vectorstore import PROJECT_ROOT
-from voice import SpeechToText, TextToSpeech
+from voice import SpeechToText
 
-sys.path.insert(0, str(PROJECT_ROOT))  # so the eval/ package can be imported
 st.set_page_config(
     page_title="RAGForge", page_icon="📄", initial_sidebar_state="expanded"
 )
@@ -179,7 +176,6 @@ if recording:
             st.session_state.spoken = st.session_state.stt.transcribe(audio)
         st.session_state.heard = digest
 
-read_aloud = TextToSpeech.available() and st.checkbox("Read answers aloud")
 with st.sidebar:
     st.header("RAG triad")
     st.caption(
@@ -208,7 +204,7 @@ def score_turn(question: str, answer: str, chunks: list) -> dict:
         "Scoring the answer (context relevance, groundedness, answer relevance)..."
     ):
         if "triad" not in st.session_state:
-            from eval.rag_triad_eval import TriadEvaluator
+            from triad import TriadEvaluator
 
             st.session_state.triad = TriadEvaluator(config=rag.config)
         return st.session_state.triad.evaluate(question, answer, chunks)
@@ -389,12 +385,9 @@ elif question and question.strip():
             first = next(stream, "")  # the guard, the search and the first words
     except InputBlocked as blocked:
         st.warning(str(blocked))
-        question = None  # nothing was asked: no scoring, no reading aloud
+        question = None  # nothing was asked: no scoring
     else:
         answer_turn(question, stream, first)
-
-if read_aloud and question and messages and messages[-1]["role"] == "assistant":
-    st.audio(TextToSpeech().speak(messages[-1]["text"]), autoplay=True)
 
 
 # ---- 4. Sidebar: the triad scores, always in view ----

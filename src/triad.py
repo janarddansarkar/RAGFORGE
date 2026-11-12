@@ -6,24 +6,20 @@
 
 It needs no golden data: give it the question asked, the top-k chunks retrieved and the answer
 generated (the web UI does this after every answer). The judge is a hosted model (judge_model
-in config.toml), so nothing leaves your machine. Judges are noisy; read the scores as a guide.
+in config.toml). Judges are noisy; read the scores as a guide.
 
-Run:  uv run python eval/rag_triad_eval.py "What rank r does LoRA use?" [--judge ID]
-      (asks the question over ./documents with rag_pipeline.py, then scores the answer)
+Run:  uv run python src/triad.py paper.pdf "What rank r does LoRA use?" [--judge ID]
+      (asks the question over the PDF, then scores the answer; set OPENAI_API_KEY or the key of
+      the provider you use)
 """
 
 import argparse
 import json
 import os
-import sys
 from pathlib import Path
 from typing import ClassVar
 
 os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "YES")  # stay local
-
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_DIR / "src"))
-sys.path.insert(0, str(PROJECT_DIR))
 
 from deepeval.metrics import (
     AnswerRelevancyMetric,
@@ -127,23 +123,23 @@ class TriadEvaluator:
         return results
 
 
-# TRY IT ---- python eval/rag_triad_eval.py "your question"
+# TRY IT ---- python src/triad.py paper.pdf "your question"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("pdf", type=Path, help="path to the PDF")
     parser.add_argument("question", nargs="+")
     parser.add_argument(
         "--judge", help="Hosted model for the judge (default: judge_model)"
     )
     args = parser.parse_args()
 
-    from rag_pipeline import RAGPipeline
+    from rag import DocumentRAG
 
     question = " ".join(args.question)
-    pipeline = RAGPipeline()
-    answer, chunks = pipeline.ask(question)
+    rag = DocumentRAG(args.pdf)
+    answer = "".join(rag.ask_stream(question)).strip()
     print(f"\nQ: {question}\nA: {answer}\n")
-    for name, result in (
-        TriadEvaluator(args.judge).evaluate(question, answer, chunks).items()
-    ):
+    judge = TriadEvaluator(args.judge, config=rag.config)
+    for name, result in judge.evaluate(question, answer, rag.last_chunks).items():
         score = "n/a" if result["score"] is None else f"{result['score']:.2f}"
         print(f"{name:18} {score}   {result['reason']}")

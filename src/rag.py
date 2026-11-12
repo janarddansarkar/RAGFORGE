@@ -1,27 +1,19 @@
-"""RAG: ask questions about one or more PDFs. Retrieves the best chunks, answers from them,
-and shows the citations and the top-k chunks.
-
-    uv run python src/rag.py paper.pdf "What rank r does LoRA use?"
-    uv run python src/rag.py paper.pdf                  # no question: ask several, empty line quits
-    uv run python src/rag.py paper.pdf "..." --k 3 --full
+"""RAG: ask questions about one or more PDFs. DocumentRAG retrieves the best chunks and answers from
+them, citing the pages; Report.cited finds the pages an answer cites.
 
 The PDFs are indexed the first time (a minute or so) and reused afterwards: each set of
 documents gets its own store in ./vs_docs, named by a hash of the files, so editing a PDF
-re-indexes it. (The CLI takes one file; DocumentRAG and the web UI take several.)
+re-indexes it. The web UI (src/app.py) is the way to use it.
 """
 
-import argparse
 import hashlib
 import re
 import sys
-import textwrap
 from pathlib import Path
 
 from langchain_core.documents import Document
 
-from chunking import chunk_body
 from generator import Generator
-from guardrails import InputBlocked
 from memory import ConversationMemory
 from vectorstore import PROJECT_ROOT, VectorStore, load_config
 
@@ -86,13 +78,6 @@ class DocumentRAG:
                 staged.write_bytes(data)
         return {**base, "data_dir": folder / "pdf", "vs_dir": folder / "vs"}
 
-    def ask(self, question: str) -> tuple[str, list[Document]]:
-        """The answer and the top-k chunks it was written from. Remembers the last few turns."""
-        answer, chunks, self.last_query = self.generator.chat(
-            question, self.memory, self.method, self.k
-        )
-        return answer, chunks
-
     def ask_stream(self, question: str):
         """Like ask(), but yields the answer piece by piece. Afterwards .last_chunks and
         .last_query hold the chunks and the rewritten query."""
@@ -113,10 +98,7 @@ class DocumentRAG:
 
 
 class Report:
-    """Prints an answer, its citations and the chunks behind it."""
-
-    def __init__(self, full: bool = False):
-        self.full = full
+    """Which pages an answer cites."""
 
     @staticmethod
     def label(chunk: Document) -> str:
@@ -132,51 +114,3 @@ class Report:
             if re.search(re.escape(tag) + r"(?!\d)", answer):
                 found.append(cls.label(chunk))
         return list(dict.fromkeys(found or (cls.label(c) for c in chunks)))
-
-    def show(self, question: str, answer: str, chunks: list[Document]) -> None:
-        print(f"\nQ: {question}\n\nAnswer:\n{textwrap.indent(answer, '  ')}")
-
-        print("\nCitations (the pages the answer cites):")
-        if REFUSAL in answer.lower().replace("\u2019", "'"):
-            print("  none - the document does not answer this question")
-        else:
-            for label in self.cited(answer, chunks):
-                print(f"  - {label}")
-
-        print(f"\nTop {len(chunks)} chunks:")
-        for rank, chunk in enumerate(chunks, start=1):
-            score = chunk.metadata.get("rerank_score")
-            score_text = f"   rerank score {score:.2f}" if score is not None else ""
-            print(f"\n  [{rank}] {self.label(chunk)}{score_text}")
-            text = " ".join(chunk_body(chunk).split())
-            text = text if self.full or len(text) <= 400 else text[:400] + " ..."
-            print(textwrap.indent(textwrap.fill(text, width=88), "      "))
-        print()
-
-
-# RUN IT ---- python src/rag.py paper.pdf "your question"
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("pdf", type=Path, help="path to the PDF")
-    parser.add_argument(
-        "question", nargs="*", help="leave empty to ask several questions"
-    )
-    parser.add_argument("--k", type=int, help="chunks to retrieve (default: top_k)")
-    parser.add_argument("--method", help="retrieval method (default: default_method)")
-    parser.add_argument("--full", action="store_true", help="show whole chunks")
-    args = parser.parse_args()
-
-    rag = DocumentRAG(args.pdf, k=args.k, method=args.method)
-    report = Report(full=args.full)
-
-    def ask_and_show(question: str) -> None:
-        try:
-            report.show(question, *rag.ask(question))
-        except InputBlocked as blocked:
-            print(f"\n{blocked}\n")
-
-    if args.question:
-        ask_and_show(" ".join(args.question))
-    else:
-        while question := input("Question (empty to quit): ").strip():
-            ask_and_show(question)

@@ -1,14 +1,15 @@
 # Retriever Methods for RAG
 
-This document explains the five retrieval methods implemented in `src/retriever.py`, and how they differ from chunking strategies.
+This document explains the retrieval methods implemented in `src/retriever.py`.
 
-The five methods are:
+The four main methods are:
 
 1. Dense (vector) retrieval
 2. BM25 (keyword) retrieval
 3. Hybrid retrieval (dense + BM25 with RRF fusion)
-4. Dense + rerank
-5. Hybrid + rerank
+4. Hybrid + rerank (the default)
+
+The retry after a thumbs down also uses `multi_query_hybrid_rerank`: the same, with the question searched in other phrasings and twice as many candidates.
 
 ---
 
@@ -93,28 +94,11 @@ In the code this is `Retriever.rrf()` in `src/retriever.py`. It adds up `1 / (rr
 
 ---
 
-## 4. Dense + Rerank
+## 4. Hybrid + Rerank
 
 ### Definition
 
-Get `fetch_k` candidates from dense search, then a **reranker** scores each (query, chunk) pair and re-orders them. On `main` the reranker is a hosted chat model that rates each chunk 0-10 (`reranker_type = "llm"`, the default), or a hosted rerank API such as `cohere/rerank-v3.5` that scores all chunks in one call (`reranker_type = "cross_encoder"`). The top `k` are returned. The score is stored in the chunk metadata as `rerank_score`.
-
-### Why it helps
-
-Dense search compares two separately made vectors. A reranker reads the query and the chunk together, so it judges relevance more accurately. It is too slow and costly to run on every chunk, so it only re-orders the small candidate list.
-
-### Weaknesses
-
-- Slower and costlier: with an LLM reranker, one model call per candidate (about 20 per question).
-- It can only re-order what dense search already found. A relevant chunk missing from the 20 candidates cannot be recovered.
-
----
-
-## 5. Hybrid + Rerank
-
-### Definition
-
-Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then rerank them. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
+Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then a **reranker** scores each (query, chunk) pair and re-orders them. The reranker is a hosted chat model (`reranker_model`) that rates each chunk from 0 (unrelated) to 9 (fully answers it), asked in parallel (`rerank_workers`). It costs about `fetch_k` (20) small model calls per question. The score is stored in the chunk metadata as `rerank_score`. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
 
 ### Why it helps
 
@@ -134,8 +118,8 @@ Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then 
 | `dense` | meaning | top k | vector similarity | low |
 | `bm25` | keywords | top k | BM25 score | low |
 | `hybrid` | meaning + keywords | 20 + 20 | RRF rank | medium |
-| `dense_rerank` | meaning | top 20 | reranker | medium-high |
 | `hybrid_rerank` | meaning + keywords | 20 + 20 merged | reranker | high |
+| `multi_query_hybrid_rerank` | the question in 3 more phrasings | 40 + 40 per phrasing, merged | reranker | highest (used for the retry) |
 
 
 ---
@@ -144,11 +128,11 @@ Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then 
 
 ```toml
 default_method = "hybrid_rerank"  # used by retrieve() when no method is given
-methods = ["dense", "bm25", "hybrid", "dense_rerank", "hybrid_rerank"]
 top_k = 5        # results returned to the caller
 fetch_k = 20     # candidates gathered before fusion / reranking
 rrf_k = 60       # RRF constant
-reranker_model = "BAAI/bge-reranker-v2-m3"
+rerank_workers = 4  # chunks the reranker scores at the same time
+reranker_model = "openai/gpt-4o-mini"  # the chat model that scores each chunk
 ```
 
 Usage:

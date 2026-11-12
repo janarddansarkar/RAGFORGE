@@ -4,13 +4,10 @@ __pycache__/
 .env
 .pytest_cache/
 .ruff_cache/
-.ipynb_checkpoints/
 .deepeval/
 vs/
 .DS_Store
 vs_docs/
 my_documents/
-cache/
-.agents/
 .claude/
 test_docs/

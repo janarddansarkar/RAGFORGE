@@ -153,24 +153,6 @@ def test_stream_yields_the_pieces_of_the_reply(monkeypatch):
     assert list(LiteLLMChat("anthropic/m").stream("hi")) == ["Hel", "lo"]
 
 
-def test_cross_encoder_rerank_scores_all_pairs_at_once_and_sorts():
-    from langchain_core.documents import Document
-
-    retriever = Retriever.__new__(Retriever)
-    retriever.config = {"reranker_type": "cross_encoder"}
-    seen = []
-    retriever.__dict__["cross_encoder"] = SimpleNamespace(
-        score=lambda pairs: seen.append(pairs) or [0.2, 0.9, 0.5]
-    )
-    docs = [Document(id=k, page_content=k) for k in "abc"]
-    ranked = retriever.rerank("q", docs, k=2)
-    assert [d.id for d in ranked] == ["b", "c"]
-    assert ranked[0].metadata["rerank_score"] == 0.9
-    assert seen == [
-        [("q", "a"), ("q", "b"), ("q", "c")]
-    ]  # one batch, not one call each
-
-
 # ---- API models through LiteLLM ----
 
 
@@ -227,10 +209,10 @@ def test_litellm_digit_score_falls_back_to_the_written_digit(monkeypatch):
     assert LiteLLMChat("anthropic/x").digit_score("rate it") == 1.0
 
 
-def test_litellm_embeddings_and_reranker(monkeypatch):
+def test_litellm_embeddings(monkeypatch):
     import litellm
 
-    from models import LiteLLMEmbeddings, LiteLLMReranker
+    from models import LiteLLMEmbeddings
 
     monkeypatch.setattr(
         litellm,
@@ -240,15 +222,3 @@ def test_litellm_embeddings_and_reranker(monkeypatch):
         ),
     )
     assert LiteLLMEmbeddings("openai/y").embed_documents(["a", "b"]) == [[1.0, 2.0]] * 2
-
-    monkeypatch.setattr(
-        litellm,
-        "rerank",
-        lambda model, query, documents, api_key=None: SimpleNamespace(
-            results=[
-                {"index": 1, "relevance_score": 0.9},
-                {"index": 0, "relevance_score": 0.1},
-            ]
-        ),
-    )
-    assert LiteLLMReranker("cohere/r").score([("q", "a"), ("q", "b")]) == [0.1, 0.9]

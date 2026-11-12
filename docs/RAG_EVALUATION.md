@@ -10,7 +10,7 @@
 | Groundedness | chunks to answer | Whether the answer's claims contradict the retrieved text (points at the generator) |
 | Answer Relevance | question to answer | Whether the answer addresses the question |
 
-Each score is 0 to 1, with the judge's reasons. They are computed with DeepEval's `ContextualRelevancyMetric`, `FaithfulnessMetric` and `AnswerRelevancyMetric`.
+Each score is 0 to 1, with the judge's reasons. They are computed with **DeepEval**'s `ContextualRelevancyMetric`, `FaithfulnessMetric` and `AnswerRelevancyMetric`, using the hosted judge model you pick (`src/triad.py`). Each metric makes several judge calls per answer, so the triad is a large share of a turn's cost.
 
 ## Where it runs
 
@@ -21,7 +21,7 @@ Each score is 0 to 1, with the judge's reasons. They are computed with DeepEval'
 ```
 
 - **In the web app:** every answer is scored in the background. The three scores appear under the answer with the reasons, and the sidebar shows the latest and the session average.
-- **Command line:** `uv run python eval/rag_triad_eval.py "What rank r does LoRA use?"`
+- **Command line:** `uv run python src/triad.py your.pdf "What rank r does LoRA use?"`
 
 ## Reading the scores
 

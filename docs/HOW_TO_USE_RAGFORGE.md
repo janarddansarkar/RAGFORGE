@@ -5,8 +5,7 @@
 ```bash
 git clone -b main https://github.com/janarddansarkar/RAGFORGE.git
 cd RAGFORGE
-./setup.sh      # installs the Python packages; no model is downloaded
-./run.sh
+uv run streamlit run src/app.py   # installs the Python packages on the first run (no model is downloaded)
 ```
 
 Open http://localhost:8501
@@ -26,21 +25,20 @@ Open http://localhost:8501
 Anthropic is available for chat only (answers, guard, judge, reranker). Embeddings need OpenAI or Gemini, and voice
 input needs OpenAI. Changing a provider or model resets the documents: click Ingest again.
 
-## From the command line
+## Scoring one question from the command line
 
 Set the provider's key first (the defaults use OpenAI):
 
 ```bash
 export OPENAI_API_KEY=...
-uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"
-uv run python eval/rag_triad_eval.py "What rank r does LoRA use?"     # the RAG triad for one question
+uv run python src/triad.py your.pdf "What rank r does LoRA use?"   # answer + RAG triad
 ```
 
 ## Next times
 
 ```bash
 cd RAGFORGE
-./run.sh
+uv run streamlit run src/app.py
 ```
 
 ## Update to the latest version
@@ -48,6 +46,5 @@ cd RAGFORGE
 ```bash
 cd RAGFORGE
 git pull
-./setup.sh
-./run.sh
+uv run streamlit run src/app.py
 ```

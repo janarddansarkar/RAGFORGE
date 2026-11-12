@@ -102,7 +102,6 @@ def settings_for(choices: dict[str, tuple[str, str]], keys: dict[str, str]) -> d
         "retry_model": "",  # a second try uses the answer model
         "guard_model": chosen["guard"],
         "judge_model": chosen["judge"],
-        "reranker_type": "llm",  # a chat model scores each chunk 0-10
         "reranker_model": chosen["reranker"],
         "embedding_model": chosen["embedding"],
         "stt_model": chosen.get("speech", ""),  # "" = no voice input

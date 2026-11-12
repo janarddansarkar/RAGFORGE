@@ -29,8 +29,8 @@ The earlier BYOK work is kept as the tag `byok-snapshot`.
 ```bash
 git clone -b main https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
 # install uv first (https://docs.astral.sh/uv/)
-./setup.sh      # installs the Python packages; no model is downloaded
-./run.sh        # the web app at http://localhost:8501
+uv run streamlit run src/app.py   # installs the Python packages on the first run (no model is
+                                   # downloaded), then starts the web app at http://localhost:8501
 ```
 
 In the web app's sidebar, pick a **provider and a model for each component**, then paste a key for each provider you
@@ -45,13 +45,9 @@ chose. Keys stay in the session's memory only: they are never written to disk or
 | Embeddings | vectors for the search | `text-embedding-3-small`, `-3-large` | not offered | `text-embedding-004`, `gemini-embedding-001` |
 | Voice input (optional) | speech to text | `whisper-1`, `gpt-4o-transcribe` | not offered | not offered |
 
-"Custom..." lets you type any other model name. The defaults are all OpenAI, so one key is enough to start. For the
-command line, set the provider's key as an environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
-`GEMINI_API_KEY`); the defaults in `config.toml` use OpenAI.
-
-```bash
-uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"   # the command line
-```
+"Custom..." lets you type any other model name. The defaults are all OpenAI, so one key is enough to start. The
+defaults in `config.toml` also use OpenAI; for the triad command line, set the provider's key as an environment
+variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`).
 
 Scanned pages need Tesseract (`brew install tesseract`). Everything you send (questions and document text) goes to the
 providers you chose, and you pay for the calls. Building the index adds one model call per chunk for its context note.
@@ -67,12 +63,11 @@ question -> input guard -> (rewrite follow-ups) -> cache check
 
 | file | role |
 |---|---|
-| `src/chunking.py` | PDFs to chunks (recursive or semantic; optional LLM context notes; OCR for scanned pages) |
+| `src/chunking.py` | PDFs to chunks (recursive splitting; optional LLM context notes; OCR for scanned pages) |
 | `src/vectorstore.py` | builds and opens the Chroma store; `load_config()` |
 | `src/retriever.py` | dense, BM25, hybrid, reranked and LLM-assisted retrieval |
 | `src/generator.py` | answers a question from chunks, citing the pages used; the retry after a thumbs down |
-| `src/rag.py` | `DocumentRAG` for PDFs, the citation report and the command line |
-| `src/rag_pipeline.py` | the full pipeline over `documents/` with the tuned settings |
+| `src/rag.py` | `DocumentRAG` for PDFs and the citation helper |
 | `src/app.py` | the Streamlit UI, including the provider and model choices |
 | `src/providers.py` | the providers (OpenAI, Anthropic, Gemini), their models, and the per-component choices |
 | `src/models.py` | the model wrappers: chat, embeddings and rerank through LiteLLM |
@@ -81,24 +76,20 @@ question -> input guard -> (rewrite follow-ups) -> cache check
 | `src/cache.py` | the per-conversation session cache |
 | `src/memory.py` | short-term memory: the last few turns, follow-ups rewritten into standalone questions |
 | `src/clock.py` | today's date for the prompt |
-| `src/voice.py` | speech to text (a hosted API), macOS `say` for reading answers aloud |
-| `eval/rag_triad_eval.py` | the RAG triad, scored with deepeval and a judge model |
-| `config.toml` | all settings (the defaults for the command line) |
-| `best_config.json` | the tuned settings, laid over `config.toml` |
+| `src/voice.py` | speech to text (a hosted API) |
+| `src/triad.py` | the RAG triad, scored with DeepEval and a judge model |
+| `config.toml` | all settings (the defaults when no sidebar choice overrides them) |
 
 ## Settings
 
-`config.toml` holds every setting. `best_config.json` holds the tuned settings and **overrides** the matching `config.toml`
-values, so the pipeline uses them without code changes. Delete that file to go back to `config.toml` alone. In the web
-app, the sidebar's model choices override the model settings for that session.
-`reranker_type` chooses between `llm` (a chat model scoring each chunk 0-10, the default) and `cross_encoder`
-(a rerank API such as `cohere/rerank-v3.5` scoring all chunks in one call).
+`config.toml` holds every setting (chunk size, top-k, the cache, the guard, the default models, ...). In the web app,
+the sidebar's model choices override the model settings for that session. The reranker is an LLM that scores each
+retrieved chunk 0-10 (`reranker_model`).
 
 ## Evaluation
 
-The only evaluation on `main` is the **RAG triad**, scored by a judge model with deepeval. The web app scores every
-answer; `uv run python eval/rag_triad_eval.py "your question"` scores one from the command line. See
-`docs/RAG_EVALUATION.md`.
+The only evaluation on `main` is the **RAG triad**, scored with **DeepEval** and a hosted judge model. The web app scores every answer;
+`uv run python src/triad.py your.pdf "your question"` scores one from the command line. See `docs/RAG_EVALUATION.md`.
 
 ```bash
 uv run pytest                       # unit tests, no API calls
@@ -118,5 +109,3 @@ uv run ruff check .                 # lint
 - Changing a provider or model in the sidebar resets the ingested documents: click Ingest again.
 - `main` has not yet been run against live provider APIs (its tests use fake clients), and deploying it still needs
   HTTPS, a login or rate limit, cleanup of stored uploads, and a container setup.
-- `RAGForge_RAG_Pipeline_Design.md` describes a larger production design (Postgres, Docker, local models) that this repo
-  does not follow; see the note at its top.

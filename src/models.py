@@ -7,7 +7,7 @@ user (config["api_keys"], set by the web UI) or from the provider's environment 
 
 Embeddings and speech-to-text are hosted too, named the same way ("openai/text-embedding-3-small",
 "openai/whisper-1"). Nothing runs on this machine. The reranker is a chat model that scores each
-chunk, or a rerank API such as "cohere/rerank-v3.5".
+chunk.
 
 Everything else calls make_embeddings(config) / make_llm(config).
 An LLM has .model (its name) and .invoke(prompt).content (the reply).
@@ -179,32 +179,6 @@ class LiteLLMChat:
             text = (choice.message.content or "").strip()[:1]
             return int(text) / 9 if text in list("0123456789") else 0.0
         return sum(d * w for d, w in weights.items()) / sum(weights.values()) / 9
-
-
-class LiteLLMReranker:
-    """A hosted rerank API (e.g. cohere/rerank-v3.5). score() matches the cross-encoder's."""
-
-    def __init__(self, model: str, api_key: str | None = None, tracker=None):
-        self.model = model
-        self.api_key = api_key
-        self.tracker = tracker
-
-    def score(self, pairs: list[tuple[str, str]]) -> list[float]:
-        import litellm
-
-        query = pairs[0][0]  # every pair asks the same question
-        reply = litellm.rerank(
-            model=self.model,
-            query=query,
-            documents=[p[1] for p in pairs],
-            api_key=self.api_key,
-        )
-        if self.tracker:
-            self.tracker.record("rerank", self.model, reply, "rerank")
-        scores = [0.0] * len(pairs)
-        for result in reply.results:
-            scores[result["index"]] = float(result["relevance_score"])
-        return scores
 
 
 def make_embeddings(config: dict, role: str = "embeddings") -> Embeddings:

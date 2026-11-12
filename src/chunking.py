@@ -4,11 +4,8 @@ One pipeline is shared by everything that needs chunks:
   - vectorstore.py builds the Chroma store from pipeline.chunks()
   - the Retriever opens the store of the same pipeline (the name picks the collection)
 
-Strategies (config.toml): recursive | semantic. With contextual = true,
-any of them is wrapped so an LLM adds a short context note to every chunk.
-
-Look at the chunks without building the store:
-    uv run python src/chunking.py
+Chunks are split recursively (config.toml). With contextual = true, the chunker is wrapped so an
+LLM adds a short context note to every chunk.
 """
 
 import hashlib
@@ -18,13 +15,11 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-import numpy as np
 import pymupdf
 from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from models import LiteLLMChat, make_embeddings, make_llm
+from models import LiteLLMChat, make_llm
 
 
 def chunk_body(chunk: Document) -> str:
@@ -71,40 +66,6 @@ class RecursiveChunker(Chunker):
 
     def split_page(self, page: Document) -> list[str]:
         return self.splitter.split_text(page.page_content)
-
-
-class SemanticChunker(Chunker):
-    """Start a new chunk where the meaning changes between neighbouring sentences."""
-
-    def __init__(self, embeddings: Embeddings, percentile: int, max_chars: int):
-        self.embeddings = embeddings
-        self.percentile = percentile
-        self.max_chars = max_chars
-
-    @property
-    def name(self) -> str:
-        return f"semantic_p{self.percentile}"
-
-    def split_page(self, page: Document) -> list[str]:
-        sentences = re.split(r"(?<=[.!?])\s+", page.page_content)
-        if len(sentences) < 2:
-            return sentences
-
-        # How different is each sentence from the next? (1 - cosine similarity)
-        vectors = np.array(self.embeddings.embed_documents(sentences))
-        vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
-        distances = 1 - (vectors[:-1] * vectors[1:]).sum(axis=1)
-        threshold = np.percentile(distances, self.percentile)
-
-        chunks, current = [], [sentences[0]]
-        for sentence, distance in zip(sentences[1:], distances):
-            too_long = len(" ".join(current)) + len(sentence) > self.max_chars
-            if distance > threshold or too_long:
-                chunks.append(" ".join(current))
-                current = []
-            current.append(sentence)
-        chunks.append(" ".join(current))
-        return chunks
 
 
 CONTEXT_PROMPT = """<page>
@@ -180,21 +141,9 @@ class ChunkingPipeline:
     @classmethod
     def from_config(cls, config: dict) -> "ChunkingPipeline":
         """Build the pipeline that config.toml describes."""
-        strategy = config["chunking_strategy"]
-        if strategy == "recursive":
-            chunker: Chunker = RecursiveChunker(
-                config["chunk_size"], config["chunk_overlap"]
-            )
-        elif strategy == "semantic":
-            chunker = SemanticChunker(
-                make_embeddings(config),
-                config["semantic_percentile"],
-                config["semantic_max_chars"],
-            )
-        else:
-            raise ValueError(
-                f"Unknown chunking_strategy '{strategy}'. Choose: recursive, semantic"
-            )
+        chunker: Chunker = RecursiveChunker(
+            config["chunk_size"], config["chunk_overlap"]
+        )
 
         if config["contextual"]:
             llm = make_llm(config, role="notes")
@@ -261,19 +210,3 @@ class ChunkingPipeline:
                     )
                 )
         return chunks
-
-
-# LOOK AT THEM ---- python src/chunking.py
-if __name__ == "__main__":
-    from vectorstore import load_config
-
-    pipeline = ChunkingPipeline.from_config(load_config())
-    chunks = pipeline.chunks()
-    sizes = [len(c.page_content) for c in chunks]
-    print(f"strategy: {pipeline.name}")
-    print(
-        f"{len(chunks)} chunks, characters min/avg/max = "
-        f"{min(sizes)}/{sum(sizes) // len(sizes)}/{max(sizes)}"
-    )
-    print(f"\nExample ({chunks[len(chunks) // 2].id}):\n")
-    print(chunks[len(chunks) // 2].page_content)

@@ -1,10 +1,5 @@
-"""Generator: answer a question from the retrieved chunks, citing the pages used.
+"""Generator: answer a question from the retrieved chunks, citing the pages used."""
 
-Build the store first:  uv run python src/vectorstore.py
-Try it:                 uv run python src/generator.py "What rank r does LoRA use?"
-"""
-
-import sys
 from functools import cached_property
 
 from langchain_core.documents import Document
@@ -86,22 +81,6 @@ class Generator:
     @staticmethod
     def label(chunk: Document) -> str:
         return f"{chunk.metadata['source'].removesuffix('.pdf')} p.{chunk.metadata['page']}"
-
-    def answer(self, question: str) -> tuple[str, list[Document]]:
-        """Retrieve chunks, then answer from them. Returns the answer and the chunks."""
-        return self.answer_from(question, self.retriever.retrieve(question))
-
-    def chat(
-        self,
-        question: str,
-        memory: ConversationMemory,
-        method: str | None = None,
-        k: int | None = None,
-    ) -> tuple[str, list[Document], str]:
-        """One turn of a conversation. Returns the answer, the chunks and the query searched.
-        Same as chat_stream(), just waiting for the whole answer."""
-        answer = "".join(self.chat_stream(question, memory, method, k)).strip()
-        return answer, self.last_chunks, self.last_query
 
     def chat_stream(
         self,
@@ -202,20 +181,3 @@ class Generator:
             extra=extra,
             question=question,
         )
-
-    def answer_from(
-        self, question: str, chunks: list[Document], history: str = ""
-    ) -> tuple[str, list[Document]]:
-        """Answer from the given chunks (lets the eval test the generator on its own)."""
-        prompt = self.build_prompt(question, chunks, history)
-        reply = str(self.retriever.llm.invoke(prompt).content).strip()
-        return reply, chunks
-
-
-# TRY IT ---- python src/generator.py "your question"
-if __name__ == "__main__":
-    question = " ".join(sys.argv[1:]) or "What rank r does LoRA use?"
-    generator = Generator()
-    text, chunks = generator.answer(question)
-    sources = ", ".join(generator.label(c) for c in chunks)
-    print(f"Q: {question}\n\n{text}\n\nSources: {sources}")
