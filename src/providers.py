@@ -39,12 +39,12 @@ PROVIDERS = {
             "Google Gemini",
             "gemini",
             chat=(
-                "gemini-2.0-flash",
-                "gemini-2.0-flash-lite",
-                "gemini-2.5-flash",
-                "gemini-2.5-pro",
+                "gemini-3.5-flash",
+                "gemini-3.5-flash-lite",
+                "gemini-3.6-flash",
+                "gemini-3.1-flash-lite",
             ),
-            embeddings=("text-embedding-004", "gemini-embedding-001"),
+            embeddings=("gemini-embedding-001", "gemini-embedding-2"),
         ),
     )
 }

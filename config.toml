@@ -1,5 +1,9 @@
 # RAGForge settings - the single place for all project configuration.
 
+# ---- Folders (relative to the project folder; the app uses its own per upload, the evals use these) ----
+data_dir = "documents"  # source PDFs
+vs_dir = "vs"           # Chroma vector store
+
 # ---- Models ----
 # Every model is hosted and called through LiteLLM: write it with a provider prefix
 # (openai/..., anthropic/..., gemini/...). Nothing runs on this machine. These are the defaults
@@ -8,7 +12,10 @@
 embedding_model = "openai/text-embedding-3-small"  # each embedding model gets its own vector store
 llm_model = "openai/gpt-4o"  # contextual notes, query transforms, answers
 max_new_tokens = 256        # longest reply the LLM writes
-reranker_model = "openai/gpt-4o-mini"  # the chat model when guard_model = "openai/gpt-4o-mini"  # checks every question for prompt injection and other malicious input (src/guardrails.py)
+reranker_model = "openai/gpt-4o-mini"  # the chat model that scores each retrieved chunk 0-10
+retry_model = ""                       # writes the second try after a thumbs down ("" = use llm_model)
+guard_model = "openai/gpt-4o-mini"     # checks every question for prompt injection and other malicious input (src/guardrails.py)
+judge_model = "openai/gpt-4o-mini"     # scores the RAG triad and the golden-dataset evals; keep it different from llm_model, so a model never grades its own answers
 stt_model = "openai/whisper-1"  # hears spoken questions in the UI ("" = no voice input)
 
 # ---- Chunking (each combination of these settings gets its own vector store) ----
@@ -35,3 +42,22 @@ cache_threshold = 0.95   # how alike two questions must be (cosine, 0-1); higher
 
 memory_turns = 3  # chat: how many past question/answer pairs the model remembers
 num_queries = 3  # multi_query: extra phrasings the LLM writes per question
+
+# ---- Reference-based evaluation (eval/retriever_eval.py, eval/generator_eval.py) ----
+golden_file = "golden_data/rag_retriever_golden_dataset_45.json"
+eval_ks = [1, 3, 5, 10]  # Recall@K and HitRate@K
+precision_k = 5          # Precision@K
+methods = ["dense", "bm25", "hybrid", "hybrid_rerank"]  # retrieval methods the retriever eval compares
+compare_methods = ["dense", "bm25", "hybrid_rerank"]    # retrieval methods used to compare chunking
+rerankers = [                    # chat models eval/reranker_compare.py tries as the reranker (each scores a chunk 0-10)
+    "openai/gpt-4o-mini",
+    "openai/gpt-4o",
+]
+
+# Chunking variants for eval/chunking_compare.py. Each one overrides the chunking settings above.
+# Keep this at the end of the file (a TOML array of tables).
+[[chunking_variants]]
+contextual = false
+
+[[chunking_variants]]
+contextual = true

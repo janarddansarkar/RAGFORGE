@@ -22,7 +22,7 @@ dev = [
 [tool.uv]
 package = false  # an app, not a library: nothing is built or installed
 
-# Tests import the project modules from src/.
+# Tests import the project modules (src/ and the project root for eval/ and metrics/).
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = [".", "src"]
 testpaths = ["tests"]

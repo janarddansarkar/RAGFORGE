@@ -38,11 +38,11 @@ chose. Keys stay in the session's memory only: they are never written to disk or
 
 | Component | What it does | OpenAI | Anthropic | Google Gemini |
 |---|---|---|---|---|
-| Answers | answers, retries, chunk notes | `gpt-4o`, `gpt-4o-mini`, `gpt-4.1`, `gpt-4.1-mini` | `claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-5-5` | `gemini-2.0-flash`, `-flash-lite`, `2.5-flash`, `2.5-pro` |
+| Answers | answers, retries, chunk notes | `gpt-4o`, `gpt-4o-mini`, `gpt-4.1`, `gpt-4.1-mini` | `claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-5-5` | `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.1-flash-lite` |
 | Input guard | blocks prompt injection | same chat models | same | same |
 | Judge | scores the RAG triad | same | same | same |
 | Reranker | scores each chunk 0-10 | same | same | same |
-| Embeddings | vectors for the search | `text-embedding-3-small`, `-3-large` | not offered | `text-embedding-004`, `gemini-embedding-001` |
+| Embeddings | vectors for the search | `text-embedding-3-small`, `-3-large` | not offered | `gemini-embedding-001`, `gemini-embedding-2` |
 | Voice input (optional) | speech to text | `whisper-1`, `gpt-4o-transcribe` | not offered | not offered |
 
 "Custom..." lets you type any other model name. The defaults are all OpenAI, so one key is enough to start. The
@@ -90,6 +90,21 @@ retrieved chunk 0-10 (`reranker_model`).
 
 The only evaluation on `main` is the **RAG triad**, scored with **DeepEval** and a hosted judge model. The web app scores every answer;
 `uv run python src/triad.py your.pdf "your question"` scores one from the command line. See `docs/RAG_EVALUATION.md`.
+
+### Reference-based evaluation (golden dataset)
+
+`golden_data/` holds 45 questions over the three papers in `documents/`, each with its source pages and a reference
+answer. `eval/run_provider_eval.py` runs the whole evaluation with one provider's models (the key comes from
+`OPENAI_API_KEY` / `GEMINI_API_KEY` in the environment or `.env`) and saves the numbers, plus the calls, tokens and
+estimated cost, to `eval/results/`. It costs real API money (the index alone adds a context note for every chunk).
+
+```bash
+uv run python eval/run_provider_eval.py openai
+uv run python eval/run_provider_eval.py gemini --limit 10          # a quick, cheaper trial
+uv run python eval/run_provider_eval.py openai --skip-generator    # the retriever eval only
+```
+
+Metric definitions: `specs_md/retriever_eval.md` and `specs_md/generator_eval.md`.
 
 ```bash
 uv run pytest                       # unit tests, no API calls

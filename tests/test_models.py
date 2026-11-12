@@ -222,3 +222,19 @@ def test_litellm_embeddings(monkeypatch):
         ),
     )
     assert LiteLLMEmbeddings("openai/y").embed_documents(["a", "b"]) == [[1.0, 2.0]] * 2
+
+
+def test_gemini_calls_disable_thinking_so_small_token_limits_still_give_a_reply(
+    monkeypatch,
+):
+    import litellm
+
+    sent = {}
+    monkeypatch.setattr(
+        litellm, "completion", lambda **kw: sent.update(kw) or fake_reply()
+    )
+    LiteLLMChat("gemini/gemini-3.5-flash").invoke("x")
+    assert sent["reasoning_effort"] == "disable"
+    sent.clear()
+    LiteLLMChat("openai/gpt-4o").invoke("x")
+    assert "reasoning_effort" not in sent

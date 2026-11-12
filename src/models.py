@@ -101,6 +101,10 @@ class LiteLLMChat:
         litellm.drop_params = (
             True  # skip settings a provider does not support (e.g. logprobs)
         )
+        if self.model.startswith("gemini/"):
+            # Gemini "thinks" first by default, and the thinking uses up the small token limits
+            # (a 256-token answer, a 1-token rerank score), leaving an empty reply.
+            extra.setdefault("reasoning_effort", "disable")
         return litellm.completion(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
@@ -163,7 +167,11 @@ class LiteLLMChat:
         """Ask for one digit (0-9) and return it as 0-1. With logprobs it is the average of the
         digits the model considered, weighted by probability; providers without logprobs
         (Anthropic) give the digit they wrote."""
-        reply = self._complete(prompt, 1, logprobs=True, top_logprobs=10)
+        # Only OpenAI gives token probabilities: Gemini rejects the request and Anthropic ignores it.
+        # Gemini returns nothing for a limit below about 8 tokens, so the others get a few spare.
+        openai = self.model.startswith("openai/")
+        asks = {"logprobs": True, "top_logprobs": 10} if openai else {}
+        reply = self._complete(prompt, 1 if openai else 16, **asks)
         if self.tracker:
             self.tracker.record(self.role, self.model, reply)
         choice = reply.choices[0]

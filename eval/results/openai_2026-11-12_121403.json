@@ -1,0 +1,2708 @@
+{
+  "provider": "openai",
+  "models": {
+    "llm_model": "openai/gpt-4o",
+    "guard_model": "openai/gpt-4o-mini",
+    "judge_model": "openai/gpt-4o-mini",
+    "reranker_model": "openai/gpt-4o-mini",
+    "embedding_model": "openai/text-embedding-3-small"
+  },
+  "limit": null,
+  "stages": {
+    "retriever": {
+      "dense": {
+        "Recall@1": 0.4888888888888889,
+        "Recall@3": 0.7222222222222222,
+        "Recall@5": 0.8222222222222222,
+        "Recall@10": 0.9,
+        "Precision@5": 0.3822222222222223,
+        "MRR": 0.712037037037037,
+        "HitRate@1": 0.5777777777777777,
+        "HitRate@3": 0.8222222222222222,
+        "HitRate@5": 0.8888888888888888,
+        "HitRate@10": 0.9333333333333333
+      },
+      "bm25": {
+        "Recall@1": 0.5666666666666667,
+        "Recall@3": 0.7333333333333333,
+        "Recall@5": 0.8222222222222222,
+        "Recall@10": 0.9333333333333333,
+        "Precision@5": 0.40888888888888886,
+        "MRR": 0.7430158730158729,
+        "HitRate@1": 0.6444444444444445,
+        "HitRate@3": 0.8,
+        "HitRate@5": 0.9111111111111111,
+        "HitRate@10": 0.9777777777777777
+      },
+      "hybrid": {
+        "Recall@1": 0.6222222222222222,
+        "Recall@3": 0.7666666666666667,
+        "Recall@5": 0.8888888888888888,
+        "Recall@10": 0.9222222222222223,
+        "Precision@5": 0.4222222222222222,
+        "MRR": 0.7894444444444444,
+        "HitRate@1": 0.7111111111111111,
+        "HitRate@3": 0.8444444444444444,
+        "HitRate@5": 0.9333333333333333,
+        "HitRate@10": 0.9555555555555556
+      },
+      "hybrid_rerank": {
+        "Recall@1": 0.7222222222222222,
+        "Recall@3": 0.8777777777777778,
+        "Recall@5": 0.9222222222222223,
+        "Recall@10": 0.9555555555555556,
+        "Precision@5": 0.46222222222222226,
+        "MRR": 0.8757407407407407,
+        "HitRate@1": 0.8222222222222222,
+        "HitRate@3": 0.9111111111111111,
+        "HitRate@5": 0.9555555555555556,
+        "HitRate@10": 0.9777777777777777
+      }
+    },
+    "reranker": {
+      "openai/gpt-4o-mini": {
+        "Recall@1": 0.7,
+        "Recall@3": 0.8777777777777778,
+        "Recall@5": 0.9222222222222223,
+        "Recall@10": 0.9555555555555556,
+        "Precision@5": 0.46222222222222226,
+        "MRR": 0.8646296296296296,
+        "HitRate@1": 0.8,
+        "HitRate@3": 0.9111111111111111,
+        "HitRate@5": 0.9555555555555556,
+        "HitRate@10": 0.9777777777777777
+      },
+      "openai/gpt-4o": {
+        "Recall@1": 0.7444444444444445,
+        "Recall@3": 0.8777777777777778,
+        "Recall@5": 0.9111111111111111,
+        "Recall@10": 0.9555555555555556,
+        "Precision@5": 0.4533333333333335,
+        "MRR": 0.885026455026455,
+        "HitRate@1": 0.8444444444444444,
+        "HitRate@3": 0.9111111111111111,
+        "HitRate@5": 0.9333333333333333,
+        "HitRate@10": 0.9777777777777777
+      }
+    },
+    "chunking": {
+      "dense": {
+        "recursive_600_90": {
+          "Recall@1": 0.4666666666666667,
+          "Recall@3": 0.7111111111111111,
+          "Recall@5": 0.8,
+          "Recall@10": 0.9111111111111111,
+          "Precision@5": 0.3244444444444445,
+          "MRR": 0.6715079365079364,
+          "HitRate@1": 0.5333333333333333,
+          "HitRate@3": 0.7777777777777778,
+          "HitRate@5": 0.8666666666666667,
+          "HitRate@10": 0.9333333333333333
+        },
+        "contextual_body_recursive_600_90": {
+          "Recall@1": 0.4888888888888889,
+          "Recall@3": 0.7222222222222222,
+          "Recall@5": 0.8222222222222222,
+          "Recall@10": 0.9,
+          "Precision@5": 0.3822222222222223,
+          "MRR": 0.712037037037037,
+          "HitRate@1": 0.5777777777777777,
+          "HitRate@3": 0.8222222222222222,
+          "HitRate@5": 0.8888888888888888,
+          "HitRate@10": 0.9333333333333333
+        }
+      },
+      "bm25": {
+        "recursive_600_90": {
+          "Recall@1": 0.5222222222222223,
+          "Recall@3": 0.6666666666666666,
+          "Recall@5": 0.7666666666666667,
+          "Recall@10": 0.9222222222222223,
+          "Precision@5": 0.3377777777777778,
+          "MRR": 0.6991622574955907,
+          "HitRate@1": 0.6,
+          "HitRate@3": 0.7333333333333333,
+          "HitRate@5": 0.8222222222222222,
+          "HitRate@10": 0.9777777777777777
+        },
+        "contextual_body_recursive_600_90": {
+          "Recall@1": 0.5666666666666667,
+          "Recall@3": 0.7333333333333333,
+          "Recall@5": 0.8222222222222222,
+          "Recall@10": 0.9333333333333333,
+          "Precision@5": 0.40888888888888886,
+          "MRR": 0.7430158730158729,
+          "HitRate@1": 0.6444444444444445,
+          "HitRate@3": 0.8,
+          "HitRate@5": 0.9111111111111111,
+          "HitRate@10": 0.9777777777777777
+        }
+      },
+      "hybrid_rerank": {
+        "recursive_600_90": {
+          "Recall@1": 0.7333333333333333,
+          "Recall@3": 0.9333333333333333,
+          "Recall@5": 0.9555555555555556,
+          "Recall@10": 0.9888888888888889,
+          "Precision@5": 0.44,
+          "MRR": 0.9074074074074073,
+          "HitRate@1": 0.8444444444444444,
+          "HitRate@3": 0.9777777777777777,
+          "HitRate@5": 0.9777777777777777,
+          "HitRate@10": 1.0
+        },
+        "contextual_body_recursive_600_90": {
+          "Recall@1": 0.7111111111111111,
+          "Recall@3": 0.8666666666666667,
+          "Recall@5": 0.9222222222222223,
+          "Recall@10": 0.9555555555555556,
+          "Precision@5": 0.4666666666666667,
+          "MRR": 0.8657407407407406,
+          "HitRate@1": 0.8,
+          "HitRate@3": 0.9111111111111111,
+          "HitRate@5": 0.9555555555555556,
+          "HitRate@10": 0.9777777777777777
+        }
+      }
+    },
+    "generator": {
+      "generator": "openai/gpt-4o",
+      "judge": "openai/gpt-4o-mini",
+      "context": "retrieved",
+      "settings": {
+        "embedding_model": "openai/text-embedding-3-small",
+        "reranker_model": "openai/gpt-4o-mini",
+        "default_method": "hybrid_rerank",
+        "top_k": 5,
+        "contextual": true,
+        "max_new_tokens": 256
+      },
+      "questions": 45,
+      "average": {
+        "faithfulness": 0.7111111111111111,
+        "answer_relevancy": 0.8411407812986593,
+        "answer_correctness": 0.9777777777777777,
+        "semantic_similarity": 0.7067885068525845,
+        "context_recall": 0.9222222222222223,
+        "seconds_per_answer": 18.86732050542226
+      },
+      "rows": [
+        {
+          "id": "L01",
+          "question": "What problem does LoRA aim to solve?",
+          "answer": "LoRA aims to solve the problem of reducing the size and computational cost of model fine-tuning while maintaining high model quality and enabling quick task-switching. [LoRA p.5] [LoRA p.12]",
+          "reference": "LoRA addresses the cost of full fine-tuning of large pretrained language models by reducing the number of trainable parameters and memory required for downstream adaptation.",
+          "seconds": 5.359490916000141,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.6664449446046833,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8135087757970976,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L02",
+          "question": "What does LoRA do to the pretrained model weights during adaptation?",
+          "answer": "LoRA keeps the pretrained model weights frozen during adaptation. [LoRA p.1] [LoRA p.2] [QLoRA p.3]",
+          "reference": "LoRA freezes the pretrained weights and learns low-rank matrices that represent the change to those weights.",
+          "seconds": 5.462882666999576,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.81688101777614,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7594965609842149,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L03",
+          "question": "How is the LoRA weight update parameterized?",
+          "answer": "The LoRA weight update is parameterized by a low-rank decomposition \\( W_0 + \\Delta W = W_0 + BA \\), where \\( B \\in \\mathbb{R}^{d \\times r} \\) and \\( A \\in \\mathbb{R}^{r \\times k} \\), with the rank \\( r \\) being much smaller than the minimum of \\( d \\) and \\( k \\). [LoRA p.4]",
+          "reference": "For a pretrained matrix W0 \u2208 R^(d\u00d7k), LoRA represents the update as \u0394W = BA, where B \u2208 R^(d\u00d7r), A \u2208 R^(r\u00d7k), and r is much smaller than min(d,k).",
+          "seconds": 5.592749749999712,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9218675543219874,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8008840100780329,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L04",
+          "question": "What is the modified forward pass in LoRA?",
+          "answer": "The modified forward pass in LoRA is \\( h = W_0x + \\Delta Wx = W_0x + BAx \\). [LoRA p.4]",
+          "reference": "The forward pass becomes h = W0x + BAx, with the pretrained path and low-rank update applied to the same input and their outputs summed.",
+          "seconds": 5.327277540999603,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9141888611102039,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6892534632623132,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L05",
+          "question": "How are LoRA matrices initialized?",
+          "answer": "I can't find that in the documents.",
+          "reference": "A is initialized with a random Gaussian distribution, while B is initialized to zero, so the initial LoRA update BA is zero.",
+          "seconds": 5.528388375000759,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.18777712218602938,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.07288710928494391,
+          "context_recall": 0.0
+        },
+        {
+          "id": "L06",
+          "question": "Why does LoRA scale the update by \u03b1/r?",
+          "answer": "LoRA scales the update by \u03b1/r to reduce the need to retune hyperparameters when varying the rank r, as tuning \u03b1 is roughly equivalent to tuning the learning rate if the initialization is scaled appropriately. [LoRA p.4]",
+          "reference": "The update \u0394Wx is scaled by \u03b1/r; the paper notes that with Adam, tuning \u03b1 is roughly equivalent to tuning the learning rate when initialization is scaled appropriately, and setting \u03b1 to the first tried rank reduces hyperparameter retuning when r changes.",
+          "seconds": 5.424599167000451,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.5536267383752885,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6810235689140907,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L07",
+          "question": "How does LoRA avoid additional inference latency?",
+          "answer": "LoRA avoids additional inference latency by merging the trainable matrices with the frozen weights when deployed, allowing inference to be performed as usual without introducing latency compared to a fully fine-tuned model. [LoRA p.2]",
+          "reference": "The trained matrices can be merged into the pretrained weights as W = W0 + BA, after which inference proceeds normally with the merged weight matrix.",
+          "seconds": 5.2248353750001115,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8939292443732798,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5646132052772072,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L08",
+          "question": "Which Transformer matrices did the LoRA experiments adapt?",
+          "answer": "The LoRA experiments adapted the Transformer matrices Wq, Wk, Wv, and Wo. [LoRA p.5]",
+          "reference": "The study focused on the attention weights Wq, Wk, Wv, and Wo, while freezing the MLP modules for simplicity and parameter efficiency.",
+          "seconds": 5.424280125000223,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.815851550126379,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5381399170454255,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L09",
+          "question": "What memory reduction did LoRA report for GPT-3 175B training?",
+          "answer": "LoRA reported a reduction in VRAM consumption during GPT-3 175B training from 1.2TB to 350GB. [LoRA p.5]",
+          "reference": "For GPT-3 175B, LoRA reduced VRAM consumption during training from 1.2 TB to 350 GB.",
+          "seconds": 5.838955708000867,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7624801041640956,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.9197181512438738,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L10",
+          "question": "What checkpoint-size reduction did LoRA report for GPT-3 175B with r=4 on query and value projections?",
+          "answer": "LoRA reported a checkpoint-size reduction from 350GB to 35MB for GPT-3 175B with r=4 on query and value projections. [LoRA p.5]",
+          "reference": "The checkpoint size was reduced by roughly 10,000\u00d7, from about 350 GB to 35 MB.",
+          "seconds": 5.4267666249998,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7996729468955065,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5989268920297492,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L11",
+          "question": "What training speedup did LoRA report for GPT-3 175B?",
+          "answer": "LoRA reported a 25% speedup during training on GPT-3 175B compared to full fine-tuning. [LoRA p.5]",
+          "reference": "The paper reported a 25% training speedup compared with full fine-tuning because gradients did not need to be calculated for most parameters.",
+          "seconds": 5.6308209159997205,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8087089873509739,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6495602850060559,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L12",
+          "question": "How many trainable parameters can LoRA use for GPT-3 175B according to the paper?",
+          "answer": "LoRA can use 4.7 million or 37.7 million trainable parameters for GPT-3 175B according to the paper. [LoRA p.8]",
+          "reference": "The paper states that the number of trainable parameters can be as small as 0.01% of the pretrained model parameters.",
+          "seconds": 5.529205207999439,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9125329468393328,
+          "answer_correctness": 0.5,
+          "semantic_similarity": 0.4997509493388617,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L13",
+          "question": "What is the main deployment advantage of using one shared pretrained model with multiple LoRA modules?",
+          "answer": "The main deployment advantage of using one shared pretrained model with multiple LoRA modules is the ability to switch between tasks at a much lower cost by only swapping the LoRA weights instead of all the parameters, allowing for the creation of many customized models that can be swapped in and out on the fly. [LoRA p.5]",
+          "reference": "A single pretrained model can be shared across tasks while small task-specific LoRA matrices are swapped to switch tasks, greatly reducing storage and task-switching overhead.",
+          "seconds": 5.426730749999479,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9763471872169882,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7916747341814663,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L14",
+          "question": "How does LoRA relate to full fine-tuning as the rank increases?",
+          "answer": "As the rank increases, training LoRA roughly converges to the expressiveness of full fine-tuning by setting the LoRA rank to the rank of the pre-trained weight matrices. [LoRA p.4]",
+          "reference": "When LoRA is applied to all weight matrices and biases are trained, increasing the rank up to the rank of the pretrained matrices roughly recovers the expressive power of full fine-tuning.",
+          "seconds": 4.984941624999919,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8765520662601934,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.869372950108483,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L15",
+          "question": "Why can LoRA reduce optimizer memory during training?",
+          "answer": "LoRA reduces optimizer memory during training because it freezes most parameters and only optimizes the injected parameters, eliminating the need to calculate gradients or maintain optimizer states for the majority of parameters. [LoRA p.2]",
+          "reference": "Because the pretrained parameters are frozen, gradients and optimizer states do not need to be maintained for most parameters; optimization is concentrated on the much smaller low-rank matrices.",
+          "seconds": 5.355862415999582,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9677727588178471,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6126561268915932,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q01",
+          "question": "What is QLoRA?",
+          "answer": "QLoRA is a method that replicates 16-bit full finetuning performance using a 4-bit base model and Low-rank Adapters (LoRA), significantly reducing the required memory for finetuning models. [QLoRA p.15]",
+          "reference": "QLoRA is an efficient fine-tuning method that backpropagates through a frozen 4-bit quantized pretrained language model into trainable Low-Rank Adapters.",
+          "seconds": 5.325116291000086,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8239521567256602,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.833251990896434,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q02",
+          "question": "What memory target does QLoRA report for fine-tuning a 65B model?",
+          "answer": "QLoRA reports a memory target of less than 48 GB for fine-tuning a 65B model. [QLoRA p.2]",
+          "reference": "QLoRA reduces the average memory requirement for fine-tuning a 65B-parameter model from more than 780 GB to less than 48 GB, enabling training on a single 48 GB GPU.",
+          "seconds": 5.6311479999994845,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8532854378280776,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.82660306710647,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q03",
+          "question": "What are the three main memory-saving innovations introduced in QLoRA?",
+          "answer": "The three main memory-saving innovations introduced in QLoRA are: 4-bit NormalFloat, Double Quantization, and Paged Optimizers. [QLoRA p.2] [QLoRA p.1]",
+          "reference": "They are 4-bit NormalFloat (NF4), Double Quantization, and Paged Optimizers.",
+          "seconds": 5.119105499999932,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.971709197954143,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6334816092902353,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q04",
+          "question": "Why is NF4 designed for normally distributed weights?",
+          "answer": "NF4 is designed for normally distributed weights because it is information theoretically optimal for zero-mean normal distributions with arbitrary standard deviations, allowing weights to be normalized into a fixed range, which optimizes memory usage without sacrificing performance. [QLoRA p.1] [QLoRA p.4]",
+          "reference": "Pretrained neural-network weights are usually approximately zero-centered and normally distributed, so NF4 is constructed as an information-theoretically optimal quantization data type for that distribution.",
+          "seconds": 5.939275708000423,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8218581494034494,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7515651608545146,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q05",
+          "question": "What is Double Quantization in QLoRA?",
+          "answer": "Double Quantization in QLoRA is the process of quantizing the quantization constants for additional memory savings. It involves treating the quantization constants of the first quantization as inputs to a second quantization, yielding quantized quantization constants and a second level of quantization constants. This second quantization uses 8-bit floats with a blocksize of 256. [QLoRA p.5]",
+          "reference": "Double Quantization quantizes the quantization constants from the first quantization step, reducing the memory overhead of storing those constants.",
+          "seconds": 5.938138667000203,
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6894889784158784,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q06",
+          "question": "How much memory does Double Quantization save per parameter in the paper's example?",
+          "answer": "Double Quantization saves 0.373 bits per parameter in the paper's example. [QLoRA p.5]",
+          "reference": "With a block size of 64, it reduces quantization-constant overhead from 0.5 bits per parameter to 0.127 bits, a reduction of about 0.373 bits per parameter.",
+          "seconds": 5.323895957999412,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.894743929502041,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7184050388092612,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q07",
+          "question": "What problem do Paged Optimizers address?",
+          "answer": "Paged Optimizers address the problem of memory spikes during gradient checkpointing, which can cause out-of-memory errors when fine-tuning large models on a single machine. [QLoRA p.4]",
+          "reference": "They handle occasional GPU memory exhaustion, especially memory spikes during gradient checkpointing, by using NVIDIA unified memory to page optimizer states between GPU memory and CPU RAM.",
+          "seconds": 5.222197124999184,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.6881899336197117,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6505900300741411,
+          "context_recall": 0.0
+        },
+        {
+          "id": "Q08",
+          "question": "What are QLoRA's storage and computation data types in the typical setup?",
+          "answer": "QLoRA's storage data type is typically 4-bit NormalFloat, and its computation data type is 16-bit BrainFloat. [QLoRA p.4] [QLoRA p.5]",
+          "reference": "The model is stored in a low-precision 4-bit format, typically NF4, while computation is performed in BFloat16 after dequantization.",
+          "seconds": 5.631591458999537,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9409850640777054,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5685495414266832,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q09",
+          "question": "Which parameters receive weight gradients during QLoRA training?",
+          "answer": "The LoRA parameters receive weight gradients during QLoRA training. [QLoRA p.5]",
+          "reference": "Only the LoRA adapter parameters receive weight gradients; the 4-bit base-model weights remain frozen.",
+          "seconds": 5.4270886660006,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7793647101305802,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7336934818911953,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q10",
+          "question": "What block sizes does the paper use for NF4 weights and the second-level quantization constants?",
+          "answer": "The paper uses a block size of 64 for NF4 weights and a block size of 256 for the second-level quantization constants. [QLoRA p.5]",
+          "reference": "It uses a block size of 64 for the model weights and 256 for the second-level quantization constants.",
+          "seconds": 5.938724083999659,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9764712689769361,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7904370529158784,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q11",
+          "question": "What did the QLoRA experiments find about NF4 with Double Quantization versus 16-bit methods?",
+          "answer": "The QLoRA experiments found that NF4 with double quantization fully recovers the 16-bit LoRA MMLU performance and matches 16-bit full finetuning and 16-bit LoRA finetuning performance on academic benchmarks. [QLoRA p.7]",
+          "reference": "Across the reported academic benchmarks, 4-bit QLoRA with NF4 and Double Quantization matched the performance of 16-bit full fine-tuning and 16-bit LoRA fine-tuning.",
+          "seconds": 5.323662332999447,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8778412333867696,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8899209819805177,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q12",
+          "question": "How did NF4 compare with FP4 in the MMLU experiments?",
+          "answer": "In the MMLU experiments, NF4 with double quantization matched the performance of BFloat16, while FP4 was consistently one percentage point behind both NF4 and BFloat16. [QLoRA p.8]",
+          "reference": "NF4 with Double Quantization matched BFloat16 performance, while FP4 was consistently about one percentage point behind both in the reported MMLU results.",
+          "seconds": 5.939126874999602,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7884803857890663,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8967072017995711,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q13",
+          "question": "What did the paper find about dataset quality versus dataset size?",
+          "answer": "The paper found that dataset quality is far more important than dataset size for both MMLU performance and chatbot performance. [QLoRA p.2] [QLoRA p.24]",
+          "reference": "The authors found that data quality was more important than dataset size; for example, a 9k-sample OASST1 dataset outperformed a 450k-sample subsampled FLAN v2 dataset on chatbot performance.",
+          "seconds": 5.64931016599985,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6165328913733094,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7198063977128679,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q14",
+          "question": "What is Guanaco and what result did the largest model achieve on the Vicuna benchmark?",
+          "answer": "Guanaco is a model that offers performance competitive to ChatGPT, and the largest model, Guanaco 65B, achieved 99.3% performance relative to ChatGPT on the Vicuna benchmark. [QLoRA p.9]",
+          "reference": "Guanaco is the QLoRA-trained model family. The largest model reached 99.3% of the performance level of ChatGPT on the Vicuna benchmark after 24 hours of fine-tuning on a single professional GPU.",
+          "seconds": 5.368601208000655,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.6943887500580767,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.87616909589137,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q15",
+          "question": "What loss and training approach did the QLoRA experiments use?",
+          "answer": "The QLoRA experiments used cross-entropy loss and a supervised learning approach for finetuning. [QLoRA p.8]",
+          "reference": "They used cross-entropy loss with supervised learning and did not use reinforcement learning, even for datasets containing human judgments of responses.",
+          "seconds": 5.466153625000516,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7945235425229001,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5949783328770469,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A01",
+          "question": "What is the main architectural idea proposed in Attention Is All You Need?",
+          "answer": "The main architectural idea proposed in \"Attention Is All You Need\" is the Transformer, a network architecture based solely on attention mechanisms, eliminating the need for recurrence and convolutions. [Attention is all you need  p.1]",
+          "reference": "The Transformer is a sequence transduction architecture based entirely on attention mechanisms, dispensing with recurrence and convolution.",
+          "seconds": 5.529222707999907,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9828995428394436,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7444196956175975,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A02",
+          "question": "How many identical layers are used in the Transformer encoder and what are its two sub-layers?",
+          "answer": "The Transformer encoder uses a stack of 6 identical layers, and each layer has two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network. [Attention is all you need  p.3]",
+          "reference": "The encoder has N=6 identical layers; each layer contains multi-head self-attention followed by a position-wise fully connected feed-forward network.",
+          "seconds": 5.528815375000704,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7094000128122018,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8185213146893857,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A03",
+          "question": "How does the Transformer decoder differ from the encoder?",
+          "answer": "The Transformer decoder differs from the encoder by having an additional third sub-layer in each of its layers, which performs multi-head attention over the encoder's output, and by using masking in the self-attention sub-layer to prevent positions from attending to subsequent positions. [Attention is all you need  p.3] [Attention is all you need  p.5]",
+          "reference": "The decoder also has 6 layers, but each layer adds a third sub-layer for multi-head attention over the encoder output; its self-attention is masked so a position cannot attend to subsequent positions.",
+          "seconds": 5.63156812500074,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9322739810206458,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8384188302522676,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A04",
+          "question": "What is the formula for scaled dot-product attention?",
+          "answer": "The formula for scaled dot-product attention is: Attention(Q, K, V) = softmax(QK^T / \u221adk)V. [Attention is all you need  p.4]",
+          "reference": "Attention(Q,K,V) = softmax(QK^T / \u221ad_k)V.",
+          "seconds": 5.2219569170001705,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9999999999999999,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7621095785065668,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A05",
+          "question": "Why does the Transformer scale the dot products in attention by 1/\u221ad_k?",
+          "answer": "The Transformer scales the dot products in attention by \\(1/\\sqrt{d_k}\\) to prevent the softmax function from entering regions with extremely small gradients, which can occur when the dot products grow large in magnitude. [Attention is all you need  p.4]",
+          "reference": "For large d_k, dot products can become large and push softmax into regions with very small gradients. Scaling by 1/\u221ad_k counteracts this effect.",
+          "seconds": 5.425747207999848,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9839559788690629,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7030674502781754,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A06",
+          "question": "How many attention heads does the Transformer base configuration use, and what are d_k and d_v?",
+          "answer": "The Transformer base configuration uses 8 attention heads, with \\(d_k = 64\\) and \\(d_v = 64\\). [Attention is all you need  p.5]",
+          "reference": "It uses 8 parallel attention heads, with d_k = d_v = d_model/8 = 64 because d_model is 512.",
+          "seconds": 5.939308582999729,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7047991793296571,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7177837565738072,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A07",
+          "question": "What are the three ways multi-head attention is used in the Transformer?",
+          "answer": "The three ways multi-head attention is used in the Transformer are: encoder-decoder attention layers, self-attention within the encoder, and self-attention within the decoder. [Attention is all you need  p.5]",
+          "reference": "It is used for encoder-decoder attention, encoder self-attention, and masked decoder self-attention.",
+          "seconds": 4.914197250000143,
+          "faithfulness": 0.0,
+          "answer_relevancy": 0.9450553620927415,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7137170839402444,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A08",
+          "question": "What is the structure and dimensionality of the position-wise feed-forward network?",
+          "answer": "The position-wise feed-forward network consists of two linear transformations with a ReLU activation in between, and it has an input and output dimensionality of 512, with an inner-layer dimensionality of 2048. [Attention is all you need  p.5]",
+          "reference": "It applies two linear transformations with a ReLU activation between them. The input and output dimension is d_model=512 and the inner dimension is d_ff=2048.",
+          "seconds": 5.32501504100037,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7916537958397137,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.689292669027352,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A09",
+          "question": "Why are positional encodings needed in the Transformer?",
+          "answer": "Positional encodings are needed in the Transformer because the model contains no recurrence or convolution, so they provide information about the order of the sequence, allowing the model to make use of the relative or absolute position of tokens. [Attention is all you need  p.6]",
+          "reference": "Because the Transformer has neither recurrence nor convolution, positional encodings inject information about the relative or absolute positions of tokens.",
+          "seconds": 5.324058500000319,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9814058798035062,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8621194433849889,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A10",
+          "question": "What type of positional encoding did the paper use?",
+          "answer": "The paper used sinusoidal positional encoding. [Attention is all you need  p.6]",
+          "reference": "It used sine and cosine functions of different frequencies, with one sinusoid corresponding to each dimension.",
+          "seconds": 5.01696633300071,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8655640673248838,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.4467933932621752,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A11",
+          "question": "What are the per-layer complexity, sequential operations, and maximum path length of self-attention?",
+          "answer": "The per-layer complexity of self-attention is \\(O(n^2 \\cdot d)\\), the number of sequential operations is \\(O(1)\\), and the maximum path length is \\(O(1)\\). [Attention is all you need  p.6]",
+          "reference": "Self-attention has O(n\u00b2\u00b7d) per-layer complexity, O(1) sequential operations, and O(1) maximum path length.",
+          "seconds": 5.427316416999929,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8910373130497871,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8546423534906907,
+          "context_recall": 0.0
+        },
+        {
+          "id": "A12",
+          "question": "What training datasets were used for WMT 2014 English-German and English-French?",
+          "answer": "The WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs was used for English-German, and the WMT 2014 English-French dataset consisting of 36 million sentences was used for English-French. [Attention is all you need  p.7]",
+          "reference": "English-German used about 4.5 million sentence pairs with a shared BPE vocabulary of about 37,000 tokens. English-French used 36 million sentences with a 32,000 word-piece vocabulary.",
+          "seconds": 606.9430122499998,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8940094017826274,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6991353497635139,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A13",
+          "question": "What optimizer and warmup schedule were used to train the Transformer?",
+          "answer": "The Transformer was trained using the Adam optimizer with a warmup schedule of 4000 steps. [Attention is all you need p.7]",
+          "reference": "The paper used Adam with \u03b21=0.9, \u03b22=0.98, \u03b5=10^-9, and 4000 warmup steps; the learning rate increased linearly during warmup and then decreased proportional to the inverse square root of the step number.",
+          "seconds": 5.833562125000753,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.871099555024897,
+          "answer_correctness": 0.5,
+          "semantic_similarity": 0.6464387015729115,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A14",
+          "question": "What BLEU scores did the Transformer big model achieve on WMT 2014 English-German and English-French?",
+          "answer": "The Transformer big model achieved a BLEU score of 28.4 on WMT 2014 English-to-German and 41.8 on WMT 2014 English-to-French. [Attention is all you need  p.8]",
+          "reference": "It achieved 28.4 BLEU on English-German and 41.8 BLEU on English-French (the abstract and Table 2). The text of Section 6.1 gives 41.0 for English-French, so either 41.8 or 41.0 is accepted for English-French.",
+          "seconds": 6.146246042000712,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9951941125469695,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6871924331075489,
+          "context_recall": 0.5
+        },
+        {
+          "id": "A15",
+          "question": "What regularization methods and settings were used in the Transformer training?",
+          "answer": "The Transformer training used three types of regularization: dropout with a rate of 0.1 for the base model, applied to the output of each sub-layer and the sums of the embeddings and positional encodings; and label smoothing with a value of \u03f5ls = 0.1. [Attention is all you need  p.8] [Attention is all you need  p.7]",
+          "reference": "The paper used residual dropout with P_drop=0.1 for the base model and label smoothing with \u03b5_ls=0.1.",
+          "seconds": 6.041507040999932,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9060262943361719,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5867160935136086,
+          "context_recall": 1.0
+        }
+      ]
+    },
+    "oracle": {
+      "generator": "openai/gpt-4o",
+      "judge": "openai/gpt-4o-mini",
+      "context": "oracle (golden pages)",
+      "settings": {
+        "embedding_model": "openai/text-embedding-3-small",
+        "reranker_model": "openai/gpt-4o-mini",
+        "default_method": "hybrid_rerank",
+        "top_k": 5,
+        "contextual": true,
+        "max_new_tokens": 256
+      },
+      "questions": 45,
+      "average": {
+        "faithfulness": 0.937037037037037,
+        "answer_relevancy": 0.7507216104602803,
+        "answer_correctness": 0.9111111111111111,
+        "semantic_similarity": 0.6310173823437238,
+        "context_recall": 0.9,
+        "seconds_per_answer": 1.0746032787777544
+      },
+      "rows": [
+        {
+          "id": "L01",
+          "question": "What problem does LoRA aim to solve?",
+          "answer": "LoRA aims to solve the problem of the infeasibility of full fine-tuning large language models, like GPT-3 with 175 billion parameters, by reducing the number of trainable parameters and GPU memory requirements while maintaining model quality. [LoRA p.1]",
+          "reference": "LoRA addresses the cost of full fine-tuning of large pretrained language models by reducing the number of trainable parameters and memory required for downstream adaptation.",
+          "seconds": 1.1566672920007477,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6374226182752353,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8214311352958131,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L02",
+          "question": "What does LoRA do to the pretrained model weights during adaptation?",
+          "answer": "LoRA freezes the pretrained model weights during adaptation. [LoRA p.1]",
+          "reference": "LoRA freezes the pretrained weights and learns low-rank matrices that represent the change to those weights.",
+          "seconds": 0.9020958329992936,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9239134209082744,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8079488779012458,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L03",
+          "question": "How is the LoRA weight update parameterized?",
+          "answer": "The LoRA weight update is parameterized using a low-rank decomposition, represented as \\( \\Delta W = BA \\), where \\( B \\in \\mathbb{R}^{d \\times r} \\) and \\( A \\in \\mathbb{R}^{r \\times k} \\), with the rank \\( r \\) being much smaller than the minimum of \\( d \\) and \\( k \\). [LoRA p.4]",
+          "reference": "For a pretrained matrix W0 \u2208 R^(d\u00d7k), LoRA represents the update as \u0394W = BA, where B \u2208 R^(d\u00d7r), A \u2208 R^(r\u00d7k), and r is much smaller than min(d,k).",
+          "seconds": 1.4548176250000324,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9218675543219874,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7861393782632999,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L04",
+          "question": "What is the modified forward pass in LoRA?",
+          "answer": "The modified forward pass in LoRA is \\( h = W_0x + \\Delta Wx = W_0x + BAx \\). [LoRA p.4]",
+          "reference": "The forward pass becomes h = W0x + BAx, with the pretrained path and low-rank update applied to the same input and their outputs summed.",
+          "seconds": 1.0232992499995817,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9141888611102039,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6892534632623132,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L05",
+          "question": "How are LoRA matrices initialized?",
+          "answer": "LoRA matrices are initialized with a random Gaussian initialization for matrix A and zero for matrix B. [LoRA p.4]",
+          "reference": "A is initialized with a random Gaussian distribution, while B is initialized to zero, so the initial LoRA update BA is zero.",
+          "seconds": 1.186066917000062,
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0000000000000002,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8189114670893656,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L06",
+          "question": "Why does LoRA scale the update by \u03b1/r?",
+          "answer": "LoRA scales the update by \u03b1/r to reduce the need to retune hyperparameters when varying the rank r, as tuning \u03b1 is roughly equivalent to tuning the learning rate if the initialization is scaled appropriately. [LoRA p.4]",
+          "reference": "The update \u0394Wx is scaled by \u03b1/r; the paper notes that with Adam, tuning \u03b1 is roughly equivalent to tuning the learning rate when initialization is scaled appropriately, and setting \u03b1 to the first tried rank reduces hyperparameter retuning when r changes.",
+          "seconds": 1.3736642919993756,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.5536306831430821,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6810235689140907,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L07",
+          "question": "How does LoRA avoid additional inference latency?",
+          "answer": "I can't find that in the documents.",
+          "reference": "The trained matrices can be merged into the pretrained weights as W = W0 + BA, after which inference proceeds normally with the merged weight matrix.",
+          "seconds": 0.8198311249998369,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.20974980320827175,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.05076803310194364,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L08",
+          "question": "Which Transformer matrices did the LoRA experiments adapt?",
+          "answer": "The LoRA experiments adapted the query and value projection matrices in the Transformer. [LoRA p.5]",
+          "reference": "The study focused on the attention weights Wq, Wk, Wv, and Wo, while freezing the MLP modules for simplicity and parameter efficiency.",
+          "seconds": 0.821142165999845,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.816937501087093,
+          "answer_correctness": 0.5,
+          "semantic_similarity": 0.3830744104941401,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L09",
+          "question": "What memory reduction did LoRA report for GPT-3 175B training?",
+          "answer": "LoRA reported a reduction in VRAM consumption during GPT-3 175B training from 1.2TB to 350GB. [LoRA p.5]",
+          "reference": "For GPT-3 175B, LoRA reduced VRAM consumption during training from 1.2 TB to 350 GB.",
+          "seconds": 1.1210633749997214,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7624801041640956,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.9197663439899183,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L10",
+          "question": "What checkpoint-size reduction did LoRA report for GPT-3 175B with r=4 on query and value projections?",
+          "answer": "LoRA reported a checkpoint-size reduction from 350GB to 35MB for GPT-3 175B with \\( r = 4 \\) on query and value projections. [LoRA p.5]",
+          "reference": "The checkpoint size was reduced by roughly 10,000\u00d7, from about 350 GB to 35 MB.",
+          "seconds": 1.0252264589998958,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7996729468955065,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5826341568791457,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L11",
+          "question": "What training speedup did LoRA report for GPT-3 175B?",
+          "answer": "LoRA reported a 25% speedup during training on GPT-3 175B compared to full fine-tuning. [LoRA p.5]",
+          "reference": "The paper reported a 25% training speedup compared with full fine-tuning because gradients did not need to be calculated for most parameters.",
+          "seconds": 0.9204752910000025,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8307992440055701,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6495602850060559,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L12",
+          "question": "How many trainable parameters can LoRA use for GPT-3 175B according to the paper?",
+          "answer": "LoRA can use as few as 0.01% of the trainable parameters of GPT-3 175B. [LoRA p.3]",
+          "reference": "The paper states that the number of trainable parameters can be as small as 0.01% of the pretrained model parameters.",
+          "seconds": 0.9094480000003387,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9213832933574673,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5848685467047856,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L13",
+          "question": "What is the main deployment advantage of using one shared pretrained model with multiple LoRA modules?",
+          "answer": "The main deployment advantage of using one shared pretrained model with multiple LoRA modules is that it allows for efficient task switching by replacing matrices A and B, significantly reducing storage requirements and task-switching overhead. [LoRA p.2]",
+          "reference": "A single pretrained model can be shared across tasks while small task-specific LoRA matrices are swapped to switch tasks, greatly reducing storage and task-switching overhead.",
+          "seconds": 1.2396024580002631,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.964856747521384,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8192651687993654,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L14",
+          "question": "How does LoRA relate to full fine-tuning as the rank increases?",
+          "answer": "I can't find that in the documents.",
+          "reference": "When LoRA is applied to all weight matrices and biases are trained, increasing the rank up to the rank of the pretrained matrices roughly recovers the expressive power of full fine-tuning.",
+          "seconds": 0.7673452090002684,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.20421456319242626,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.06535866076598751,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L15",
+          "question": "Why can LoRA reduce optimizer memory during training?",
+          "answer": "LoRA reduces optimizer memory during training because it only optimizes the much smaller low-rank matrices, eliminating the need to calculate gradients or maintain optimizer states for most parameters. [LoRA p.2]",
+          "reference": "Because the pretrained parameters are frozen, gradients and optimizer states do not need to be maintained for most parameters; optimization is concentrated on the much smaller low-rank matrices.",
+          "seconds": 1.0870169170002555,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8999375130337052,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6379833273827304,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q01",
+          "question": "What is QLoRA?",
+          "answer": "QLoRA is an efficient finetuning approach that reduces memory usage enough to finetune a 65 billion parameter model on a single 48GB GPU while preserving full 16-bit finetuning task performance. It backpropagates gradients through a frozen, 4-bit quantized pretrained language model into Low Rank Adapters (LoRA). [QLoRA p.1]",
+          "reference": "QLoRA is an efficient fine-tuning method that backpropagates through a frozen 4-bit quantized pretrained language model into trainable Low-Rank Adapters.",
+          "seconds": 1.3180079169997043,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7668984915337675,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8593099263489161,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q02",
+          "question": "What memory target does QLoRA report for fine-tuning a 65B model?",
+          "answer": "QLoRA reports a memory target of less than 48 GB for fine-tuning a 65B model. [QLoRA p.2]",
+          "reference": "QLoRA reduces the average memory requirement for fine-tuning a 65B-parameter model from more than 780 GB to less than 48 GB, enabling training on a single 48 GB GPU.",
+          "seconds": 0.9208920420005597,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8532854378280776,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.82660306710647,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q03",
+          "question": "What are the three main memory-saving innovations introduced in QLoRA?",
+          "answer": "The three main memory-saving innovations introduced in QLoRA are: (a) 4-bit NormalFloat (NF4), (b) Double Quantization, and (c) Paged Optimizers. [QLoRA p.1]",
+          "reference": "They are 4-bit NormalFloat (NF4), Double Quantization, and Paged Optimizers.",
+          "seconds": 1.12473937499999,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9717253968338139,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6696529835815218,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q04",
+          "question": "Why is NF4 designed for normally distributed weights?",
+          "answer": "I can't find that in the documents.",
+          "reference": "Pretrained neural-network weights are usually approximately zero-centered and normally distributed, so NF4 is constructed as an information-theoretically optimal quantization data type for that distribution.",
+          "seconds": 0.8184729169997809,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.16369128630053317,
+          "answer_correctness": 0.5,
+          "semantic_similarity": 0.0575392160227136,
+          "context_recall": 0.0
+        },
+        {
+          "id": "Q05",
+          "question": "What is Double Quantization in QLoRA?",
+          "answer": "Double Quantization in QLoRA is the process of quantizing the quantization constants for additional memory savings. It involves treating the quantization constants of the first quantization as inputs to a second quantization, which yields quantized quantization constants and a second level of quantization constants. This process reduces the memory footprint per parameter significantly. [QLoRA p.5]",
+          "reference": "Double Quantization quantizes the quantization constants from the first quantization step, reducing the memory overhead of storing those constants.",
+          "seconds": 1.2443725829998584,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9877812162894422,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7072240922368226,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q06",
+          "question": "How much memory does Double Quantization save per parameter in the paper's example?",
+          "answer": "Double Quantization saves 0.373 bits per parameter in the paper's example. [QLoRA p.5]",
+          "reference": "With a block size of 64, it reduces quantization-constant overhead from 0.5 bits per parameter to 0.127 bits, a reduction of about 0.373 bits per parameter.",
+          "seconds": 0.8363116670007003,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.894743929502041,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7184050388092612,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q07",
+          "question": "What problem do Paged Optimizers address?",
+          "answer": "Paged Optimizers address the problem of the GPU occasionally running out of memory by using NVIDIA unified memory to automatically transfer data between the CPU and GPU, similar to regular memory paging between CPU RAM and the disk. [QLoRA p.5]",
+          "reference": "They handle occasional GPU memory exhaustion, especially memory spikes during gradient checkpointing, by using NVIDIA unified memory to page optimizer states between GPU memory and CPU RAM.",
+          "seconds": 1.0383692500008692,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7349716872430881,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7570109350973943,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q08",
+          "question": "What are QLoRA's storage and computation data types in the typical setup?",
+          "answer": "QLoRA's storage data type is typically 4-bit, and the computation data type is usually BFloat16. [QLoRA p.4]",
+          "reference": "The model is stored in a low-precision 4-bit format, typically NF4, while computation is performed in BFloat16 after dequantization.",
+          "seconds": 0.9365448339995055,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9410478539543153,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5909096710249417,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q09",
+          "question": "Which parameters receive weight gradients during QLoRA training?",
+          "answer": "I can't find that in the documents.",
+          "reference": "Only the LoRA adapter parameters receive weight gradients; the 4-bit base-model weights remain frozen.",
+          "seconds": 0.8564971670002706,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.19185059360496504,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.12797298686695546,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q10",
+          "question": "What block sizes does the paper use for NF4 weights and the second-level quantization constants?",
+          "answer": "The paper uses a block size of 64 for NF4 weights and a block size of 256 for the second-level quantization constants. [QLoRA p.5]",
+          "reference": "It uses a block size of 64 for the model weights and 256 for the second-level quantization constants.",
+          "seconds": 1.0270562919995427,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9764803406227565,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7904370529158784,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q11",
+          "question": "What did the QLoRA experiments find about NF4 with Double Quantization versus 16-bit methods?",
+          "answer": "The QLoRA experiments found that NF4 with Double Quantization fully recovers the performance of 16-bit LoRA methods. [QLoRA p.7]",
+          "reference": "Across the reported academic benchmarks, 4-bit QLoRA with NF4 and Double Quantization matched the performance of 16-bit full fine-tuning and 16-bit LoRA fine-tuning.",
+          "seconds": 1.0214039160000539,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.952401181060547,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8502518588150242,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q12",
+          "question": "How did NF4 compare with FP4 in the MMLU experiments?",
+          "answer": "NF4 with double quantization fully recovered the 16-bit LoRA MMLU performance, while QLORA with FP4 lagged behind the 16-bit brain float LoRA baseline by about 1 percentage point. [QLoRA p.7]",
+          "reference": "NF4 with Double Quantization matched BFloat16 performance, while FP4 was consistently about one percentage point behind both in the reported MMLU results.",
+          "seconds": 1.2277500000000146,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.588319695806914,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7778260792814825,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q13",
+          "question": "What did the paper find about dataset quality versus dataset size?",
+          "answer": "I can't find that in the documents.",
+          "reference": "The authors found that data quality was more important than dataset size; for example, a 9k-sample OASST1 dataset outperformed a 450k-sample subsampled FLAN v2 dataset on chatbot performance.",
+          "seconds": 1.0239557499999137,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.1733007852455985,
+          "answer_correctness": 0.0,
+          "semantic_similarity": 0.10681558684647333,
+          "context_recall": 0.0
+        },
+        {
+          "id": "Q14",
+          "question": "What is Guanaco and what result did the largest model achieve on the Vicuna benchmark?",
+          "answer": "Guanaco is a model family that outperforms all previous openly released models on the Vicuna benchmark, achieving 99.3% of the performance level of ChatGPT. [QLoRA p.1]",
+          "reference": "Guanaco is the QLoRA-trained model family. The largest model reached 99.3% of the performance level of ChatGPT on the Vicuna benchmark after 24 hours of fine-tuning on a single professional GPU.",
+          "seconds": 1.024398999999903,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8309959615577254,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8911119595248216,
+          "context_recall": 1.0
+        },
+        {
+          "id": "Q15",
+          "question": "What loss and training approach did the QLoRA experiments use?",
+          "answer": "The QLoRA experiments used cross-entropy loss with supervised learning for finetuning. [QLoRA p.8]",
+          "reference": "They used cross-entropy loss with supervised learning and did not use reinforcement learning, even for datasets containing human judgments of responses.",
+          "seconds": 0.8574794169999223,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7912002125055195,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.5897686319160856,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A01",
+          "question": "What is the main architectural idea proposed in Attention Is All You Need?",
+          "answer": "The main architectural idea proposed in \"Attention Is All You Need\" is the Transformer, a network architecture based solely on attention mechanisms, eliminating the need for recurrence and convolutions. [Attention is all you need  p.1]",
+          "reference": "The Transformer is a sequence transduction architecture based entirely on attention mechanisms, dispensing with recurrence and convolution.",
+          "seconds": 1.2903982090001591,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9828995428394436,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7444047146473878,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A02",
+          "question": "How many identical layers are used in the Transformer encoder and what are its two sub-layers?",
+          "answer": "The Transformer encoder uses 6 identical layers, and each layer has two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network. [Attention is all you need  p.3]",
+          "reference": "The encoder has N=6 identical layers; each layer contains multi-head self-attention followed by a position-wise fully connected feed-forward network.",
+          "seconds": 1.1258675830003995,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7094000128122018,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8425961500067815,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A03",
+          "question": "How does the Transformer decoder differ from the encoder?",
+          "answer": "The Transformer decoder differs from the encoder by having an additional third sub-layer in each layer, which performs multi-head attention over the output of the encoder stack, and by modifying the self-attention sub-layer to prevent positions from attending to subsequent positions. [Attention is all you need  p.3]",
+          "reference": "The decoder also has 6 layers, but each layer adds a third sub-layer for multi-head attention over the encoder output; its self-attention is masked so a position cannot attend to subsequent positions.",
+          "seconds": 1.228415125000538,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9322482658926633,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.83804637064348,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A04",
+          "question": "What is the formula for scaled dot-product attention?",
+          "answer": "The formula for scaled dot-product attention is: \\( \\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V \\). [Attention is all you need  p.4]",
+          "reference": "Attention(Q,K,V) = softmax(QK^T / \u221ad_k)V.",
+          "seconds": 1.0617143330000545,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9999999999999999,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7388607767231609,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A05",
+          "question": "Why does the Transformer scale the dot products in attention by 1/\u221ad_k?",
+          "answer": "The Transformer scales the dot products in attention by \\(1/\\sqrt{d_k}\\) to prevent the dot products from growing large in magnitude, which would push the softmax function into regions with extremely small gradients. [Attention is all you need  p.4]",
+          "reference": "For large d_k, dot products can become large and push softmax into regions with very small gradients. Scaling by 1/\u221ad_k counteracts this effect.",
+          "seconds": 1.7022412500000428,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9839579274936846,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7057094381010682,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A06",
+          "question": "How many attention heads does the Transformer base configuration use, and what are d_k and d_v?",
+          "answer": "The Transformer base configuration uses 8 attention heads, with \\(d_k = 64\\) and \\(d_v = 64\\). [Attention is all you need  p.5]",
+          "reference": "It uses 8 parallel attention heads, with d_k = d_v = d_model/8 = 64 because d_model is 512.",
+          "seconds": 1.331534208999983,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7048244082641285,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7177837565738072,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A07",
+          "question": "What are the three ways multi-head attention is used in the Transformer?",
+          "answer": "The three ways multi-head attention is used in the Transformer are: encoder-decoder attention layers, self-attention layers in the encoder, and self-attention layers in the decoder. [Attention is all you need  p.5]",
+          "reference": "It is used for encoder-decoder attention, encoder self-attention, and masked decoder self-attention.",
+          "seconds": 1.2270249999992302,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.9450553620927415,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7027476413848703,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A08",
+          "question": "What is the structure and dimensionality of the position-wise feed-forward network?",
+          "answer": "The position-wise feed-forward network consists of two linear transformations with a ReLU activation in between. The dimensionality of the input and output is \\(d_{model} = 512\\), and the inner layer has a dimensionality of \\(d_{ff} = 2048\\). [Attention is all you need  p.5]",
+          "reference": "It applies two linear transformations with a ReLU activation between them. The input and output dimension is d_model=512 and the inner dimension is d_ff=2048.",
+          "seconds": 1.4333938749996378,
+          "faithfulness": 0.6666666666666666,
+          "answer_relevancy": 0.7898156032766472,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8042328138639645,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A09",
+          "question": "Why are positional encodings needed in the Transformer?",
+          "answer": "Positional encodings are needed in the Transformer because the model contains no recurrence or convolution, so they are required to provide information about the relative or absolute position of tokens in the sequence. [Attention is all you need  p.6]",
+          "reference": "Because the Transformer has neither recurrence nor convolution, positional encodings inject information about the relative or absolute positions of tokens.",
+          "seconds": 1.3303368749993751,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9814058798035062,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8605895946861365,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A10",
+          "question": "What type of positional encoding did the paper use?",
+          "answer": "The paper used sinusoidal positional encoding. [Attention is all you need  p.6]",
+          "reference": "It used sine and cosine functions of different frequencies, with one sinusoid corresponding to each dimension.",
+          "seconds": 0.7894152919998305,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8655640673248838,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.4467933932621752,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A11",
+          "question": "What are the per-layer complexity, sequential operations, and maximum path length of self-attention?",
+          "answer": "The per-layer complexity of self-attention is \\(O(n^2 \\cdot d)\\), the number of sequential operations is \\(O(1)\\), and the maximum path length is \\(O(1)\\). [Attention is all you need  p.6]",
+          "reference": "Self-attention has O(n\u00b2\u00b7d) per-layer complexity, O(1) sequential operations, and O(1) maximum path length.",
+          "seconds": 1.0368286670000089,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8910373130497871,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8546423534906907,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A12",
+          "question": "What training datasets were used for WMT 2014 English-German and English-French?",
+          "answer": "The training datasets used were the WMT 2014 English-German dataset with about 4.5 million sentence pairs and the WMT 2014 English-French dataset with 36 million sentences. [Attention is all you need  p.7]",
+          "reference": "English-German used about 4.5 million sentence pairs with a shared BPE vocabulary of about 37,000 tokens. English-French used 36 million sentences with a 32,000 word-piece vocabulary.",
+          "seconds": 1.044710957999996,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.5623010080474076,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6336838031997387,
+          "context_recall": 1.0
+        },
+        {
+          "id": "A13",
+          "question": "What optimizer and warmup schedule were used to train the Transformer?",
+          "answer": "I can't find that in the documents.",
+          "reference": "The paper used Adam with \u03b21=0.9, \u03b22=0.98, \u03b5=10^-9, and 4000 warmup steps; the learning rate increased linearly during warmup and then decreased proportional to the inverse square root of the step number.",
+          "seconds": 0.8129069160004292,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.13290911647303738,
+          "answer_correctness": 0.0,
+          "semantic_similarity": 0.07469566007122691,
+          "context_recall": 0.0
+        },
+        {
+          "id": "A14",
+          "question": "What BLEU scores did the Transformer big model achieve on WMT 2014 English-German and English-French?",
+          "answer": "The Transformer big model achieved a BLEU score of 28.4 on the WMT 2014 English-to-German translation task and a BLEU score of 41.8 on the WMT 2014 English-to-French translation task. [Attention is all you need  p.1]",
+          "reference": "It achieved 28.4 BLEU on English-German and 41.8 BLEU on English-French (the abstract and Table 2). The text of Section 6.1 gives 41.0 for English-French, so either 41.8 or 41.0 is accepted for English-French.",
+          "seconds": 1.1258737919997657,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.9732144572373531,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.6940850604429417,
+          "context_recall": 0.5
+        },
+        {
+          "id": "A15",
+          "question": "What regularization methods and settings were used in the Transformer training?",
+          "answer": "I can't find that in the documents.",
+          "reference": "The paper used residual dropout with P_drop=0.1 for the base model and label smoothing with \u03b5_ls=0.1.",
+          "seconds": 0.7324711249993925,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.1480905819917219,
+          "answer_correctness": 0.0,
+          "semantic_similarity": 0.11808476812517979,
+          "context_recall": 0.0
+        }
+      ]
+    },
+    "triad": {
+      "generator": "openai/gpt-4o",
+      "judge": "openai/gpt-4o-mini",
+      "settings": {
+        "embedding_model": "openai/text-embedding-3-small",
+        "reranker_model": "openai/gpt-4o-mini",
+        "default_method": "hybrid_rerank",
+        "top_k": 5,
+        "contextual": true,
+        "max_new_tokens": 256
+      },
+      "questions": 45,
+      "average": {
+        "Context relevance": 0.4093341817720387,
+        "Groundedness": 0.7214814814814815,
+        "Answer relevance": 0.9425925925925925
+      },
+      "judge_failures": {
+        "Context relevance": 0,
+        "Groundedness": 0,
+        "Answer relevance": 0
+      },
+      "rows": [
+        {
+          "id": "L01",
+          "question": "What problem does LoRA aim to solve?",
+          "answer": "LoRA aims to solve the problem of efficiently switching between tasks and reducing storage requirements by allowing the creation of many small modules for different tasks, which can be swapped in and out without needing to fine-tune the entire model. [LoRA p.2]",
+          "pages": [
+            "LoRA.pdf p.12",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.5",
+            "QLoRA.pdf p.3"
+          ],
+          "seconds": 9.526241582999319,
+          "triad": {
+            "Context relevance": {
+              "score": 0.1875,
+              "reason": "The score is 0.19 because the retrieval context fails to address the specific problem LoRA aims to solve, as highlighted by statements like 'The statement does not specify what problem LoRA aims to solve' and 'This statement describes a feature of LoRA but does not address the problem it aims to solve.' The relevant statements provided focus on benefits and features rather than the core issue LoRA is designed to tackle."
+            },
+            "Groundedness": {
+              "score": 0.75,
+              "reason": "The score is 0.75 because the context indicates a significant reduction in size from 350GB to 35MB, yet it does not clearly state that LoRA's purpose is to reduce storage requirements, leading to a slight misalignment in understanding."
+            },
+            "Answer relevance": {
+              "score": 0.6666666666666666,
+              "reason": "The score is 0.67 because the output included a discussion on task switching, which does not directly address the specific problem that LoRA aims to solve. This detracted from the overall relevance, but the remaining content still provided some useful context about LoRA."
+            }
+          }
+        },
+        {
+          "id": "L02",
+          "question": "What does LoRA do to the pretrained model weights during adaptation?",
+          "answer": "LoRA keeps the pretrained model weights frozen during adaptation. [LoRA p.1] [LoRA p.2]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.4",
+            "LoRA.pdf p.6",
+            "QLoRA.pdf p.3"
+          ],
+          "seconds": 5.937581332999798,
+          "triad": {
+            "Context relevance": {
+              "score": 0.6111111111111112,
+              "reason": "The score is 0.61 because while some relevant statements explain that 'LoRA freezes the pretrained model weights and injects trainable rank decomposition matrices into each layer of the Transformer architecture,' many other statements focus on unrelated aspects like the feasibility of full fine-tuning and deployment costs, which detracts from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about LoRA's effect on pretrained model weights without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L03",
+          "question": "How is the LoRA weight update parameterized?",
+          "answer": "The LoRA weight update is parameterized by a low-rank decomposition, represented as \\( W_0 + \\Delta W = W_0 + BA \\), where \\( B \\in \\mathbb{R}^{d \\times r} \\) and \\( A \\in \\mathbb{R}^{r \\times k} \\), with the rank \\( r \\) being much smaller than the minimum of \\( d \\) and \\( k \\). [LoRA p.4]",
+          "pages": [
+            "LoRA.pdf p.4",
+            "LoRA.pdf p.6",
+            "LoRA.pdf p.9",
+            "QLoRA.pdf p.3"
+          ],
+          "seconds": 5.937181250000322,
+          "triad": {
+            "Context relevance": {
+              "score": 0.6,
+              "reason": "The score is 0.60 because while there are relevant statements about LoRA's parameterization, such as 'we constrain its update by representing the latter with a low-rank decomposition W0 + \u2206W = W0 + BA,' many statements discuss unrelated concepts like intrinsic dimension and fine-tuning, which detracts from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about LoRA weight update parameterization without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L04",
+          "question": "What is the modified forward pass in LoRA?",
+          "answer": "The modified forward pass in LoRA is \\( h = W_0x + \\Delta Wx = W_0x + BAx \\). [LoRA p.4]",
+          "pages": [
+            "LoRA.pdf p.12",
+            "LoRA.pdf p.4",
+            "QLoRA.pdf p.3",
+            "QLoRA.pdf p.5"
+          ],
+          "seconds": 5.428704500000094,
+          "triad": {
+            "Context relevance": {
+              "score": 0.2608695652173913,
+              "reason": "The score is 0.26 because while there are some relevant statements like 'For h = W0x, our modi\ufb01ed forward pass yields: h = W0x + \u2206Wx = W0x + BAx,' the majority of the context fails to explain the modified forward pass in LoRA, as seen in reasons such as 'The statement discusses the training process but does not explain what the modified forward pass in LoRA is.' This indicates a significant lack of relevant information."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about the modified forward pass in LoRA without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L05",
+          "question": "How are LoRA matrices initialized?",
+          "answer": "I can't find that in the documents.",
+          "pages": [
+            "LoRA.pdf p.10",
+            "LoRA.pdf p.4",
+            "LoRA.pdf p.5",
+            "LoRA.pdf p.6",
+            "QLoRA.pdf p.6"
+          ],
+          "seconds": 5.138878957999623,
+          "triad": {
+            "Context relevance": {
+              "score": 0.23809523809523808,
+              "reason": "The score is 0.24 because the retrieval context primarily discusses concepts like adapter layers and weight matrices without addressing how LoRA matrices are initialized. For instance, while it mentions 'LoRA adds trainable pairs of rank decomposition matrices,' it does not explain the initialization process, leading to a low relevancy score."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the response completely fails to address the question about LoRA matrices and their initialization, providing no relevant information whatsoever."
+            }
+          }
+        },
+        {
+          "id": "L06",
+          "question": "Why does LoRA scale the update by \u03b1/r?",
+          "answer": "LoRA scales the update by \u03b1/r to reduce the need to retune hyperparameters when varying r, as tuning \u03b1 is roughly equivalent to tuning the learning rate if the initialization is scaled appropriately. [LoRA p.4]",
+          "pages": [
+            "LoRA.pdf p.25",
+            "LoRA.pdf p.4"
+          ],
+          "seconds": 6.1636362079998435,
+          "triad": {
+            "Context relevance": {
+              "score": 0.13636363636363635,
+              "reason": "The score is 0.14 because while there are some relevant statements like 'We then scale \u2206Wx by \u21b5 r.' and 'This scaling helps to reduce the need to retune hyperparameters when we vary r,' the majority of the context fails to address the specific question about why LoRA scales the update by \u03b1/r, as highlighted by multiple irrelevant statements."
+            },
+            "Groundedness": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the actual output incorrectly states that LoRA scales the update by \u03b1/r, while the retrieval context specifies that \u2206Wx is scaled by a constant \u03b1, leading to a significant contradiction."
+            },
+            "Answer relevance": {
+              "score": 0.75,
+              "reason": "The score is 0.75 because the output included an irrelevant statement about initialization scaling that did not address the specific question regarding the scaling of updates by \u03b1/r."
+            }
+          }
+        },
+        {
+          "id": "L07",
+          "question": "How does LoRA avoid additional inference latency?",
+          "answer": "LoRA avoids additional inference latency by allowing the trainable matrices to be merged with the frozen weights when deployed, enabling inference to be performed as usual without any added latency compared to a fully fine-tuned model. [LoRA p.2]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.12",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.4",
+            "LoRA.pdf p.5"
+          ],
+          "seconds": 6.209329999999682,
+          "triad": {
+            "Context relevance": {
+              "score": 0.3,
+              "reason": "The score is 0.30 because while there are relevant statements such as 'Our simple linear design allows us to merge the trainable matrices with the frozen weights when deployed, introducing no inference latency compared to a fully fine-tuned model, by construction,' the majority of the context focuses on unrelated aspects like parameter reduction and architecture details, which do not address the question of how LoRA avoids additional inference latency."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about how LoRA avoids additional inference latency without including any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L08",
+          "question": "Which Transformer matrices did the LoRA experiments adapt?",
+          "answer": "The LoRA experiments adapted the Transformer matrices Wq, Wk, Wv, and Wo. [LoRA p.5]",
+          "pages": [
+            "LoRA.pdf p.10",
+            "LoRA.pdf p.5",
+            "LoRA.pdf p.6"
+          ],
+          "seconds": 5.936342708000666,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5833333333333334,
+              "reason": "The score is 0.58 because while there are relevant statements such as 'we only consider weight matrices in the self-attention module' and 'As mentioned in Section 4.2, we only apply LoRA to Wq and Wv in most experiments for simplicity,' many other statements do not address the question about which Transformer matrices were adapted, leading to a lower relevancy score."
+            },
+            "Groundedness": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the actual output contradicts the retrieval context by implying that all Transformer matrices were adapted, despite the context stating that only attention weights were adjusted."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the input question without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L09",
+          "question": "What memory reduction did LoRA report for GPT-3 175B training?",
+          "answer": "LoRA reported a reduction in VRAM consumption during GPT-3 175B training from 1.2TB to 350GB. [LoRA p.5]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.5",
+            "LoRA.pdf p.9"
+          ],
+          "seconds": 5.646932915999969,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5714285714285714,
+              "reason": "The score is 0.57 because while there are relevant statements such as 'For GPT-3 175B, we reduce the VRAM consumption during training from 1.2TB to 350GB,' many other statements discuss unrelated topics like 'hardware barrier to entry' and 'parameter budget constraint,' which detract from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about memory reduction reported by LoRA for GPT-3 175B training without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L10",
+          "question": "What checkpoint-size reduction did LoRA report for GPT-3 175B with r=4 on query and value projections?",
+          "answer": "LoRA reported a checkpoint-size reduction from 350GB to 35MB for GPT-3 175B with \\( r = 4 \\) on query and value projections. [LoRA p.5]",
+          "pages": [
+            "LoRA.pdf p.5",
+            "LoRA.pdf p.8",
+            "LoRA.pdf p.9"
+          ],
+          "seconds": 5.942894333000368,
+          "triad": {
+            "Context relevance": {
+              "score": 0.23809523809523808,
+              "reason": "The score is 0.24 because while there are some relevant statements like 'On GPT-3 175B, we reduce the VRAM consumption during training from 1.2TB to 350GB' and 'size is reduced by roughly 10,000\u21e5(from 350GB to 35MB)', the majority of the context discusses unrelated topics such as VRAM usage and training efficiency without specifically addressing the checkpoint-size reduction for GPT-3 175B with r=4."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the input question without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L11",
+          "question": "What training speedup did LoRA report for GPT-3 175B?",
+          "answer": "LoRA reported a 25% speedup during training on GPT-3 175B compared to full fine-tuning. [LoRA p.5]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.5",
+            "LoRA.pdf p.8"
+          ],
+          "seconds": 5.508259457999884,
+          "triad": {
+            "Context relevance": {
+              "score": 0.26666666666666666,
+              "reason": "The score is 0.27 because while there is a relevant statement noting 'We observe a 25% speedup during training on GPT-3 175B compared to full fine-tuning,' the majority of the retrieval context contains irrelevant information, such as 'Size is reduced by roughly 10,000\u21e5(from 350GB to 35MB)' and discussions about deployment costs, which do not address the specific training speedup."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about LoRA's reported training speedup for GPT-3 175B without including any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L12",
+          "question": "How many trainable parameters can LoRA use for GPT-3 175B according to the paper?",
+          "answer": "LoRA can use 4.7 million or 37.7 million trainable parameters for GPT-3 175B according to the paper. [LoRA p.8]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.3",
+            "LoRA.pdf p.8"
+          ],
+          "seconds": 6.452450624999983,
+          "triad": {
+            "Context relevance": {
+              "score": 0.2777777777777778,
+              "reason": "The score is 0.28 because while the retrieval context includes relevant statements such as 'GPT-3 (LoRA) can use 4.7M and 37.7M trainable parameters' and 'When the pre-trained model is GPT-3 175B, the number of trainable parameters can be as small as 0.01% of |\u03a60|', the majority of the context is irrelevant, discussing topics like efficiency and deployment challenges instead of directly answering the question about trainable parameters."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the output included an incorrect number of trainable parameters for LoRA with GPT-3 175B, which detracted from its relevance. However, it still addressed the main question, just not accurately."
+            }
+          }
+        },
+        {
+          "id": "L13",
+          "question": "What is the main deployment advantage of using one shared pretrained model with multiple LoRA modules?",
+          "answer": "The main deployment advantage of using one shared pretrained model with multiple LoRA modules is the ability to switch between tasks at a much lower cost by only swapping the LoRA weights, rather than all the parameters, allowing for efficient task-switching and reduced storage requirements. [LoRA p.5]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.12",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.4",
+            "LoRA.pdf p.5"
+          ],
+          "seconds": 6.141860124999766,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because while some statements mention advantages like 'reducing the storage requirement and task-switching overhead significantly' and 'quick task-switching when deployed as a service by sharing the vast majority of the model parameters,' many other statements are irrelevant or too broad, failing to directly address the main deployment advantage of using one shared pretrained model with multiple LoRA modules."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the input question without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L14",
+          "question": "How does LoRA relate to full fine-tuning as the rank increases?",
+          "answer": "As the rank increases, LoRA roughly converges to the expressiveness of full fine-tuning by setting the LoRA rank to the rank of the pre-trained weight matrices. [LoRA p.4]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.10",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.26",
+            "LoRA.pdf p.4"
+          ],
+          "seconds": 5.736732542000027,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because while some statements mention LoRA's efficiency and its relationship to full fine-tuning, such as 'LoRA takes a step further and does not require the accumulated gradient update to weight matrices to have full-rank during adaptation,' the overall context fails to directly address how LoRA relates to full fine-tuning as the rank increases, leading to a lack of clarity."
+            },
+            "Groundedness": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the actual output incorrectly asserts that the LoRA rank must match the rank of the pre-trained weight matrices, which contradicts the retrieval context that specifies LoRA operates with a low rank independent of the pre-trained weights."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the relationship between LoRA and full fine-tuning without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L15",
+          "question": "Why can LoRA reduce optimizer memory during training?",
+          "answer": "LoRA reduces optimizer memory during training because it does not require storing the optimizer states for the frozen parameters, only optimizing the injected parameters. [LoRA p.2]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.5",
+            "QLoRA.pdf p.4"
+          ],
+          "seconds": 5.527631541999654,
+          "triad": {
+            "Context relevance": {
+              "score": 0.35,
+              "reason": "The score is 0.35 because while there are relevant statements like 'LoRA can reduce the number of trainable parameters by 10,000 times and the GPU memory requirement by 3 times,' the majority of the context fails to directly address how LoRA reduces optimizer memory, with many statements discussing unrelated topics such as model quality and performance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about LoRA's ability to reduce optimizer memory during training without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q01",
+          "question": "What is QLoRA?",
+          "answer": "QLoRA is a method that uses a 4-bit base model with Low-rank Adapters (LoRA) to replicate the performance of 16-bit full finetuning, significantly reducing the required memory for finetuning models. [QLoRA p.15]",
+          "pages": [
+            "QLoRA.pdf p.14",
+            "QLoRA.pdf p.15",
+            "QLoRA.pdf p.5",
+            "QLoRA.pdf p.6"
+          ],
+          "seconds": 6.347740791000433,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because while there are relevant statements like 'We have discussed how QLoRA works and how it can significantly reduce the required memory for finetuning models,' many other statements focus on unrelated topics such as resource costs and evaluation benchmarks, which detracts from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 0.6666666666666666,
+              "reason": "The score is 0.67 because the actual output incorrectly claims that QLoRA can match full 16-bit finetuning performance at 33B and 65B scales, while the retrieval context states that the study did not establish this."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about QLoRA without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q02",
+          "question": "What memory target does QLoRA report for fine-tuning a 65B model?",
+          "answer": "QLoRA reports a memory target of less than 48 GB for fine-tuning a 65B model. [QLoRA p.2]",
+          "pages": [
+            "QLoRA.pdf p.1",
+            "QLoRA.pdf p.2",
+            "QLoRA.pdf p.26",
+            "QLoRA.pdf p.5",
+            "QLoRA.pdf p.6"
+          ],
+          "seconds": 5.835801750000428,
+          "triad": {
+            "Context relevance": {
+              "score": 0.2631578947368421,
+              "reason": "The score is 0.26 because while the retrieval context mentions that 'QLORA reduces the average memory requirements of finetuning a 65B parameter model from >780GB of GPU memory to <48GB', most other statements are irrelevant, discussing topics like paged optimizers and the 33B model, which do not directly address the memory target for fine-tuning a 65B model."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about the memory target for fine-tuning a 65B model without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q03",
+          "question": "What are the three main memory-saving innovations introduced in QLoRA?",
+          "answer": "The three main memory-saving innovations introduced in QLoRA are: 4-bit NormalFloat, Double Quantization, and Paged Optimizers. [QLoRA p.2] [QLoRA p.1]",
+          "pages": [
+            "QLoRA.pdf p.1",
+            "QLoRA.pdf p.2",
+            "QLoRA.pdf p.3",
+            "QLoRA.pdf p.6"
+          ],
+          "seconds": 5.426964958999633,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because while the retrieval context includes relevant statements about QLoRA's memory-saving innovations, such as 'QLORA introduces multiple innovations designed to reduce memory use without sacrificing performance' and details on '4-bit NormalFloat' and 'Double Quantization', much of the context is irrelevant, discussing unrelated models and vague concepts that do not directly answer the question."
+            },
+            "Groundedness": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the actual output incorrectly identifies Paged Optimizers as one of the three main innovations, while the retrieval context does not support this claim, only mentioning 4-bit NormalFloat and Double Quantization."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about the three main memory-saving innovations introduced in QLoRA without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q04",
+          "question": "Why is NF4 designed for normally distributed weights?",
+          "answer": "NF4 is designed for normally distributed weights because it is information theoretically optimal for such distributions, allowing for efficient quantization and memory savings without sacrificing performance. [QLoRA p.1]",
+          "pages": [
+            "QLoRA.pdf p.1",
+            "QLoRA.pdf p.24",
+            "QLoRA.pdf p.25",
+            "QLoRA.pdf p.4"
+          ],
+          "seconds": 5.938756041000488,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5555555555555556,
+              "reason": "The score is 0.56 because while some relevant statements mention that 'weights need to be normalized into this range' and that '4-bit NormalFloat (NF4) is a new data type that is information theoretically optimal for normally distributed weights,' the majority of the retrieval context fails to directly address the design rationale for NF4, as highlighted by reasons such as 'the statement discusses a crowdsourcing form and is unrelated to the question about NF4's design.' This indicates a lack of focused relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about NF4 and normally distributed weights without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q05",
+          "question": "What is Double Quantization in QLoRA?",
+          "answer": "Double Quantization in QLoRA is the process of quantizing the quantization constants for additional memory savings. It involves treating the quantization constants of the first quantization as inputs to a second quantization, yielding quantized quantization constants and a second level of quantization constants. This second quantization uses 8-bit floats with a blocksize of 256. [QLoRA p.5]",
+          "pages": [
+            "QLoRA.pdf p.3",
+            "QLoRA.pdf p.4",
+            "QLoRA.pdf p.5",
+            "QLoRA.pdf p.7"
+          ],
+          "seconds": 5.835992040999372,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5714285714285714,
+              "reason": "The score is 0.57 because while there are relevant statements about Double Quantization, such as 'Double Quantization helps reduce the memory footprint of quantization constants,' the retrieval context largely contains irrelevant information that does not define or explain Double Quantization, leading to a lower relevancy score."
+            },
+            "Groundedness": {
+              "score": 0.75,
+              "reason": "The score is 0.75 because the actual output suggests that the configuration of Double Quantization is limited to 8-bit floats with a blocksize of 256, while the context only specifies this as one possible configuration without ruling out others."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about Double Quantization in QLoRA without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q06",
+          "question": "How much memory does Double Quantization save per parameter in the paper's example?",
+          "answer": "Double Quantization saves approximately 0.37 bits per parameter in the paper's example. [QLoRA p.2]",
+          "pages": [
+            "QLoRA.pdf p.2",
+            "QLoRA.pdf p.5",
+            "QLoRA.pdf p.7"
+          ],
+          "seconds": 5.835190832999615,
+          "triad": {
+            "Context relevance": {
+              "score": 0.21052631578947367,
+              "reason": "The score is 0.21 because while there are relevant statements about memory savings from Double Quantization, such as 'this quantization reduces the memory footprint per parameter from 32/64 = 0.5 bits, to 8/64 + 32/(64 \u00b7 256) = 0.127 bits, a reduction of 0.373 bits per parameter,' the majority of the context discusses unrelated topics like 'Paged Optimizers' and implementation details that do not answer the specific question about memory savings."
+            },
+            "Groundedness": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the actual output claims a specific savings of 0.37 bits per parameter, which is not mentioned in the retrieval context that only discusses the reduction of memory footprint."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about memory savings per parameter in Double Quantization without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q07",
+          "question": "What problem do Paged Optimizers address?",
+          "answer": "Paged Optimizers address the problem of memory spikes during gradient checkpointing, which can cause out-of-memory errors when fine-tuning large models on a single machine. [QLoRA p.4]",
+          "pages": [
+            "QLoRA.pdf p.1",
+            "QLoRA.pdf p.2",
+            "QLoRA.pdf p.26",
+            "QLoRA.pdf p.4",
+            "QLoRA.pdf p.6"
+          ],
+          "seconds": 5.426852958999916,
+          "triad": {
+            "Context relevance": {
+              "score": 0.3888888888888889,
+              "reason": "The score is 0.39 because while there are relevant statements about how 'Paged Optimizers prevent memory spikes during gradient checkpointing from causing out-of-memory errors,' the majority of the retrieval context focuses on unrelated topics such as QLORA's data types and practical applications, which do not address the specific problem Paged Optimizers solve."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about Paged Optimizers without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q08",
+          "question": "What are QLoRA's storage and computation data types in the typical setup?",
+          "answer": "QLoRA's storage data type is usually 4-bit NormalFloat, and the computation data type is 16-bit BrainFloat (BFloat16). [QLoRA p.4] [QLoRA p.5]",
+          "pages": [
+            "QLoRA.pdf p.2",
+            "QLoRA.pdf p.3",
+            "QLoRA.pdf p.4",
+            "QLoRA.pdf p.5"
+          ],
+          "seconds": 5.735846874999879,
+          "triad": {
+            "Context relevance": {
+              "score": 0.6666666666666666,
+              "reason": "The score is 0.67 because while there are relevant statements about QLoRA's data types, such as 'QLORA has one low-precision storage data type, in our case usually 4-bit, and one computation data type that is usually BFloat16,' many other statements discuss unrelated topics like 'Paged Optimizers' and 'gradient checkpointing,' which detract from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the actual output incorrectly states that QLoRA uses 16-bit BrainFloat, while the retrieval context specifies that it typically uses BFloat16."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about QLoRA's storage and computation data types without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q09",
+          "question": "Which parameters receive weight gradients during QLoRA training?",
+          "answer": "The LoRA parameters receive weight gradients during QLoRA training. [QLoRA p.5]",
+          "pages": [
+            "LoRA.pdf p.10",
+            "LoRA.pdf p.4",
+            "LoRA.pdf p.5",
+            "QLoRA.pdf p.5"
+          ],
+          "seconds": 5.319277457999306,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5416666666666666,
+              "reason": "The score is 0.54 because while there are relevant statements such as 'we only consider weight matrices in the self-attention module' and 'we only compute weight gradients for the LoRA parameters which use 16-bit BrainFloat', the majority of the retrieval context contains irrelevant information that does not address the specific question about which parameters receive weight gradients during QLoRA training."
+            },
+            "Groundedness": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the actual output incorrectly states that LoRA parameters receive weight gradients during training, contradicting the retrieval context which clearly specifies that W0 is frozen and does not receive gradient updates."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about parameters receiving weight gradients during QLoRA training without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q10",
+          "question": "What block sizes does the paper use for NF4 weights and the second-level quantization constants?",
+          "answer": "The paper uses a block size of 64 for NF4 weights and a block size of 256 for the second-level quantization constants. [QLoRA p.5]",
+          "pages": [
+            "QLoRA.pdf p.3",
+            "QLoRA.pdf p.5"
+          ],
+          "seconds": 5.7809031670003606,
+          "triad": {
+            "Context relevance": {
+              "score": 0.2222222222222222,
+              "reason": "The score is 0.22 because while there are relevant statements such as 'We use a blocksize of 64 for W for higher quantization precision and a blocksize of 256 for c2 to conserve memory,' the majority of the retrieval context focuses on unrelated topics like gradients and Double Quantization, which do not directly answer the question about block sizes."
+            },
+            "Groundedness": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the actual output incorrectly implies that the blocksize of 64 applies to NF4 weights, while the retrieval context specifies it is used for W."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about block sizes for NF4 weights and second-level quantization constants without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q11",
+          "question": "What did the QLoRA experiments find about NF4 with Double Quantization versus 16-bit methods?",
+          "answer": "The QLoRA experiments found that NF4 with double quantization fully recovers the 16-bit LoRA MMLU performance and matches 16-bit full finetuning and 16-bit LoRA finetuning performance on academic benchmarks. [QLoRA p.7]",
+          "pages": [
+            "QLoRA.pdf p.15",
+            "QLoRA.pdf p.6",
+            "QLoRA.pdf p.7"
+          ],
+          "seconds": 5.627747083999566,
+          "triad": {
+            "Context relevance": {
+              "score": 0.7,
+              "reason": "The score is 0.70 because while there are relevant statements such as 'Results are shown in Table 4 where we see that NF4 with double quantization fully recovers the 16-bit LoRA MMLU performance,' many other statements focus on unrelated aspects like efficiency and limitations, which detracts from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the input question without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q12",
+          "question": "How did NF4 compare with FP4 in the MMLU experiments?",
+          "answer": "In the MMLU experiments, NF4 with double quantization matched the performance of BFloat16, while FP4 was consistently one percentage point behind both NF4 and BFloat16. [QLoRA p.8]",
+          "pages": [
+            "QLoRA.pdf p.6",
+            "QLoRA.pdf p.7",
+            "QLoRA.pdf p.8"
+          ],
+          "seconds": 5.505614957999569,
+          "triad": {
+            "Context relevance": {
+              "score": 0.631578947368421,
+              "reason": "The score is 0.63 because while there are relevant statements indicating that 'NF4 is superior to FP4 in terms of quantization precision' and 'NF4 improves performance significantly over FP4', the majority of the context focuses on unrelated aspects such as the performance of QLORA with NF4 and experimental setups, which do not directly address the comparison between NF4 and FP4."
+            },
+            "Groundedness": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the actual output claims that NF4 with double quantization matches BFloat16 performance in the MMLU experiments, while the retrieval context only indicates a match without confirming it specifically for those experiments."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the comparison between NF4 and FP4 in the MMLU experiments without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q13",
+          "question": "What did the paper find about dataset quality versus dataset size?",
+          "answer": "The paper found that dataset quality is more important than dataset size for both MMLU performance and chatbot performance. [QLoRA p.2] [QLoRA p.24]",
+          "pages": [
+            "QLoRA.pdf p.2",
+            "QLoRA.pdf p.24"
+          ],
+          "seconds": 5.512770167000781,
+          "triad": {
+            "Context relevance": {
+              "score": 0.45454545454545453,
+              "reason": "The score is 0.45 because while there are relevant statements such as 'data quality is far more important than dataset size' and 'dataset suitability matters more than size for a given task,' the majority of the retrieval context focuses on chatbot performance evaluation, which does not directly address the input question about dataset quality versus size."
+            },
+            "Groundedness": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the actual output contradicts the retrieval context by failing to acknowledge the importance of data quality over dataset size for chatbot performance, and it incorrectly introduces MMLU performance, which was not mentioned in the context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about dataset quality versus dataset size without including any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q14",
+          "question": "What is Guanaco and what result did the largest model achieve on the Vicuna benchmark?",
+          "answer": "Guanaco is a model that is not trained on proprietary data, and the largest model, Guanaco 65B, achieved 99.3% performance relative to ChatGPT on the Vicuna benchmark. [QLoRA p.9]",
+          "pages": [
+            "QLoRA.pdf p.10",
+            "QLoRA.pdf p.2",
+            "QLoRA.pdf p.9"
+          ],
+          "seconds": 5.836492458999601,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5789473684210527,
+              "reason": "The score is 0.58 because while there are relevant statements such as 'Guanaco 65B is the best-performing model after GPT-4, achieving 99.3% performance relative to ChatGPT' and 'using a single professional GPU over 24 hours we achieve 99.3% with our largest model', the retrieval context also contains a lot of irrelevant information, such as '4-bit precision' and 'expected win probability of 30%', which detracts from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about Guanaco and its performance on the Vicuna benchmark without including any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "Q15",
+          "question": "What loss and training approach did the QLoRA experiments use?",
+          "answer": "The QLoRA experiments used cross-entropy loss and a supervised learning approach. [QLoRA p.8]",
+          "pages": [
+            "QLoRA.pdf p.15",
+            "QLoRA.pdf p.23",
+            "QLoRA.pdf p.8"
+          ],
+          "seconds": 5.70735945800061,
+          "triad": {
+            "Context relevance": {
+              "score": 0.4090909090909091,
+              "reason": "The score is 0.41 because while there are relevant statements like 'QLoRA finetuning with cross-entropy loss (supervised learning) without reinforcement learning', the majority of the retrieval context focuses on unrelated aspects such as hyperparameter searches and evaluation limitations, which do not directly address the loss and training approach used in the QLoRA experiments."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the input question without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A01",
+          "question": "What is the main architectural idea proposed in Attention Is All You Need?",
+          "answer": "The main architectural idea proposed in \"Attention Is All You Need\" is the Transformer, a network architecture based solely on attention mechanisms, eliminating the need for recurrence and convolutions. [Attention is all you need  p.1]",
+          "pages": [
+            "Attention is all you need .pdf p.1",
+            "Attention is all you need .pdf p.2"
+          ],
+          "seconds": 5.861390333999225,
+          "triad": {
+            "Context relevance": {
+              "score": 0.3125,
+              "reason": "The score is 0.31 because while the relevant statements mention the Transformer architecture and its reliance on attention mechanisms, the majority of the retrieval context focuses on performance, implementation details, and applications that do not directly address the main architectural idea proposed in 'Attention Is All You Need', such as 'dispensing with recurrence and convolutions entirely'."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the main architectural idea of the paper 'Attention Is All You Need' without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A02",
+          "question": "How many identical layers are used in the Transformer encoder and what are its two sub-layers?",
+          "answer": "The Transformer encoder uses a stack of 6 identical layers, and each layer has two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network. [Attention is all you need  p.3]",
+          "pages": [
+            "Attention is all you need .pdf p.3",
+            "Attention is all you need .pdf p.5"
+          ],
+          "seconds": 6.554564250000112,
+          "triad": {
+            "Context relevance": {
+              "score": 0.36,
+              "reason": "The score is 0.36 because while the retrieval context includes relevant statements such as 'The encoder is composed of a stack of N = 6 identical layers' and 'Each layer has two sub-layers', it is overshadowed by numerous irrelevant details like 'for both the encoder and decoder' and discussions on computational costs that do not address the specific question."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about the number of identical layers in the Transformer encoder and described its two sub-layers accurately, with no irrelevant statements present."
+            }
+          }
+        },
+        {
+          "id": "A03",
+          "question": "How does the Transformer decoder differ from the encoder?",
+          "answer": "The Transformer decoder differs from the encoder by having an additional third sub-layer in each of its layers, which performs multi-head attention over the encoder's output, and by using masking in the self-attention sub-layer to prevent positions from attending to subsequent positions. [Attention is all you need  p.3] [Attention is all you need  p.5]",
+          "pages": [
+            "Attention is all you need .pdf p.3",
+            "Attention is all you need .pdf p.5"
+          ],
+          "seconds": 6.227790249999998,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because while there are relevant statements about the decoder's modifications, such as 'We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions,' many statements fail to directly compare the decoder to the encoder, leading to a lack of clarity on their differences."
+            },
+            "Groundedness": {
+              "score": 0.3333333333333333,
+              "reason": "The score is 0.33 because the actual output incorrectly states that the Transformer decoder has an additional third sub-layer compared to the encoder, while the retrieval context clarifies that it has three sub-layers that are not additional. Furthermore, the actual output misrepresents the function of the third sub-layer, which is a self-attention sub-layer, not one that performs multi-head attention over the encoder's output."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no irrelevant statements in the output, providing a clear and focused explanation of the differences between the Transformer decoder and encoder."
+            }
+          }
+        },
+        {
+          "id": "A04",
+          "question": "What is the formula for scaled dot-product attention?",
+          "answer": "The formula for scaled dot-product attention is: Attention(Q, K, V) = softmax(QK^T / \u221adk)V. [Attention is all you need  p.4]",
+          "pages": [
+            "Attention is all you need .pdf p.4",
+            "Attention is all you need .pdf p.5"
+          ],
+          "seconds": 5.343099291999351,
+          "triad": {
+            "Context relevance": {
+              "score": 0.44,
+              "reason": "The score is 0.44 because while there are relevant statements like 'Attention(Q, K, V ) = softmax(QKT \u221adk)V' and 'We call our particular attention 'Scaled Dot-Product Attention'', the majority of the retrieval context contains irrelevant information such as 'Multi-Head Attention consists of several attention layers running in parallel' which does not directly address the formula for scaled dot-product attention."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about the formula for scaled dot-product attention without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A05",
+          "question": "Why does the Transformer scale the dot products in attention by 1/\u221ad_k?",
+          "answer": "The Transformer scales the dot products in attention by \\(1/\\sqrt{d_k}\\) to prevent the softmax function from entering regions with extremely small gradients, which can occur when the dot products grow large in magnitude. [Attention is all you need  p.4]",
+          "pages": [
+            "Attention is all you need .pdf p.4"
+          ],
+          "seconds": 6.142409707999832,
+          "triad": {
+            "Context relevance": {
+              "score": 0.36363636363636365,
+              "reason": "The score is 0.36 because while there is a relevant statement mentioning the scaling of dot products by 1/\u221adk, such as 'To counteract this effect, we scale the dot products by 1/\u221adk.', the majority of the context fails to directly address the specific question about scaling, focusing instead on unrelated aspects of attention mechanisms."
+            },
+            "Groundedness": {
+              "score": 0.6666666666666666,
+              "reason": "The score is 0.67 because the actual output incorrectly states that small gradients occur when dot products are small, contradicting the retrieval context which specifies that small gradients occur when dot products are large."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about the scaling of dot products in attention without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A06",
+          "question": "How many attention heads does the Transformer base configuration use, and what are d_k and d_v?",
+          "answer": "The Transformer base configuration uses 8 attention heads, with \\(d_k = 64\\) and \\(d_v = 64\\). [Attention is all you need  p.5] [Attention is all you need  p.9]",
+          "pages": [
+            "Attention is all you need .pdf p.3",
+            "Attention is all you need .pdf p.5",
+            "Attention is all you need .pdf p.9"
+          ],
+          "seconds": 5.325341499999922,
+          "triad": {
+            "Context relevance": {
+              "score": 0.24,
+              "reason": "The score is 0.24 because the retrieval context primarily discusses computational aspects and general descriptions of the Transformer architecture, failing to directly answer the specific question about attention heads and dimensions. While it mentions 'we employ h = 8 parallel attention layers, or heads' and 'dk = dv = dmodel/h = 64', these relevant statements are overshadowed by numerous irrelevant details that do not address the input's query."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about the number of attention heads in the Transformer base configuration and provides the values for d_k and d_v without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A07",
+          "question": "What are the three ways multi-head attention is used in the Transformer?",
+          "answer": "Multi-head attention is used in the Transformer in three ways: encoder-decoder attention layers, self-attention within the encoder, and self-attention within the decoder. [Attention is all you need  p.5]",
+          "pages": [
+            "Attention is all you need .pdf p.2",
+            "Attention is all you need .pdf p.4",
+            "Attention is all you need .pdf p.5"
+          ],
+          "seconds": 5.426000500000555,
+          "triad": {
+            "Context relevance": {
+              "score": 0.35294117647058826,
+              "reason": "The score is 0.35 because while the retrieval context mentions that 'The Transformer uses multi-head attention in three different ways,' it fails to elaborate on those specific ways, leading to a lack of direct relevance to the input question."
+            },
+            "Groundedness": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the actual output incorrectly asserts that multi-head attention is utilized in encoder-decoder attention layers, which is not supported by the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about the three ways multi-head attention is used in the Transformer without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A08",
+          "question": "What is the structure and dimensionality of the position-wise feed-forward network?",
+          "answer": "The position-wise feed-forward network consists of two linear transformations with a ReLU activation in between, described by the formula: \\( \\text{FFN}(x) = \\max(0, xW1 + b1)W2 + b2 \\). The dimensionality of the input and output is \\( d_{\\text{model}} = 512 \\), and the inner-layer has a dimensionality of \\( d_{\\text{ff}} = 2048 \\). [Attention is all you need  p.5]",
+          "pages": [
+            "Attention is all you need .pdf p.2",
+            "Attention is all you need .pdf p.3",
+            "Attention is all you need .pdf p.5"
+          ],
+          "seconds": 6.2466261249992385,
+          "triad": {
+            "Context relevance": {
+              "score": 0.44,
+              "reason": "The score is 0.44 because while there are relevant statements such as 'connected feed-forward network, which is applied to each position separately and identically' and 'The dimensionality of input and output is dmodel = 512, and the inner-layer has dimensionality dff = 2048,' the majority of the retrieval context focuses on unrelated topics like self-attention and decoder properties, leading to a lack of comprehensive information about the position-wise feed-forward network."
+            },
+            "Groundedness": {
+              "score": 0.8,
+              "reason": "The score is 0.80 because the actual output incorrectly attributes the dimensionality of 512 specifically to the position-wise feed-forward network, while the retrieval context does not explicitly state this, leading to a potential misunderstanding."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the structure and dimensionality of the position-wise feed-forward network without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A09",
+          "question": "Why are positional encodings needed in the Transformer?",
+          "answer": "Positional encodings are needed in the Transformer because the model contains no recurrence or convolution, so they provide information about the order of the sequence, allowing the model to make use of the relative or absolute position of tokens. [Attention is all you need  p.6]",
+          "pages": [
+            "Attention is all you need .pdf p.2",
+            "Attention is all you need .pdf p.6",
+            "Attention is all you need .pdf p.9"
+          ],
+          "seconds": 5.83489895799994,
+          "triad": {
+            "Context relevance": {
+              "score": 0.38095238095238093,
+              "reason": "The score is 0.38 because while there are relevant statements like 'we must inject some information about the relative or absolute position of the tokens in the sequence' that directly address the need for positional encodings, the majority of the retrieval context contains irrelevant mathematical notations and definitions that do not explain their necessity."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the need for positional encodings in Transformers without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A10",
+          "question": "What type of positional encoding did the paper use?",
+          "answer": "The paper used sinusoidal positional encoding. [Attention is all you need  p.6]",
+          "pages": [
+            "Attention is all you need .pdf p.6",
+            "Attention is all you need .pdf p.9",
+            "LoRA.pdf p.3"
+          ],
+          "seconds": 5.570773750000626,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5789473684210527,
+              "reason": "The score is 0.58 because while there are relevant statements about the type of positional encoding used, such as the use of sine and cosine functions, the majority of the retrieval context discusses unrelated topics like self-attention layers and optimization tasks, which detracts from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about the type of positional encoding used in the paper without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A11",
+          "question": "What are the per-layer complexity, sequential operations, and maximum path length of self-attention?",
+          "answer": "The per-layer complexity of self-attention is \\(O(n^2 \\cdot d)\\), the number of sequential operations is \\(O(1)\\), and the maximum path length is \\(O(1)\\). [Attention is all you need  p.6]",
+          "pages": [
+            "Attention is all you need .pdf p.6",
+            "Attention is all you need .pdf p.7"
+          ],
+          "seconds": 5.591171749999376,
+          "triad": {
+            "Context relevance": {
+              "score": 0.5217391304347826,
+              "reason": "The score is 0.52 because while there are relevant statements like 'Self-Attention O(n2 \u00b7 d) O(1) O(1)' and 'maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types', much of the retrieval context is irrelevant, discussing unrelated complexities of recurrent and convolutional layers, which do not directly address the input's focus on self-attention."
+            },
+            "Groundedness": {
+              "score": 0.75,
+              "reason": "The score is 0.75 because the actual output incorrectly states the per-layer complexity of self-attention as O(n^2 d) instead of the correct O(n^2 \u00b7 d), indicating a misunderstanding of the notation."
+            },
+            "Answer relevance": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the output included irrelevant statements about sequential operations and maximum path length that did not directly address the complexities of self-attention as requested."
+            }
+          }
+        },
+        {
+          "id": "A12",
+          "question": "What training datasets were used for WMT 2014 English-German and English-French?",
+          "answer": "The WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs was used for English-German, and the WMT 2014 English-French dataset consisting of 36 million sentences was used for English-French. [Attention is all you need  p.7]",
+          "pages": [
+            "Attention is all you need .pdf p.10",
+            "Attention is all you need .pdf p.7",
+            "Attention is all you need .pdf p.8"
+          ],
+          "seconds": 6.040830167000422,
+          "triad": {
+            "Context relevance": {
+              "score": 0.13793103448275862,
+              "reason": "The score is 0.14 because while the retrieval context included relevant statements about the datasets, such as 'We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs.' and 'For English-French, we used the significantly larger WMT 2014 English-French dataset consisting of 36M sentences.', the majority of the context was filled with irrelevant information regarding model performance and training methodology, which did not address the question about the datasets."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about the training datasets used for WMT 2014 English-German and English-French without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A13",
+          "question": "What optimizer and warmup schedule were used to train the Transformer?",
+          "answer": "The Transformer was trained using the Adam optimizer with a warmup schedule of 4000 steps. [Attention is all you need p.7]",
+          "pages": [
+            "Attention is all you need .pdf p.7",
+            "LoRA.pdf p.19",
+            "LoRA.pdf p.20",
+            "LoRA.pdf p.21"
+          ],
+          "seconds": 5.269826542000374,
+          "triad": {
+            "Context relevance": {
+              "score": 0.3076923076923077,
+              "reason": "The score is 0.31 because while the retrieval context included relevant statements such as 'We used the Adam optimizer' and 'We used warmup_steps = 4000', the majority of the context was filled with irrelevant information that did not address the optimizer or warmup schedule, leading to a low relevancy score."
+            },
+            "Groundedness": {
+              "score": 0.5,
+              "reason": "The score is 0.50 because the actual output incorrectly states that the optimizer used was Adam, while the retrieval context clearly specifies that it was AdamW."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the question about the optimizer and warmup schedule used to train the Transformer without including any irrelevant information."
+            }
+          }
+        },
+        {
+          "id": "A14",
+          "question": "What BLEU scores did the Transformer big model achieve on WMT 2014 English-German and English-French?",
+          "answer": "The Transformer big model achieved a BLEU score of 28.4 on WMT 2014 English-to-German and 41.8 on WMT 2014 English-to-French. [Attention is all you need  p.8]",
+          "pages": [
+            "Attention is all you need .pdf p.1",
+            "Attention is all you need .pdf p.8"
+          ],
+          "seconds": 5.685866000000715,
+          "triad": {
+            "Context relevance": {
+              "score": 0.35,
+              "reason": "The score is 0.35 because while there are relevant statements such as 'Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task' and 'On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8', the majority of the retrieval context discusses unrelated aspects like training efficiency and model architecture, leading to a lack of direct answers to the input question."
+            },
+            "Groundedness": {
+              "score": 0.0,
+              "reason": "The score is 0.00 because the actual output incorrectly attributes a BLEU score of 28.4 to the big model for the English-to-German task, while it should be attributed to the base model, and it also misstates the BLEU score for the English-to-French task as 41.8 instead of the correct 41.0."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addressed the input question regarding the BLEU scores achieved by the Transformer big model on WMT 2014 English-German and English-French without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "A15",
+          "question": "What regularization methods and settings were used in the Transformer training?",
+          "answer": "The Transformer training employed three types of regularization: dropout with a rate of 0.1 for the base model, label smoothing with a value of 0.1, and residual dropout applied to the output of each sub-layer and the sums of the embeddings and positional encodings. [Attention is all you need  p.8] [Attention is all you need  p.7]",
+          "pages": [
+            "Attention is all you need .pdf p.7",
+            "Attention is all you need .pdf p.8",
+            "Attention is all you need .pdf p.9",
+            "QLoRA.pdf p.8"
+          ],
+          "seconds": 6.681700332999753,
+          "triad": {
+            "Context relevance": {
+              "score": 0.3181818181818182,
+              "reason": "The score is 0.32 because while there are relevant statements about regularization methods, such as 'Residual Dropout' and 'Label Smoothing', the majority of the retrieval context lacks specific details on regularization settings, making it largely irrelevant to the input question."
+            },
+            "Groundedness": {
+              "score": 0.75,
+              "reason": "The score is 0.75 because the actual output incorrectly refers to 'residual dropout', which is not mentioned in the retrieval context that only discusses 'dropout' applied to the output of each sub-layer."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there were no irrelevant statements in the output, directly addressing the question about regularization methods and settings used in Transformer training."
+            }
+          }
+        }
+      ]
+    },
+    "latency": {
+      "questions": [
+        "What rank r does LoRA use?",
+        "What is NF4 and why is it used?",
+        "How does the Transformer use attention instead of recurrence?"
+      ],
+      "rows": [
+        {
+          "guard": 0.8175236669994774,
+          "search": 1.751123958001699,
+          "rerank": 3.462174791997313,
+          "answer": 1.1255202499996813,
+          "triad": 45.77345462500125
+        },
+        {
+          "guard": 0.7858153329998459,
+          "search": 0.3774397500001214,
+          "rerank": 4.045924625001135,
+          "answer": 1.374740749999546,
+          "triad": 39.73388745800003
+        },
+        {
+          "guard": 0.9212580000003072,
+          "search": 0.4163522909984749,
+          "rerank": 3.837197417002244,
+          "answer": 1.272061167001084,
+          "triad": 32.35607499999969
+        }
+      ],
+      "mean": {
+        "guard": 0.8415323333332102,
+        "search": 0.8483053330000985,
+        "rerank": 3.781765611333564,
+        "answer": 1.2574407223334372,
+        "triad": 39.287805694333656
+      }
+    }
+  },
+  "usage": {
+    "indexing": {
+      "calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "estimated_cost_usd": 0,
+      "unpriced_calls": 0,
+      "by_component": {}
+    },
+    "total": {
+      "calls": 8284,
+      "input_tokens": 2303228,
+      "output_tokens": 139187,
+      "estimated_cost_usd": 1.3217,
+      "unpriced_calls": 0
+    },
+    "retriever": {
+      "calls": 1035,
+      "input_tokens": 218632,
+      "output_tokens": 900,
+      "estimated_cost_usd": 0.0331,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 135,
+          "input_tokens": 1920,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 900,
+          "input_tokens": 216712,
+          "output_tokens": 900,
+          "estimated_cost_usd": 0.033
+        }
+      },
+      "seconds": 229
+    },
+    "reranker": {
+      "calls": 1890,
+      "input_tokens": 434704,
+      "output_tokens": 1800,
+      "estimated_cost_usd": 0.5839,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 90,
+          "input_tokens": 1280,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 1800,
+          "input_tokens": 433424,
+          "output_tokens": 1800,
+          "estimated_cost_usd": 0.5838
+        }
+      },
+      "seconds": 1308
+    },
+    "chunking": {
+      "calls": 1980,
+      "input_tokens": 393502,
+      "output_tokens": 1800,
+      "estimated_cost_usd": 0.0598,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 180,
+          "input_tokens": 2560,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0001
+        },
+        "Reranker": {
+          "calls": 1800,
+          "input_tokens": 390942,
+          "output_tokens": 1800,
+          "estimated_cost_usd": 0.0597
+        }
+      },
+      "seconds": 428
+    },
+    "generator": {
+      "calls": 1310,
+      "input_tokens": 413750,
+      "output_tokens": 3917,
+      "estimated_cost_usd": 0.1875,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 135,
+          "input_tokens": 5533,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0001
+        },
+        "Reranker": {
+          "calls": 900,
+          "input_tokens": 216712,
+          "output_tokens": 900,
+          "estimated_cost_usd": 0.033
+        },
+        "Answers": {
+          "calls": 275,
+          "input_tokens": 191505,
+          "output_tokens": 3017,
+          "estimated_cost_usd": 0.1543
+        }
+      },
+      "seconds": 1396
+    },
+    "oracle": {
+      "calls": 355,
+      "input_tokens": 181884,
+      "output_tokens": 2675,
+      "estimated_cost_usd": 0.1474,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Answers": {
+          "calls": 265,
+          "input_tokens": 177316,
+          "output_tokens": 2675,
+          "estimated_cost_usd": 0.1473
+        },
+        "Embeddings": {
+          "calls": 90,
+          "input_tokens": 4568,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0001
+        }
+      },
+      "seconds": 271
+    },
+    "triad": {
+      "calls": 1581,
+      "input_tokens": 613357,
+      "output_tokens": 121153,
+      "estimated_cost_usd": 0.2893,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 45,
+          "input_tokens": 640,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 900,
+          "input_tokens": 216712,
+          "output_tokens": 900,
+          "estimated_cost_usd": 0.033
+        },
+        "Answers": {
+          "calls": 45,
+          "input_tokens": 44756,
+          "output_tokens": 2074,
+          "estimated_cost_usd": 0.1326
+        },
+        "Judge (RAG triad)": {
+          "calls": 591,
+          "input_tokens": 351249,
+          "output_tokens": 118179,
+          "estimated_cost_usd": 0.1236
+        }
+      },
+      "seconds": 2305
+    },
+    "latency": {
+      "calls": 133,
+      "input_tokens": 47399,
+      "output_tokens": 6942,
+      "estimated_cost_usd": 0.0207,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 7,
+          "input_tokens": 64,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 80,
+          "input_tokens": 19201,
+          "output_tokens": 80,
+          "estimated_cost_usd": 0.0029
+        },
+        "Input guard": {
+          "calls": 4,
+          "input_tokens": 1196,
+          "output_tokens": 48,
+          "estimated_cost_usd": 0.0002
+        },
+        "Answers": {
+          "calls": 3,
+          "input_tokens": 3166,
+          "output_tokens": 213,
+          "estimated_cost_usd": 0.01
+        },
+        "Judge (RAG triad)": {
+          "calls": 39,
+          "input_tokens": 23772,
+          "output_tokens": 6601,
+          "estimated_cost_usd": 0.0075
+        }
+      },
+      "seconds": 148
+    }
+  },
+  "errors": {},
+  "seconds": 6086
+}

@@ -21,6 +21,8 @@ def load_config() -> dict:
     """Read config.toml. DocumentRAG adds the folders (data_dir, vs_dir) for each set of documents."""
     with open(PROJECT_ROOT / "config.toml", "rb") as f:
         config = tomllib.load(f)
+    config["data_dir"] = PROJECT_ROOT / config["data_dir"]
+    config["vs_dir"] = PROJECT_ROOT / config["vs_dir"]
     return config
 
 

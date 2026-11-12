@@ -1,0 +1,640 @@
+{
+  "provider": "openai",
+  "models": {
+    "llm_model": "openai/gpt-4o",
+    "guard_model": "openai/gpt-4o-mini",
+    "judge_model": "openai/gpt-4o-mini",
+    "reranker_model": "openai/gpt-4o-mini",
+    "embedding_model": "openai/text-embedding-3-small"
+  },
+  "limit": 2,
+  "stages": {
+    "retriever": {
+      "dense": {
+        "Recall@1": 0.25,
+        "Recall@3": 0.5,
+        "Recall@5": 0.75,
+        "Recall@10": 0.75,
+        "Precision@5": 0.30000000000000004,
+        "MRR": 0.75,
+        "HitRate@1": 0.5,
+        "HitRate@3": 1.0,
+        "HitRate@5": 1.0,
+        "HitRate@10": 1.0
+      },
+      "bm25": {
+        "Recall@1": 0.0,
+        "Recall@3": 0.0,
+        "Recall@5": 0.5,
+        "Recall@10": 0.5,
+        "Precision@5": 0.2,
+        "MRR": 0.225,
+        "HitRate@1": 0.0,
+        "HitRate@3": 0.0,
+        "HitRate@5": 1.0,
+        "HitRate@10": 1.0
+      },
+      "hybrid": {
+        "Recall@1": 0.0,
+        "Recall@3": 0.25,
+        "Recall@5": 0.75,
+        "Recall@10": 0.75,
+        "Precision@5": 0.30000000000000004,
+        "MRR": 0.375,
+        "HitRate@1": 0.0,
+        "HitRate@3": 0.5,
+        "HitRate@5": 1.0,
+        "HitRate@10": 1.0
+      },
+      "hybrid_rerank": {
+        "Recall@1": 0.25,
+        "Recall@3": 0.75,
+        "Recall@5": 0.75,
+        "Recall@10": 0.75,
+        "Precision@5": 0.30000000000000004,
+        "MRR": 0.75,
+        "HitRate@1": 0.5,
+        "HitRate@3": 1.0,
+        "HitRate@5": 1.0,
+        "HitRate@10": 1.0
+      }
+    },
+    "reranker": {
+      "openai/gpt-4o-mini": {
+        "Recall@1": 0.25,
+        "Recall@3": 0.75,
+        "Recall@5": 0.75,
+        "Recall@10": 0.75,
+        "Precision@5": 0.30000000000000004,
+        "MRR": 0.75,
+        "HitRate@1": 0.5,
+        "HitRate@3": 1.0,
+        "HitRate@5": 1.0,
+        "HitRate@10": 1.0
+      },
+      "openai/gpt-4o": {
+        "Recall@1": 0.25,
+        "Recall@3": 0.75,
+        "Recall@5": 0.75,
+        "Recall@10": 0.75,
+        "Precision@5": 0.4,
+        "MRR": 0.75,
+        "HitRate@1": 0.5,
+        "HitRate@3": 1.0,
+        "HitRate@5": 1.0,
+        "HitRate@10": 1.0
+      }
+    },
+    "chunking": {
+      "dense": {
+        "recursive_600_90": {
+          "Recall@1": 0.5,
+          "Recall@3": 0.75,
+          "Recall@5": 0.75,
+          "Recall@10": 1.0,
+          "Precision@5": 0.4,
+          "MRR": 1.0,
+          "HitRate@1": 1.0,
+          "HitRate@3": 1.0,
+          "HitRate@5": 1.0,
+          "HitRate@10": 1.0
+        },
+        "contextual_body_recursive_600_90": {
+          "Recall@1": 0.25,
+          "Recall@3": 0.5,
+          "Recall@5": 0.75,
+          "Recall@10": 0.75,
+          "Precision@5": 0.30000000000000004,
+          "MRR": 0.75,
+          "HitRate@1": 0.5,
+          "HitRate@3": 1.0,
+          "HitRate@5": 1.0,
+          "HitRate@10": 1.0
+        }
+      },
+      "bm25": {
+        "recursive_600_90": {
+          "Recall@1": 0.0,
+          "Recall@3": 0.25,
+          "Recall@5": 0.25,
+          "Recall@10": 0.75,
+          "Precision@5": 0.2,
+          "MRR": 0.3125,
+          "HitRate@1": 0.0,
+          "HitRate@3": 0.5,
+          "HitRate@5": 0.5,
+          "HitRate@10": 1.0
+        },
+        "contextual_body_recursive_600_90": {
+          "Recall@1": 0.0,
+          "Recall@3": 0.0,
+          "Recall@5": 0.5,
+          "Recall@10": 0.5,
+          "Precision@5": 0.2,
+          "MRR": 0.225,
+          "HitRate@1": 0.0,
+          "HitRate@3": 0.0,
+          "HitRate@5": 1.0,
+          "HitRate@10": 1.0
+        }
+      },
+      "hybrid_rerank": {
+        "recursive_600_90": {
+          "Recall@1": 0.5,
+          "Recall@3": 1.0,
+          "Recall@5": 1.0,
+          "Recall@10": 1.0,
+          "Precision@5": 0.5,
+          "MRR": 1.0,
+          "HitRate@1": 1.0,
+          "HitRate@3": 1.0,
+          "HitRate@5": 1.0,
+          "HitRate@10": 1.0
+        },
+        "contextual_body_recursive_600_90": {
+          "Recall@1": 0.25,
+          "Recall@3": 0.75,
+          "Recall@5": 0.75,
+          "Recall@10": 0.75,
+          "Precision@5": 0.30000000000000004,
+          "MRR": 0.75,
+          "HitRate@1": 0.5,
+          "HitRate@3": 1.0,
+          "HitRate@5": 1.0,
+          "HitRate@10": 1.0
+        }
+      }
+    },
+    "generator": {
+      "generator": "openai/gpt-4o",
+      "judge": "openai/gpt-4o-mini",
+      "context": "retrieved",
+      "settings": {
+        "embedding_model": "openai/text-embedding-3-small",
+        "reranker_model": "openai/gpt-4o-mini",
+        "default_method": "hybrid_rerank",
+        "top_k": 5,
+        "contextual": true,
+        "max_new_tokens": 256
+      },
+      "questions": 2,
+      "average": {
+        "faithfulness": 0.75,
+        "answer_relevancy": 0.7041187000029765,
+        "answer_correctness": 1.0,
+        "semantic_similarity": 0.7865861352561321,
+        "context_recall": 1.0,
+        "seconds_per_answer": 5.180363353999837
+      },
+      "rows": [
+        {
+          "id": "L01",
+          "question": "What problem does LoRA aim to solve?",
+          "answer": "LoRA aims to solve the problem of reducing the size and computational cost of model fine-tuning while maintaining high model quality and enabling quick task-switching. [LoRA p.5] [LoRA p.12]",
+          "reference": "LoRA addresses the cost of full fine-tuning of large pretrained language models by reducing the number of trainable parameters and memory required for downstream adaptation.",
+          "seconds": 5.072018500000013,
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.6664449446046833,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8135087757970976,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L02",
+          "question": "What does LoRA do to the pretrained model weights during adaptation?",
+          "answer": "LoRA keeps the pretrained model weights frozen during adaptation. [LoRA p.1] [LoRA p.2]",
+          "reference": "LoRA freezes the pretrained weights and learns low-rank matrices that represent the change to those weights.",
+          "seconds": 5.288708207999662,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7417924554012696,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.7596634947151665,
+          "context_recall": 1.0
+        }
+      ]
+    },
+    "oracle": {
+      "generator": "openai/gpt-4o",
+      "judge": "openai/gpt-4o-mini",
+      "context": "oracle (golden pages)",
+      "settings": {
+        "embedding_model": "openai/text-embedding-3-small",
+        "reranker_model": "openai/gpt-4o-mini",
+        "default_method": "hybrid_rerank",
+        "top_k": 5,
+        "contextual": true,
+        "max_new_tokens": 256
+      },
+      "questions": 2,
+      "average": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.7106319514353354,
+        "answer_correctness": 1.0,
+        "semantic_similarity": 0.8146900065985294,
+        "context_recall": 1.0,
+        "seconds_per_answer": 0.9488422084998547
+      },
+      "rows": [
+        {
+          "id": "L01",
+          "question": "What problem does LoRA aim to solve?",
+          "answer": "LoRA aims to solve the problem of the infeasibility of full fine-tuning large language models, like GPT-3 with 175 billion parameters, by reducing the number of trainable parameters and GPU memory requirements while maintaining model quality. [LoRA p.1]",
+          "reference": "LoRA addresses the cost of full fine-tuning of large pretrained language models by reducing the number of trainable parameters and memory required for downstream adaptation.",
+          "seconds": 1.1926162919999115,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6374226182752353,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8214311352958131,
+          "context_recall": 1.0
+        },
+        {
+          "id": "L02",
+          "question": "What does LoRA do to the pretrained model weights during adaptation?",
+          "answer": "LoRA freezes the pretrained model weights during adaptation. [LoRA p.1]",
+          "reference": "LoRA freezes the pretrained weights and learns low-rank matrices that represent the change to those weights.",
+          "seconds": 0.7050681249997979,
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7838412845954355,
+          "answer_correctness": 1.0,
+          "semantic_similarity": 0.8079488779012458,
+          "context_recall": 1.0
+        }
+      ]
+    },
+    "triad": {
+      "generator": "openai/gpt-4o",
+      "judge": "openai/gpt-4o-mini",
+      "settings": {
+        "embedding_model": "openai/text-embedding-3-small",
+        "reranker_model": "openai/gpt-4o-mini",
+        "default_method": "hybrid_rerank",
+        "top_k": 5,
+        "contextual": true,
+        "max_new_tokens": 256
+      },
+      "questions": 2,
+      "average": {
+        "Context relevance": 0.4485294117647059,
+        "Groundedness": 1.0,
+        "Answer relevance": 1.0
+      },
+      "judge_failures": {
+        "Context relevance": 0,
+        "Groundedness": 0,
+        "Answer relevance": 0
+      },
+      "rows": [
+        {
+          "id": "L01",
+          "question": "What problem does LoRA aim to solve?",
+          "answer": "LoRA aims to solve the problem of reducing the size and computational cost of model fine-tuning while maintaining high model quality and enabling quick task-switching. [LoRA p.5] [LoRA p.12]",
+          "pages": [
+            "LoRA.pdf p.12",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.5",
+            "QLoRA.pdf p.3"
+          ],
+          "seconds": 5.494594624999991,
+          "triad": {
+            "Context relevance": {
+              "score": 0.25,
+              "reason": "The score is 0.25 because the retrieval context fails to directly address the specific problem LoRA aims to solve, as highlighted by statements like 'The statement ends abruptly and does not provide complete information relevant to the problem LoRA aims to solve.' While there are mentions of benefits such as reduced size and cost-effectiveness, they do not clarify the core problem LoRA addresses."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because the response directly addresses the question about LoRA's purpose without any irrelevant statements."
+            }
+          }
+        },
+        {
+          "id": "L02",
+          "question": "What does LoRA do to the pretrained model weights during adaptation?",
+          "answer": "LoRA keeps the pretrained model weights frozen during adaptation. [LoRA p.1] [LoRA p.2]",
+          "pages": [
+            "LoRA.pdf p.1",
+            "LoRA.pdf p.2",
+            "LoRA.pdf p.4",
+            "LoRA.pdf p.6",
+            "QLoRA.pdf p.3"
+          ],
+          "seconds": 5.427358583000114,
+          "triad": {
+            "Context relevance": {
+              "score": 0.6470588235294118,
+              "reason": "The score is 0.65 because while some relevant statements explain that 'LoRA freezes the pretrained model weights and injects trainable rank decomposition matrices,' many other statements focus on unrelated aspects like 'full fine-tuning' and 'quantizing blocks independently,' which detracts from the overall relevance."
+            },
+            "Groundedness": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no contradictions present, indicating that the actual output aligns perfectly with the retrieval context."
+            },
+            "Answer relevance": {
+              "score": 1.0,
+              "reason": "The score is 1.00 because there are no irrelevant statements in the output, and it directly addresses the question about LoRA's effect on pretrained model weights."
+            }
+          }
+        }
+      ]
+    },
+    "latency": {
+      "questions": [
+        "What rank r does LoRA use?",
+        "What is NF4 and why is it used?",
+        "How does the Transformer use attention instead of recurrence?"
+      ],
+      "rows": [
+        {
+          "guard": 0.9211887500000557,
+          "search": 0.5340738340000826,
+          "rerank": 3.9540447069998663,
+          "answer": 1.019198917000267,
+          "triad": 40.141404083
+        },
+        {
+          "guard": 0.8627349580001464,
+          "search": 0.4778785409998818,
+          "rerank": 3.676738834000389,
+          "answer": 1.4676364169999943,
+          "triad": 43.82822262499985
+        },
+        {
+          "guard": 0.9209716669997761,
+          "search": 0.548773459000131,
+          "rerank": 3.921155790999819,
+          "answer": 1.0226960420000069,
+          "triad": 37.78760962500019
+        }
+      ],
+      "mean": {
+        "guard": 0.9016317916666594,
+        "search": 0.5202419446666985,
+        "rerank": 3.850646444000025,
+        "answer": 1.1698437920000895,
+        "triad": 40.58574544433335
+      }
+    }
+  },
+  "usage": {
+    "indexing": {
+      "calls": 222,
+      "input_tokens": 342246,
+      "output_tokens": 9541,
+      "estimated_cost_usd": 0.7391,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Chunk notes": {
+          "calls": 208,
+          "input_tokens": 259557,
+          "output_tokens": 9541,
+          "estimated_cost_usd": 0.7374
+        },
+        "Embeddings": {
+          "calls": 14,
+          "input_tokens": 82689,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0017
+        }
+      }
+    },
+    "total": {
+      "calls": 731,
+      "input_tokens": 545787,
+      "output_tokens": 20068,
+      "estimated_cost_usd": 0.8127,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Chunk notes": {
+          "calls": 208,
+          "input_tokens": 259557,
+          "output_tokens": 9541,
+          "estimated_cost_usd": 0.7374
+        },
+        "Embeddings": {
+          "calls": 65,
+          "input_tokens": 147240,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0029
+        },
+        "Reranker": {
+          "calls": 360,
+          "input_tokens": 78799,
+          "output_tokens": 360,
+          "estimated_cost_usd": 0.0331
+        },
+        "Answers": {
+          "calls": 29,
+          "input_tokens": 20907,
+          "output_tokens": 483,
+          "estimated_cost_usd": 0.0276
+        },
+        "Judge (RAG triad)": {
+          "calls": 65,
+          "input_tokens": 38088,
+          "output_tokens": 9631,
+          "estimated_cost_usd": 0.0115
+        },
+        "Input guard": {
+          "calls": 4,
+          "input_tokens": 1196,
+          "output_tokens": 53,
+          "estimated_cost_usd": 0.0002
+        }
+      }
+    },
+    "retriever": {
+      "calls": 46,
+      "input_tokens": 8855,
+      "output_tokens": 40,
+      "estimated_cost_usd": 0.0013,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 6,
+          "input_tokens": 66,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 40,
+          "input_tokens": 8789,
+          "output_tokens": 40,
+          "estimated_cost_usd": 0.0013
+        }
+      },
+      "seconds": 10
+    },
+    "reranker": {
+      "calls": 84,
+      "input_tokens": 17622,
+      "output_tokens": 80,
+      "estimated_cost_usd": 0.0237,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 4,
+          "input_tokens": 44,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 80,
+          "input_tokens": 17578,
+          "output_tokens": 80,
+          "estimated_cost_usd": 0.0237
+        }
+      },
+      "seconds": 17
+    },
+    "chunking": {
+      "calls": 102,
+      "input_tokens": 79646,
+      "output_tokens": 80,
+      "estimated_cost_usd": 0.0037,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 22,
+          "input_tokens": 63993,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0013
+        },
+        "Reranker": {
+          "calls": 80,
+          "input_tokens": 15653,
+          "output_tokens": 80,
+          "estimated_cost_usd": 0.0024
+        }
+      },
+      "seconds": 31
+    },
+    "generator": {
+      "calls": 58,
+      "input_tokens": 16353,
+      "output_tokens": 147,
+      "estimated_cost_usd": 0.0073,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 6,
+          "input_tokens": 190,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 40,
+          "input_tokens": 8789,
+          "output_tokens": 40,
+          "estimated_cost_usd": 0.0013
+        },
+        "Answers": {
+          "calls": 12,
+          "input_tokens": 7374,
+          "output_tokens": 107,
+          "estimated_cost_usd": 0.006
+        }
+      },
+      "seconds": 21
+    },
+    "oracle": {
+      "calls": 16,
+      "input_tokens": 8828,
+      "output_tokens": 111,
+      "estimated_cost_usd": 0.0068,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Answers": {
+          "calls": 12,
+          "input_tokens": 8656,
+          "output_tokens": 111,
+          "estimated_cost_usd": 0.0068
+        },
+        "Embeddings": {
+          "calls": 4,
+          "input_tokens": 172,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        }
+      },
+      "seconds": 11
+    },
+    "triad": {
+      "calls": 70,
+      "input_tokens": 25205,
+      "output_tokens": 3452,
+      "estimated_cost_usd": 0.0107,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 2,
+          "input_tokens": 22,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 40,
+          "input_tokens": 8789,
+          "output_tokens": 40,
+          "estimated_cost_usd": 0.0013
+        },
+        "Answers": {
+          "calls": 2,
+          "input_tokens": 1771,
+          "output_tokens": 70,
+          "estimated_cost_usd": 0.0051
+        },
+        "Judge (RAG triad)": {
+          "calls": 26,
+          "input_tokens": 14623,
+          "output_tokens": 3342,
+          "estimated_cost_usd": 0.0042
+        }
+      },
+      "seconds": 78
+    },
+    "latency": {
+      "calls": 133,
+      "input_tokens": 47032,
+      "output_tokens": 6617,
+      "estimated_cost_usd": 0.0201,
+      "unpriced_calls": 0,
+      "by_component": {
+        "Embeddings": {
+          "calls": 7,
+          "input_tokens": 64,
+          "output_tokens": 0,
+          "estimated_cost_usd": 0.0
+        },
+        "Reranker": {
+          "calls": 80,
+          "input_tokens": 19201,
+          "output_tokens": 80,
+          "estimated_cost_usd": 0.0029
+        },
+        "Input guard": {
+          "calls": 4,
+          "input_tokens": 1196,
+          "output_tokens": 53,
+          "estimated_cost_usd": 0.0002
+        },
+        "Answers": {
+          "calls": 3,
+          "input_tokens": 3106,
+          "output_tokens": 195,
+          "estimated_cost_usd": 0.0097
+        },
+        "Judge (RAG triad)": {
+          "calls": 39,
+          "input_tokens": 23465,
+          "output_tokens": 6289,
+          "estimated_cost_usd": 0.0073
+        }
+      },
+      "seconds": 148
+    }
+  },
+  "errors": {},
+  "seconds": 568
+}
