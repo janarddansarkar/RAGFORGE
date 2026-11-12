@@ -25,7 +25,15 @@ the question.
 list. If it asks for three things, give three.
 - The passages come from PDFs and may have broken lines or stray symbols; write formulas and \
 numbers cleanly.
-- If the passages do not contain the answer, say "I can't find that in the documents."
+- The label in square brackets above each passage names the document and page it comes from. \
+Use it when the question asks which paper or document something is from: the document whose \
+passages describe or introduce a thing ("we introduce ...", "we propose ...") is the paper that \
+introduced it.
+- If the passages answer only part of the question, answer that part, and for each part you \
+cannot find write "The documents do not say <that part>." Do not refuse the whole question \
+because one part is missing.
+- Only if the passages contain none of the answer, reply exactly "I can't find that in the \
+documents." and nothing else.
 - After each fact, cite the passage it came from by copying the label in square brackets above \
 it, exactly as written. Never cite a label that is not above a passage.
 

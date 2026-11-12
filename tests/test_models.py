@@ -338,3 +338,30 @@ def test_the_reranker_spaces_its_calls_for_a_rate_limited_key(monkeypatch):
     clock["slept"].clear()
     LiteLLMReranker("cohere/rerank-v3.5").score("q", ["a"])  # no limit: no waiting
     assert clock["slept"] == []
+
+
+# ---- request timeout ----
+
+
+def test_every_model_request_gets_a_timeout_and_retries_from_the_config(monkeypatch):
+    import litellm
+
+    from models import DEFAULT_RETRIES, DEFAULT_TIMEOUT, make_llm, use_timeouts
+
+    monkeypatch.setattr(litellm, "request_timeout", 6000, raising=False)
+    monkeypatch.setattr(litellm, "num_retries", 0, raising=False)
+    use_timeouts({})  # no setting: the defaults, never "wait for ever"
+    assert (litellm.request_timeout, litellm.num_retries) == (
+        DEFAULT_TIMEOUT,
+        DEFAULT_RETRIES,
+    )
+    assert DEFAULT_TIMEOUT <= 120
+    make_llm(
+        {
+            "llm_model": "openai/m",
+            "max_new_tokens": 5,
+            "request_timeout": 15,
+            "request_retries": 1,
+        }
+    )
+    assert (litellm.request_timeout, litellm.num_retries) == (15, 1)  # config.toml wins

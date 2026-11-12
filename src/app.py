@@ -172,6 +172,9 @@ if recording:
                 st.session_state.stt = SpeechToText(
                     rag.config["stt_model"],
                     api_key_for(rag.config, rag.config["stt_model"]),
+                    rag.config.get(
+                        "usage_tracker"
+                    ),  # so voice input shows up in the cost
                 )
             st.session_state.spoken = st.session_state.stt.transcribe(audio)
         st.session_state.heard = digest

@@ -12,7 +12,7 @@ from functools import cached_property
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
-from models import LiteLLMChat, LiteLLMReranker, api_key_for, make_llm
+from models import LiteLLMChat, LiteLLMReranker, api_key_for, make_llm, use_timeouts
 from vectorstore import VectorStore, load_config
 
 MULTI_QUERY_PROMPT = """Write {n} different phrasings of the question below, \
@@ -135,6 +135,7 @@ class Retriever:
     @cached_property
     def cross_encoder(self) -> LiteLLMReranker:
         """The cross-encoder rerank API (reranker_type = "cross_encoder", e.g. cohere/rerank-v3.5)."""
+        use_timeouts(self.config)
         model = self.config["cross_encoder_model"]
         return LiteLLMReranker(
             model,

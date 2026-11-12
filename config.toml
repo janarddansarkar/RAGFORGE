@@ -15,6 +15,8 @@ max_new_tokens = 256        # longest reply the LLM writes
 reranker_type = "llm"                  # llm: a chat model scores each chunk 0-10 | cross_encoder: a rerank API scores all chunks in one call
 reranker_model = "openai/gpt-4o-mini"  # the chat model that scores each retrieved chunk 0-10 (reranker_type = "llm")
 cross_encoder_model = "cohere/rerank-v3.5"  # the rerank API model (reranker_type = "cross_encoder"; needs a Cohere key)
+request_timeout = 60                   # seconds one model request may take before it fails and is retried
+request_retries = 2                    # how many times a failed or timed-out request is retried
 rerank_calls_per_minute = 0            # 0 = no limit. A Cohere trial key allows 10 calls a minute: set 9 for one
 retry_model = ""                       # writes the second try after a thumbs down ("" = use llm_model)
 guard_model = "openai/gpt-4o-mini"     # checks every question for prompt injection and other malicious input (src/guardrails.py)

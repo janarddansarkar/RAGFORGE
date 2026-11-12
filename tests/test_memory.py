@@ -101,3 +101,21 @@ def test_a_rewrite_that_is_really_an_answer_falls_back_to_the_question():
     memory.add("What is NF4?", "A 4-bit data type [QLoRA p.3]")
     reply = FakeLLM("r = 4 [LoRA p.26], [LoRA p.10]")
     assert memory.standalone("And the rank?", reply) == "And the rank?"
+
+
+def test_the_answer_prompt_answers_what_it_can_and_names_the_paper_from_the_label():
+    prompt = Generator.__new__(Generator).build_prompt(
+        "Which paper introduced NF4?", []
+    )
+    assert (
+        "Do not refuse the whole question" in prompt
+    )  # a missing part must not cause a refusal
+    assert (
+        "names the document and page it comes from" in prompt
+    )  # "which paper" can use the label
+    assert (
+        'reply exactly "I can\'t find that in the documents."' in prompt
+    )  # a real refusal is unchanged
+    assert (
+        'write "The documents do not say' in prompt
+    )  # partial gaps use different words than the refusal

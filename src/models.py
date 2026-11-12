@@ -27,6 +27,21 @@ API_PROVIDERS = (
 )  # fmt: skip
 
 
+DEFAULT_TIMEOUT = (
+    60  # seconds one model request may take before it fails (and is retried)
+)
+DEFAULT_RETRIES = 2
+
+
+def use_timeouts(config: dict) -> None:
+    """Make every LiteLLM request give up after request_timeout seconds and retry request_retries
+    times (config.toml). Without a limit, one stalled API call freezes the page for many minutes."""
+    import litellm
+
+    litellm.request_timeout = config.get("request_timeout", DEFAULT_TIMEOUT)
+    litellm.num_retries = config.get("request_retries", DEFAULT_RETRIES)
+
+
 def is_api_model(name: str | None) -> bool:
     """True for "anthropic/claude-haiku-5-5"."""
     return bool(name) and name.split("/")[0] in API_PROVIDERS
@@ -244,6 +259,7 @@ class LiteLLMReranker:
 
 
 def make_embeddings(config: dict, role: str = "embeddings") -> Embeddings:
+    use_timeouts(config)
     model = config["embedding_model"]
     return LiteLLMEmbeddings(
         model, api_key_for(config, model), config.get("usage_tracker"), role
@@ -253,6 +269,7 @@ def make_embeddings(config: dict, role: str = "embeddings") -> Embeddings:
 def make_llm(config: dict, role: str = "answer") -> LiteLLMChat:
     """The chat model in config["llm_model"]. role says what it is used for (answer, guard,
     judge, ...), so the usage breakdown can tell the jobs apart."""
+    use_timeouts(config)
     model = config["llm_model"]
     return LiteLLMChat(
         model,

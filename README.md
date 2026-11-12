@@ -86,6 +86,9 @@ question -> input guard -> (rewrite follow-ups) -> cache check
 `config.toml` holds every setting: chunk size, top-k, the cache, the guard, the reranker type and the default models.
 In the web app, the sidebar's model choices override the model settings for that session.
 
+Every model request has a timeout (`request_timeout`, 60 seconds) and is retried `request_retries` times (2), so one
+stalled API call cannot freeze the page.
+
 ## Evaluation
 
 There are two kinds, described in `docs/RAG_EVALUATION.md`:
@@ -113,6 +116,8 @@ in `specs_md/retriever_eval.md` and `specs_md/generator_eval.md`.
 ## Notes
 
 - The judge model should differ from the answer model, so a model never grades its own answers.
+- If the documents answer only part of a question, the app answers that part and writes "The documents do not say ..."
+  for the rest. It replies "I can't find that in the documents." only when none of the question can be answered.
 - Each answer has a thumbs up/down; the ratings live in the session cache and disappear with it (details in
   `specs_md/user_feedback.md`).
 - Only PDFs are accepted (scanned pages are read with OCR); standalone images are not supported.

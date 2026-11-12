@@ -119,7 +119,7 @@ Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then 
 | `bm25` | keywords | top k | BM25 score | low |
 | `hybrid` | meaning + keywords | 20 + 20 | RRF rank | medium |
 | `hybrid_rerank` | meaning + keywords | 20 + 20 merged | reranker | high |
-| `multi_query_hybrid_rerank` | the question in 3 more phrasings | 40 + 40 per phrasing, merged | reranker | highest (used for the retry) |
+| `multi_query_hybrid_rerank` | the question in 3 more phrasings | 4 hybrid searches, merged | reranker | highest (used for the retry) |
 
 
 ---
@@ -145,3 +145,9 @@ retriever = Retriever()
 retriever.retrieve("What rank r does LoRA use?")                 # default method
 retriever.retrieve("What rank r does LoRA use?", method="bm25")  # pick one
 ```
+
+### Measured: multi-query against the default
+
+On the 45 golden questions (OpenAI models), `multi_query_hybrid_rerank` scored MRR 0.871 and Recall@5 0.933, against
+0.866 and 0.922 for `hybrid_rerank`, but took 7.3 s per query instead of 4.8 s. The difference is within noise, so
+`hybrid_rerank` stays the default and multi-query is used only for the retry after a thumbs down.

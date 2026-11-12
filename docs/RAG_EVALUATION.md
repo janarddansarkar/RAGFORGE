@@ -104,6 +104,21 @@ findings of that run on the 45 questions:
 
 The Cohere cross-encoder reranker was added to the app after this run, so it is **not** part of these results.
 
+## Checks after the saved run
+
+Two things were checked after the saved run, outside `eval/results/`:
+
+- **App test (15 questions through the Streamlit app, OpenAI):** 9 of 11 answerable questions were answered correctly,
+  both out-of-scope questions were refused, a prompt injection was blocked, a repeated question came from the cache,
+  and a typical turn made about 39 model calls for about $0.007. Two answerable questions were wrongly refused: a
+  two-part question ("what does LoRA stand for, and what is its main idea?") and a follow-up ("which paper introduced
+  it?"). The answer prompt was then changed to answer the parts the passages support and to use the passage label to name
+  the paper. The follow-up is now answered, and the two-part question now gives the main idea and says the documents do
+  not say what LoRA stands for.
+- **Multi-query search (the retry's wider search) against the default on the 45 golden questions:** MRR 0.871 against
+  0.866 and Recall@5 0.933 against 0.922, at 7.3 s against 4.8 s per query. The gain is within noise, so the default
+  stays plain hybrid search + rerank.
+
 ## Reading the scores
 
 - A judge model scores the generator and the triad, so those numbers are a comparison between setups, not absolute
