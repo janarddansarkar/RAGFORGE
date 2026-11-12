@@ -41,13 +41,18 @@ chose. Keys stay in the session's memory only: they are never written to disk or
 | Answers | answers, retries, chunk notes | `gpt-4o`, `gpt-4o-mini`, `gpt-4.1`, `gpt-4.1-mini` | `claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-5-5` | `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.1-flash-lite` |
 | Input guard | blocks prompt injection | same chat models | same | same |
 | Judge | scores the RAG triad | same | same | same |
-| Reranker | scores each chunk 0-10 | same | same | same |
+| Reranker | an LLM rates each chunk 0-10 (about 20 calls), or a cross-encoder scores all chunks in one call | same chat models | same | same, **or Cohere** `rerank-v3.5`, `rerank-v4.0-pro`, `rerank-v4.0-fast` (the Cohere cross-encoder; needs a Cohere key) |
 | Embeddings | vectors for the search | `text-embedding-3-small`, `-3-large` | not offered | `gemini-embedding-001`, `gemini-embedding-2` |
 | Voice input (optional) | speech to text | `whisper-1`, `gpt-4o-transcribe` | not offered | not offered |
 
 "Custom..." lets you type any other model name. The defaults are all OpenAI, so one key is enough to start. The
 defaults in `config.toml` also use OpenAI; for the triad command line, set the provider's key as an environment
 variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`).
+
+Choosing **Cohere** as the reranker switches it from the LLM scorer to a cross-encoder: one rerank call scores all 20
+candidates, and a Cohere key field appears. If the Cohere call fails, the answer keeps the plain search order and the
+failure is logged. A Cohere **trial** key allows 10 calls a minute; set `rerank_calls_per_minute = 9` in `config.toml`
+to stay under it.
 
 Scanned pages need Tesseract (`brew install tesseract`). Everything you send (questions and document text) goes to the
 providers you chose, and you pay for the calls. Building the index adds one model call per chunk for its context note.

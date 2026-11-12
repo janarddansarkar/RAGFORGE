@@ -20,8 +20,8 @@ from models import api_key_for
 from providers import (
     COMPONENTS,
     OFF,
-    PROVIDERS,
     Component,
+    models_of,
     needed_keys,
     providers_for,
     settings_for,
@@ -45,7 +45,7 @@ def choose(component: Component) -> tuple[str, str]:
     """A provider and a model for one component: (OFF, "") when it is switched off."""
     st.markdown(f"**{component.label}**")
     st.caption(component.help)
-    names = providers_for(component.kind)
+    names = providers_for(component.kind, component.also)
     if component.kind == "speech":
         names = [OFF, *names]  # voice input is optional
     default = names.index(component.provider)
@@ -58,7 +58,7 @@ def choose(component: Component) -> tuple[str, str]:
     )
     if provider == OFF:
         return OFF, ""
-    models = list(PROVIDERS[provider].models(component.kind))
+    models = list(models_of(component, provider))
     index = models.index(component.model) if component.model in models else 0
     model = st.selectbox(
         "Model",

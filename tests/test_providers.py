@@ -58,3 +58,35 @@ def test_config_toml_has_a_default_for_every_model_the_code_asks_for():
     ):
         assert config[key], key
     assert "retry_model" in config  # empty = use llm_model
+
+
+def test_cohere_is_offered_for_reranking_only_and_makes_the_reranker_a_cross_encoder():
+    from providers import PROVIDERS, is_cross_encoder, models_of
+
+    reranker = next(c for c in COMPONENTS if c.key == "reranker")
+    assert "Cohere" in providers_for(reranker.kind, reranker.also)
+    assert "Cohere" not in providers_for("chat")  # not for answers, guard or judge
+    assert models_of(reranker, "Cohere")[0] == "rerank-v3.5"
+    assert models_of(reranker, "OpenAI") == PROVIDERS["OpenAI"].chat
+    assert is_cross_encoder("Cohere") and not is_cross_encoder("OpenAI")
+
+    settings = settings_for(
+        {**DEFAULTS, "reranker": ("Cohere", "rerank-v3.5")},
+        {"OpenAI": "o", "Cohere": "c"},
+    )
+    assert settings["reranker_type"] == "cross_encoder"
+    assert settings["cross_encoder_model"] == "cohere/rerank-v3.5"
+    assert "cross_encoder_model" not in settings_for(
+        DEFAULTS, {"OpenAI": "o"}
+    )  # config.toml's default stays
+    assert settings["api_keys"] == {"openai": "o", "cohere": "c"}
+    assert needed_keys({**DEFAULTS, "reranker": ("Cohere", "rerank-v3.5")}) == [
+        "OpenAI",
+        "Cohere",
+    ]
+
+
+def test_the_default_reranker_is_still_the_llm_one():
+    settings = settings_for(DEFAULTS, {"OpenAI": "o"})
+    assert settings["reranker_type"] == "llm"
+    assert settings["reranker_model"] == "openai/gpt-4o-mini"

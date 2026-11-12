@@ -14,6 +14,8 @@ An LLM has .model (its name) and .invoke(prompt).content (the reply).
 """
 
 import math
+import threading
+import time
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage
@@ -187,6 +189,58 @@ class LiteLLMChat:
             text = (choice.message.content or "").strip()[:1]
             return int(text) / 9 if text in list("0123456789") else 0.0
         return sum(d * w for d, w in weights.items()) / sum(weights.values()) / 9
+
+
+class LiteLLMReranker:
+    """A cross-encoder behind a rerank API (e.g. cohere/rerank-v3.5): it reads the question and each
+    chunk together and scores all of them in ONE call."""
+
+    _lock = (
+        threading.Lock()
+    )  # shared by every reranker, so the pace holds across instances
+    _last_call = 0.0
+
+    def __init__(
+        self,
+        model: str,
+        api_key: str | None = None,
+        tracker=None,
+        calls_per_minute: int = 0,
+    ):
+        require_prefix(model)
+        self.model = model
+        self.api_key = api_key
+        self.tracker = tracker  # counts the calls (see usage.py)
+        self.calls_per_minute = (
+            calls_per_minute  # 0 = no limit; a Cohere trial key allows 10
+        )
+
+    def _wait_your_turn(self) -> None:
+        """Space the calls out, so a rate-limited key (e.g. a trial key) is not rejected."""
+        if not self.calls_per_minute:
+            return
+        gap = 60 / self.calls_per_minute
+        with LiteLLMReranker._lock:
+            pause = LiteLLMReranker._last_call + gap - time.monotonic()
+            if pause > 0:
+                time.sleep(pause)
+            LiteLLMReranker._last_call = time.monotonic()
+
+    def score(self, query: str, passages: list[str]) -> list[float]:
+        """One relevance score (0 to 1) per passage, in the same order."""
+        import litellm
+
+        self._wait_your_turn()
+
+        reply = litellm.rerank(
+            model=self.model, query=query, documents=passages, api_key=self.api_key
+        )
+        if self.tracker:
+            self.tracker.record("rerank", self.model, reply, "rerank")
+        scores = [0.0] * len(passages)
+        for result in reply.results:
+            scores[result["index"]] = float(result["relevance_score"])
+        return scores
 
 
 def make_embeddings(config: dict, role: str = "embeddings") -> Embeddings:

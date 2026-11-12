@@ -98,7 +98,7 @@ In the code this is `Retriever.rrf()` in `src/retriever.py`. It adds up `1 / (rr
 
 ### Definition
 
-Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then a **reranker** scores each (query, chunk) pair and re-orders them. The reranker is a hosted chat model (`reranker_model`) that rates each chunk from 0 (unrelated) to 9 (fully answers it), asked in parallel (`rerank_workers`). It costs about `fetch_k` (20) small model calls per question. The score is stored in the chunk metadata as `rerank_score`. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
+Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then a **reranker** scores each (query, chunk) pair and re-orders them. The reranker is one of two kinds (`reranker_type`): **`llm`** (the default), a hosted chat model (`reranker_model`) that rates each chunk from 0 (unrelated) to 9 (fully answers it), asked in parallel (`rerank_workers`), which costs about `fetch_k` (20) small model calls per question; or **`cross_encoder`**, a rerank API (`cross_encoder_model`, e.g. Cohere `rerank-v3.5`) that reads the question and every chunk together and scores all of them in a single call. If the rerank API fails, the fused search order is kept. A rate-limited key can be paced with `rerank_calls_per_minute`. The score is stored in the chunk metadata as `rerank_score`. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
 
 ### Why it helps
 
@@ -132,7 +132,10 @@ top_k = 5        # results returned to the caller
 fetch_k = 20     # candidates gathered before fusion / reranking
 rrf_k = 60       # RRF constant
 rerank_workers = 4  # chunks the reranker scores at the same time
-reranker_model = "openai/gpt-4o-mini"  # the chat model that scores each chunk
+reranker_type = "llm"  # llm | cross_encoder
+reranker_model = "openai/gpt-4o-mini"  # the chat model that scores each chunk (llm)
+cross_encoder_model = "cohere/rerank-v3.5"  # the rerank API (cross_encoder)
+rerank_calls_per_minute = 0  # 0 = no limit; 9 for a Cohere trial key
 ```
 
 Usage:

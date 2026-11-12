@@ -1,8 +1,10 @@
 """Retriever: search the vector store with dense (vectors) and BM25 (keywords) search, fuse them
-with RRF, and rerank with an LLM (a chat model scores each chunk). The retry's wider search also
-asks the LLM for other phrasings of the question (multi-query).
+with RRF, and rerank: either a chat model scores each chunk, or a cross-encoder rerank API (Cohere)
+scores them all in one call. The retry's wider search also asks the LLM for other phrasings of the
+question (multi-query).
 """
 
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from functools import cached_property
@@ -10,7 +12,7 @@ from functools import cached_property
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
-from models import LiteLLMChat, make_llm
+from models import LiteLLMChat, LiteLLMReranker, api_key_for, make_llm
 from vectorstore import VectorStore, load_config
 
 MULTI_QUERY_PROMPT = """Write {n} different phrasings of the question below, \
@@ -130,17 +132,32 @@ class Retriever:
         ranked = sorted(docs, key=lambda key: scores[key], reverse=True)
         return [self.with_scores(docs[key], rrf_score=scores[key]) for key in ranked]
 
+    @cached_property
+    def cross_encoder(self) -> LiteLLMReranker:
+        """The cross-encoder rerank API (reranker_type = "cross_encoder", e.g. cohere/rerank-v3.5)."""
+        model = self.config["cross_encoder_model"]
+        return LiteLLMReranker(
+            model,
+            api_key_for(self.config, model),
+            self.config.get("usage_tracker"),
+            self.config.get("rerank_calls_per_minute", 0),
+        )
+
     def rerank(self, query: str, docs: list[Document], k: int) -> list[Document]:
-        """Score every (question, chunk) pair from 0 to 1 and keep the best k. The scorer is an
-        LLM asked for a number. Equal scores keep their incoming order (sorted() is stable), so
-        ties fall back to the fusion ranking."""
+        """Score every (question, chunk) pair from 0 to 1 and keep the best k. The scorer is either
+        a cross-encoder rerank API (reranker_type = "cross_encoder": one call for all chunks) or an
+        LLM asked for a number per chunk. Equal scores keep their incoming order (sorted() is
+        stable), so ties fall back to the fusion ranking."""
         if not docs:
             return []
-        # Each chunk is scored on its own, so several can be asked at once (map keeps the order).
-        with ThreadPoolExecutor(self.config.get("rerank_workers", 1)) as pool:
-            scores = list(
-                pool.map(lambda d: self._relevance(query, d.page_content), docs)
-            )
+        if self.config.get("reranker_type", "llm") == "cross_encoder":
+            scores = self._cross_encoder_scores(query, docs)
+        else:
+            # Each chunk is scored on its own, so several can be asked at once (map keeps the order).
+            with ThreadPoolExecutor(self.config.get("rerank_workers", 1)) as pool:
+                scores = list(
+                    pool.map(lambda d: self._relevance(query, d.page_content), docs)
+                )
         ranked = sorted(zip(docs, scores), key=lambda pair: pair[1], reverse=True)
         # New Documents, so the score doesn't leak into the shared BM25 chunks.
         return [
@@ -151,6 +168,17 @@ class Retriever:
             )
             for doc, score in ranked[:k]
         ]
+
+    def _cross_encoder_scores(self, query: str, docs: list[Document]) -> list[float]:
+        """One rerank call. If it fails, keep the fused search order instead of failing the answer."""
+        try:
+            return self.cross_encoder.score(query, [d.page_content for d in docs])
+        except Exception as error:  # noqa: BLE001 - a rerank outage must not break answers
+            logging.getLogger(__name__).warning(
+                "cross-encoder rerank failed (%s): keeping the fused search order",
+                error,
+            )
+            return [1 - i / len(docs) for i in range(len(docs))]
 
     def _relevance(self, query: str, passage: str) -> float:
         return self.reranker.digit_score(

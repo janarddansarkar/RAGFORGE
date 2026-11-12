@@ -15,9 +15,12 @@ class Provider:
     chat: tuple[str, ...]  # chat models, best first
     embeddings: tuple[str, ...] = ()
     speech: tuple[str, ...] = ()
+    rerank: tuple[
+        str, ...
+    ] = ()  # cross-encoder rerank models (one call scores every chunk)
 
     def models(self, kind: str) -> tuple[str, ...]:
-        return getattr(self, kind)
+        return getattr(self, kind) if kind else ()
 
 
 PROVIDERS = {
@@ -46,6 +49,12 @@ PROVIDERS = {
             ),
             embeddings=("gemini-embedding-001", "gemini-embedding-2"),
         ),
+        Provider(
+            "Cohere",
+            "cohere",
+            chat=(),  # Cohere is offered for reranking only
+            rerank=("rerank-v3.5", "rerank-v4.0-pro", "rerank-v4.0-fast"),
+        ),
     )
 }
 
@@ -58,6 +67,7 @@ class Component:
     kind: str  # "chat" | "embeddings" | "speech": which models of a provider it can use
     provider: str  # the default provider
     model: str  # the default model
+    also: str = ""  # a second kind of model it can use, from providers that have no `kind` models
 
 
 COMPONENTS = (
@@ -67,8 +77,10 @@ COMPONENTS = (
               "chat", "OpenAI", "gpt-4o-mini"),
     Component("judge", "Judge", "scores every answer (RAG triad)",
               "chat", "OpenAI", "gpt-4o-mini"),
-    Component("reranker", "Reranker", "scores each retrieved chunk 0-10",
-              "chat", "OpenAI", "gpt-4o-mini"),
+    Component("reranker", "Reranker",
+              "scores each retrieved chunk: a chat model rates them 0-10 (20 calls), or Cohere's "
+              "cross-encoder scores them all in one call",
+              "chat", "OpenAI", "gpt-4o-mini", also="rerank"),
     Component("embedding", "Embeddings", "turns text into vectors for the search",
               "embeddings", "OpenAI", "text-embedding-3-small"),
     Component("speech", "Voice input", "turns a spoken question into text (optional)",
@@ -78,9 +90,23 @@ COMPONENTS = (
 OFF = "Off"  # the choice for an optional component, e.g. voice input
 
 
-def providers_for(kind: str) -> list[str]:
-    """The providers that have a model for this kind of job."""
-    return [name for name, p in PROVIDERS.items() if p.models(kind)]
+def providers_for(kind: str, also: str = "") -> list[str]:
+    """The providers that have a model for this kind of job (or for the `also` kind)."""
+    return [name for name, p in PROVIDERS.items() if p.models(kind) or p.models(also)]
+
+
+def models_of(component: Component, provider: str) -> tuple[str, ...]:
+    """The models this provider offers for the component."""
+    p = PROVIDERS[provider]
+    return p.models(component.kind) or (
+        p.models(component.also) if component.also else ()
+    )
+
+
+def is_cross_encoder(provider: str) -> bool:
+    """True for a provider that can only rerank (Cohere): the reranker is then a cross-encoder."""
+    p = PROVIDERS[provider]
+    return bool(p.rerank) and not p.chat
 
 
 def full_name(provider: str, model: str) -> str:
@@ -97,13 +123,18 @@ def settings_for(choices: dict[str, tuple[str, str]], keys: dict[str, str]) -> d
     """The config.toml overrides for these choices ({component key: (provider, model)}).
     keys maps a provider name to the user's API key; it is held in memory only."""
     chosen = {key: full_name(*pair) for key, pair in choices.items() if pair[0] != OFF}
-    return {
+    cross_encoder = is_cross_encoder(choices["reranker"][0])
+    settings = {
+        "reranker_type": "cross_encoder" if cross_encoder else "llm",
         "llm_model": chosen["answer"],
         "retry_model": "",  # a second try uses the answer model
         "guard_model": chosen["guard"],
         "judge_model": chosen["judge"],
-        "reranker_model": chosen["reranker"],
+        "reranker_model": chosen["guard"] if cross_encoder else chosen["reranker"],
         "embedding_model": chosen["embedding"],
         "stt_model": chosen.get("speech", ""),  # "" = no voice input
         "api_keys": {PROVIDERS[name].prefix: key for name, key in keys.items()},
     }
+    if cross_encoder:  # otherwise keep cross_encoder_model from config.toml
+        settings["cross_encoder_model"] = chosen["reranker"]
+    return settings

@@ -238,3 +238,103 @@ def test_gemini_calls_disable_thinking_so_small_token_limits_still_give_a_reply(
     sent.clear()
     LiteLLMChat("openai/gpt-4o").invoke("x")
     assert "reasoning_effort" not in sent
+
+
+# ---- the cross-encoder reranker (Cohere through LiteLLM) ----
+
+
+def retriever_with(config: dict, scorer) -> Retriever:
+    from langchain_core.documents import Document
+
+    retriever = Retriever.__new__(Retriever)
+    retriever.config = config
+    retriever.__dict__["cross_encoder"] = scorer
+    retriever.docs = [Document(id=k, page_content=k) for k in "abc"]
+    return retriever
+
+
+def test_cross_encoder_rerank_scores_all_chunks_in_one_call_and_sorts():
+    calls = []
+    scorer = SimpleNamespace(
+        score=lambda query, passages: calls.append((query, passages)) or [0.2, 0.9, 0.5]
+    )
+    retriever = retriever_with({"reranker_type": "cross_encoder"}, scorer)
+    ranked = retriever.rerank("q", retriever.docs, k=2)
+    assert [d.id for d in ranked] == ["b", "c"]
+    assert ranked[0].metadata["rerank_score"] == 0.9
+    assert calls == [("q", ["a", "b", "c"])]  # one call, not one per chunk
+
+
+def test_a_failed_cross_encoder_call_keeps_the_fused_order(caplog):
+    def broken(query, passages):
+        raise RuntimeError("rerank api down")
+
+    retriever = retriever_with(
+        {"reranker_type": "cross_encoder"}, SimpleNamespace(score=broken)
+    )
+    ranked = retriever.rerank("q", retriever.docs, k=3)
+    assert [d.id for d in ranked] == ["a", "b", "c"]
+    assert "keeping the fused search order" in caplog.text
+
+
+def test_litellm_reranker_maps_scores_back_to_the_chunk_order_and_counts_the_call(
+    monkeypatch,
+):
+    import litellm
+
+    from models import LiteLLMReranker
+    from usage import UsageTracker
+
+    sent = {}
+    monkeypatch.setattr(
+        litellm,
+        "rerank",
+        lambda **kw: (
+            sent.update(kw)
+            or SimpleNamespace(
+                results=[
+                    {"index": 1, "relevance_score": 0.9},
+                    {"index": 0, "relevance_score": 0.1},
+                ]
+            )
+        ),
+    )
+    monkeypatch.setattr(litellm, "completion_cost", lambda **kw: 0.002)
+    tracker = UsageTracker()
+    scores = LiteLLMReranker("cohere/rerank-v3.5", "key-c", tracker).score(
+        "q", ["a", "b"]
+    )
+    assert scores == [0.1, 0.9]
+    assert sent["model"] == "cohere/rerank-v3.5" and sent["api_key"] == "key-c"
+    assert [(c.role, c.cost) for c in tracker.calls] == [("rerank", 0.002)]
+
+
+def test_the_reranker_spaces_its_calls_for_a_rate_limited_key(monkeypatch):
+    import litellm
+
+    import models
+    from models import LiteLLMReranker
+
+    clock = {"now": 100.0, "slept": []}
+    monkeypatch.setattr(models.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr(
+        models.time,
+        "sleep",
+        lambda s: (clock["slept"].append(s), clock.update(now=clock["now"] + s)),
+    )
+    monkeypatch.setattr(
+        litellm,
+        "rerank",
+        lambda **kw: SimpleNamespace(results=[{"index": 0, "relevance_score": 1.0}]),
+    )
+    LiteLLMReranker._last_call = 0.0
+    fast = LiteLLMReranker(
+        "cohere/rerank-v3.5", calls_per_minute=10
+    )  # one call every 6 s
+    fast.score("q", ["a"])
+    fast.score("q", ["a"])
+    fast.score("q", ["a"])
+    assert clock["slept"] == [6.0, 6.0]  # the first call goes straight through
+    clock["slept"].clear()
+    LiteLLMReranker("cohere/rerank-v3.5").score("q", ["a"])  # no limit: no waiting
+    assert clock["slept"] == []
