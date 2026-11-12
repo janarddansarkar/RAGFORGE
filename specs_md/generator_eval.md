@@ -3,17 +3,18 @@
 This document explains what the generator evaluation measures, how each number is
 calculated, and how to read it. The retriever has its own document, `retriever_eval.md`.
 
-Run it:
+Run it (the runner builds the index first; a full run also does the other stages):
 
 ```bash
-uv run python eval/generator_eval.py                  # retrieve, then answer (the real pipeline)
-uv run python eval/generator_eval.py --oracle         # answer from the golden pages (generator alone)
-uv run python eval/generator_eval.py --limit 5        # only the first 5 questions (quick test)
-uv run python eval/generator_eval.py --generator ID --judge ID   # try other models without editing config
+uv run python eval/run_provider_eval.py openai --stages generator          # retrieve, then answer (the real pipeline)
+uv run python eval/run_provider_eval.py openai --stages generator,oracle   # also answer from the golden pages
+uv run python eval/run_provider_eval.py openai --stages generator --limit 5   # first 5 questions (quick test)
 ```
 
-Each run is saved to its own file, `eval/generator_runs/<date>_<time>.json` (with
-`_oracle` added for oracle runs). Files are never overwritten.
+The numbers are saved in `eval/results/<provider>_<date>_<time>.json`. `eval/generator_eval.py` can also be run on its
+own (`--oracle`, `--limit`, `--generator ID`, `--judge ID`) once the vector store for the configured models exists;
+it then writes `eval/generator_runs/<date>_<time>.json` and never overwrites a file. Set `OPENAI_API_KEY` (or the key of
+the provider you use) first.
 
 ---
 
@@ -49,16 +50,13 @@ Compare the two for the same generator:
 Three of the metrics need a model to judge answers. This is the **judge**
 (`judge_model` in `config.toml`, or `--judge`). Rules:
 
-- The judge must be **a different model, ideally a different family, from the generator**,
+- The judge must be **a different model from the generator**, ideally a different family,
   so a model does not grade its own answers.
-- It is a local Hugging Face model, so nothing leaves your machine and there is no cost.
-  The current judge is `mistralai/Mistral-7B-Instruct-v0.3` (about 14.5 GB).
-- Each run has **two phases**: the generator answers every question, is then freed from
-  memory, and only then is the judge loaded. That is what lets a 7B judge fit next to a
-  generator on a 24 GB machine.
+- It is a hosted model called through LiteLLM with your key, so it costs money. The default is `gpt-4o-mini`; the
+  generator is `gpt-4o`.
 - Judge replies are one word (`YES`, `NO`, `CORRECT`, `PARTLY`, `WRONG`). If the reply
   is unclear, it counts as the worst option for that question.
-- Small judges are **noisy**. Compare runs that used the **same judge**; scores from
+- Judges are **noisy**. Compare runs that used the **same judge**; scores from
   different judges are not comparable.
 
 ## 4. The metrics
@@ -90,7 +88,7 @@ addresses what was asked, even if it is wrong or incomplete.
 **How it is calculated** (the RAGAS approach):
 
 1. Ask the judge to write the one question the answer responds to.
-2. Embed that question and the real question with the embedding model (`bge-m3`).
+2. Embed that question and the real question with the embedding model (`embedding_model`).
 3. Relevancy = cosine similarity between the two, with negative values set to 0.
 
 **Reading it:** an answer that is off topic or a refusal produces an unrelated question
@@ -152,7 +150,7 @@ golden answer and how strict the judge is; it will not be 1.0.
 generator, judge        the models used
 context                 "retrieved" or "oracle (golden pages)"
 settings                embedding_model, reranker_model, default_method, top_k,
-                        chunking_strategy, contextual, max_new_tokens
+                        contextual, max_new_tokens
 questions               number of questions scored
 average                 the five metrics plus seconds_per_answer
 rows                    per question: id, question, answer, reference, seconds, 5 scores
@@ -167,8 +165,8 @@ In `config.toml`:
 
 | setting | meaning |
 |---|---|
-| `llm_model` | the generator (Hugging Face id) |
-| `judge_model` | the judge (a different model from the generator) |
+| `llm_model` | the generator (a LiteLLM name such as `openai/gpt-4o`) |
+| `judge_model` | the judge (a different model from the generator, e.g. `openai/gpt-4o-mini`) |
 | `max_new_tokens` | longest answer the generator writes |
 | `top_k` | how many chunks are given to the generator |
 | `golden_file` | the question set (needs `golden_ans` for each question) |
@@ -182,30 +180,26 @@ In `config.toml`:
   the judge is right.
 - **Compare only runs with the same judge and the same settings.**
 
-## 8. Run history and what to trust
+## 8. Results
 
-Absolute scores depend heavily on the judge, so only compare runs with the same judge.
-The same 45 `gemma-3-1b` answers scored very differently under different judges:
+The saved OpenAI run (`gpt-4o` generator, `gpt-4o-mini` judge, 45 questions) is in `docs/EVALUATION_RESULTS.md`:
 
-| judge | answer correctness | note |
-|---|---|---|
-| Qwen2.5-3B-Instruct | 0.62 | strict; but it refused to say "relevant" (old relevancy method) |
-| Granite-3.3-2B-Instruct | 0.94 | too lenient: accepted a wrong answer, gave Phi 45/45 |
-| Mistral-7B-Instruct-v0.3 | 0.91 | current judge; still lenient on faithfulness and context recall |
+| context | faithfulness | answer relevancy | answer correctness | semantic similarity | context recall |
+|---|---|---|---|---|---|
+| retrieved chunks | 0.71 | 0.84 | 0.98 | 0.71 | 0.92 |
+| golden pages (oracle) | 0.94 | 0.75 | 0.91 | 0.63 | 0.90 |
 
-So the valid generator comparison is the one in `eval/find_best_report.json` (all three
-generators, same judge). The files in `eval/generator_runs/` from the Qwen and Granite judges
-are kept as history, not as the basis for a decision. Across both Granite and Mistral the
-order is consistent: `gemma-3-1b` < `Qwen2.5-3B` ≈ `Phi-3.5-mini`.
+Correctness is already high, and faithfulness is much better when the generator is handed the right pages, so most of
+the remaining gap comes from retrieval, not the answer model. Absolute scores depend on the judge, so only compare runs
+with the same judge.
 
 ## 9. Limitations
 
-- **Judges are lenient on easy questions.** Faithfulness and context recall come out near
+- **Judges can be lenient on easy questions.** Faithfulness and context recall can come out near
   1.00 for every generator, so they separate weak models from strong ones poorly. Correctness
   and the judge-free semantic similarity are the more useful columns.
-- **A small judge makes mistakes.** Early on, a 3B judge always answered "NO" for
-  relevancy, which is why relevancy uses the question-rewriting method instead of a
-  yes/no verdict.
+- **A small judge makes mistakes.** A weak judge can answer "NO" to every relevancy check, which is why relevancy
+  uses the question-rewriting method instead of a yes/no verdict.
 - **Sentence-level checks.** Faithfulness and context recall split text on `.`, `!` and
   `?`, so abbreviations and equations can split wrongly.
 - **Golden answers are single references.** A correct answer worded differently can
@@ -218,8 +212,10 @@ order is consistent: `gemma-3-1b` < `Qwen2.5-3B` ≈ `Phi-3.5-mini`.
 
 | file | role |
 |---|---|
-| `eval/generator_eval.py` | runs the evaluation and writes the run file |
+| `eval/run_provider_eval.py` | runs this evaluation (and the others) with one provider and saves the results |
+| `eval/generator_eval.py` | the evaluation itself |
+| `eval/answering.py` | answers a question from given chunks with the generator's own prompt |
 | `src/generator.py` | the generator (prompt, answer from chunks) |
-| `src/models.py` | loads the generator, judge and embedding models |
-| `eval/generator_runs/` | one JSON file per run |
+| `src/models.py` | the LiteLLM wrappers for the generator, judge and embedding models |
+| `eval/results/` | one JSON file per saved run |
 | `golden_data/rag_retriever_golden_dataset_45.json` | questions and golden answers |

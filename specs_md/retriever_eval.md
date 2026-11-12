@@ -8,10 +8,12 @@ calculated, and how to read it. For the general theory behind the metrics see
 Run it:
 
 ```bash
-uv run python eval/retriever_eval.py      # needs the vector store built first
+uv run python eval/run_provider_eval.py openai --stages retriever   # builds the index first, saves to eval/results/
 ```
 
-Results are printed as a table and saved to `eval/retriever_results.json`.
+Results are printed as a table and saved in the run's JSON file in `eval/results/`. `eval/retriever_eval.py` can also be
+run on its own once the vector store for the configured models exists (set `OPENAI_API_KEY` or the key of the provider
+you use).
 
 ---
 
@@ -27,8 +29,8 @@ evaluation (`generator_eval.md`). Keeping the two apart tells you which half of 
 pipeline is the problem when an answer is bad.
 
 Every retrieval method listed under `methods` in `config.toml` is scored on the same
-questions: `dense`, `bm25`, `hybrid`, `dense_rerank` and `hybrid_rerank` (the LLM-based
-methods `rewrite_*`, `multi_query_*` and `hyde_*` can be added to the list).
+questions: `dense`, `bm25`, `hybrid` and `hybrid_rerank` (`multi_query_hybrid_rerank`, the retry's wider search, can be
+added to the list). The reranker is whichever one `reranker_type` selects: an LLM or Cohere's cross-encoder.
 
 ## 2. The test set (golden dataset)
 
@@ -143,17 +145,17 @@ metrics read prefixes of that list.
 ## 6. Output
 
 The table has one row per method and one column per metric. The JSON file has the same
-numbers. Example (45 questions, `recursive_1000_150` chunking, `bge-m3` embeddings):
+numbers. The saved OpenAI run (45 questions, 600/90 chunks with context notes, `text-embedding-3-small`
+embeddings, `gpt-4o-mini` reranker; see `docs/EVALUATION_RESULTS.md`):
 
 | method | Recall@1 | Recall@3 | Recall@5 | Recall@10 | Precision@5 | MRR | HitRate@5 |
 |---|---|---|---|---|---|---|---|
-| dense | 0.59 | 0.78 | 0.89 | 0.96 | 0.34 | 0.78 | 0.93 |
-| bm25 | 0.44 | 0.69 | 0.82 | 0.90 | 0.32 | 0.67 | 0.87 |
-| hybrid | 0.61 | 0.86 | 0.90 | 0.96 | 0.34 | 0.82 | 0.96 |
-| dense_rerank | 0.62 | 0.90 | 0.93 | 0.97 | 0.39 | 0.84 | 0.96 |
-| hybrid_rerank | 0.66 | 0.90 | 0.93 | 0.96 | 0.40 | 0.85 | 0.96 |
+| dense | 0.49 | 0.72 | 0.82 | 0.90 | 0.38 | 0.71 | 0.89 |
+| bm25 | 0.57 | 0.73 | 0.82 | 0.93 | 0.41 | 0.74 | 0.91 |
+| hybrid | 0.62 | 0.77 | 0.89 | 0.92 | 0.42 | 0.79 | 0.93 |
+| hybrid_rerank | 0.72 | 0.88 | 0.92 | 0.96 | 0.46 | 0.88 | 0.96 |
 
-These are a snapshot, so rerun the evaluation for current numbers.
+These are a snapshot of one run; rerun the evaluation to refresh them.
 
 ## 7. How to read the results
 
@@ -174,16 +176,17 @@ These are a snapshot, so rerun the evaluation for current numbers.
 - **Small test set.** 45 questions from three papers (LoRA, QLoRA, Attention Is All You
   Need). Results may not carry over to other documents.
 - **No answer quality.** A perfect retriever score does not mean good answers.
-- **The tuning risk.** Choosing settings on the same 45 questions overfits. `find_best.py`
-  holds out every third question to check the final pick.
+- **The tuning risk.** Choosing settings on the same 45 questions overfits, so treat a setting chosen from these numbers
+  as a hypothesis and check it on documents of your own.
 
 ## 9. Related files
 
 | file | role |
 |---|---|
-| `eval/retriever_eval.py` | runs the evaluation |
+| `eval/run_provider_eval.py` | builds the index and runs this evaluation (and the others) with one provider |
+| `eval/retriever_eval.py` | the evaluation itself |
 | `metrics/retriever_metrics.py` | the metric math |
 | `eval/golden.py` | reads a golden question and decides which chunks are relevant |
-| `eval/chunking_compare.py` | runs this evaluation for each chunking strategy |
-| `eval/find_best.py` | runs it across chunking, methods and rerankers |
-| `eval/retriever_results.json` | latest saved numbers |
+| `eval/chunking_compare.py` | runs this evaluation for plain and context-note chunks |
+| `eval/reranker_compare.py` | runs it for each reranker model |
+| `eval/results/` | the saved runs |

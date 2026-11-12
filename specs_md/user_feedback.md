@@ -70,7 +70,7 @@ A wrong citation is a writing problem, not a search problem: an early version se
 search only added unrelated chunks (pages 6 and 2) while the same wrong citation came back.
 
 **A stronger model writes the second try.** `retry_model` in `config.toml` (empty by default = the usual
-`llm_model`; on `main` the sidebar's answer model) can be set to a stronger model that is used only for retries, because a small answer model ignored "do not repeat it" and
+`llm_model`, which the sidebar sets) can be set to a stronger model that is used only for retries, because a small answer model ignored "do not repeat it" and
 repeated a wrong citation. A retry is one more model call.
 
 Every retry also shows the model the rejected answer ("Do not repeat it") and puts the extra notes **before** the
@@ -88,7 +88,7 @@ Only the latest answer has the Try again button, so the chat memory stays consis
 ## A fix found while testing: repeated questions were rewritten into answers
 
 The chat memory rewrites follow-ups into standalone questions (`ConversationMemory.standalone`). When the same
-question was asked again, the 4B model once turned it into the text of the previous answer
+question was asked again, a small model once turned it into the text of the previous answer
 (`r = 4 [LoRA p.26], [LoRA p.10]`), which broke both the cache lookup and the search. Now a question asked before
 word for word is not rewritten at all, and a rewrite that contains a citation like `[LoRA p.10]` is rejected.
 
@@ -124,8 +124,8 @@ it is quick). Chunks from an older store, without `chunk_text`, still work and a
   not one per displayed message.
 - Only the latest answer can be retried.
 - Even the retry model can ignore the extra notes; the token limit is the only hard control, and nothing checks that a cited page really contains the cited number.
-- Cloud use (`main`) would add API cost for the retry: a wider search is about 20 more reranker calls if the
-  reranker is an LLM (none with a rerank API) plus the rewrite and the answer.
+- A retry adds API cost: a wider search is about 40 reranker calls if the reranker is an LLM (one with Cohere's
+  cross-encoder) plus the rewrite and the answer.
 
 ## How it was tested
 
@@ -135,7 +135,7 @@ it is quick). Chunks from an older store, without `chunk_text`, still work and a
   reasons were stored, the question was then answered afresh with a different answer, "Wrong or missing source" ran a
   wider search (7 chunks, new pages), "Too long" reused the chunks, and the cache file was deleted on a new upload.
   The RAG-triad judge was stubbed in the replay runs to keep them fast.
-- Retry model check, run on `dev` with local models (LoRA paper, "Wrong citation" + "Incomplete"): `mistral:7b` reused the same chunks, ran no new
+- Retry check (LoRA paper, "Wrong citation" + "Incomplete"): the retry model reused the same chunks, ran no new
   search, and dropped the wrong `[p.4]` citation.
 - IRS W-9 form (`test_docs/irs_w9_form.pdf`, 6 pages): five factual questions answered correctly with the right
   pages (24% backup withholding, the $50 penalty, Form W-8, the SSN), an out-of-scope question refused, a prompt

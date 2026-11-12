@@ -17,7 +17,7 @@ The retry after a thumbs down also uses `multi_query_hybrid_rerank`: the same, w
 
 ### Definition
 
-The query is embedded with the same model used for the chunks (`bge-m3`). The vector store returns the `k` chunks whose vectors are closest to the query vector.
+The query is embedded with the same model used for the chunks (`embedding_model`, e.g. `text-embedding-3-small`). The vector store returns the `k` chunks whose vectors are closest to the query vector.
 
 ### Strengths
 
