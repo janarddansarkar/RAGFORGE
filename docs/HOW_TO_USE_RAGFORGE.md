@@ -28,7 +28,7 @@ Choices to know about:
 
 - **Anthropic** is available for chat only (answers, guard, judge, reranker). Embeddings need OpenAI or Gemini, and
   voice input needs OpenAI.
-- **Reranker:** an LLM rates each retrieved chunk (about 20 calls per question), or choose **Cohere** to use its
+- **Reranker:** an LLM rates each retrieved chunk (about 30 calls per question), or choose **Cohere** to use its
   cross-encoder (one call per question; needs a Cohere key).
 - Changing a provider or model resets the documents: click Ingest again.
 

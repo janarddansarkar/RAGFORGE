@@ -30,7 +30,7 @@ losing the answers.
  question
    -> input guard (small LLM)                       blocks injection / malicious input
    -> follow-up rewrite + session cache check
-   -> RETRIEVER: dense + BM25, fused with RRF       (20 candidates)                 <-- 1. retriever
+   -> RETRIEVER: dense + BM25, fused with RRF       (30 candidates)                 <-- 1. retriever
    -> RERANKER: an LLM scores each chunk, or Cohere's cross-encoder (top 5 kept)    <-- 2. reranker
    -> GENERATOR: answer model, cited answer, today's date in the prompt             <-- 4 and 5. generator
    -> answer + page citations
@@ -102,7 +102,8 @@ findings of that run on the 45 questions:
   top 5 chunks usually include some unrelated ones.
 - **Latency per question:** guard 0.8 s, search 0.8 s, rerank 3.8 s, answer 1.3 s, triad scoring 39 s.
 
-The Cohere cross-encoder reranker was added to the app after this run, so it is **not** part of these results.
+The saved run used 20 candidates for the reranker; the default is now 30 (see "Checks after the saved run"). The Cohere
+cross-encoder reranker was added to the app after this run, so it is **not** part of these results.
 
 ## Checks after the saved run
 
@@ -115,6 +116,15 @@ Two things were checked after the saved run, outside `eval/results/`:
   it?"). The answer prompt was then changed to answer the parts the passages support and to use the passage label to name
   the paper. The follow-up is now answered, and the two-part question now gives the main idea and says the documents do
   not say what LoRA stands for.
+- **Fixing a wrong answer ("what rank r did the GPT-3 experiments use?", answered "1 or 2"):** the passages that state
+  r=4 were never among the 20 candidates the reranker sees. With 30 candidates they are, and the answer is r=4. On the
+  45 golden questions this also helped retrieval (Recall@3 0.922 against 0.878, MRR 0.888 against 0.866, Hit Rate@5
+  0.978 against 0.956; 6.9 s against 4.8 s per query). A stricter answer prompt (answer the supported parts, never use
+  outside knowledge, prefer the values the authors actually used) was checked on the 45 golden questions with the same
+  judge: faithfulness 0.93 (was 0.71), answer relevancy 0.86 (0.84), correctness 0.99 (0.98), similarity 0.73 (0.71),
+  context recall 0.90 (0.92), 8.3 s per answer. Out-of-scope questions (a capital city, a sports result, an
+  unrelated paper) were refused 3 of 3 times each. A vague phrasing ("what rank r does LoRA use?") is still unreliable:
+  the paper uses different ranks in different places and the reranker ranks tangential passages highly.
 - **Multi-query search (the retry's wider search) against the default on the 45 golden questions:** MRR 0.871 against
   0.866 and Recall@5 0.933 against 0.922, at 7.3 s against 4.8 s per query. The gain is within noise, so the default
   stays plain hybrid search + rerank.

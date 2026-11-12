@@ -26,7 +26,7 @@ from providers import (
     providers_for,
     settings_for,
 )
-from rag import REFUSAL, DocumentRAG, Report
+from rag import DocumentRAG, Report
 from usage import ROLE_NAMES, UsageTracker, summarize
 from voice import SpeechToText
 
@@ -288,7 +288,7 @@ def show_answer(message: dict, index: int, streamed: bool = False) -> None:
         st.write(answer)
     if message["query"] != previous_question:
         st.caption(f"Searched for: {message['query']}")
-    if REFUSAL in answer.lower().replace("\u2019", "'"):
+    if Report.refused(answer):
         st.write("**Citations:** none - the document does not answer this question.")
     else:
         st.write("**Citations:** " + ", ".join(Report.cited(answer, chunks)))

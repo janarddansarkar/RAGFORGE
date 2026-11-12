@@ -53,7 +53,7 @@ BM25 is a classic keyword scoring function. Chunks and the query are lowercased 
 
 ### Definition
 
-Run dense and BM25 each for `fetch_k` candidates (default 20), then merge the two ranked lists with **Reciprocal Rank Fusion (RRF)**:
+Run dense and BM25 each for `fetch_k` candidates (default 30), then merge the two ranked lists with **Reciprocal Rank Fusion (RRF)**:
 
 ```text
 score(chunk) = sum over lists of  1 / (rrf_k + rank)      rrf_k = 60
@@ -98,7 +98,7 @@ In the code this is `Retriever.rrf()` in `src/retriever.py`. It adds up `1 / (rr
 
 ### Definition
 
-Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then a **reranker** scores each (query, chunk) pair and re-orders them. The reranker is one of two kinds (`reranker_type`): **`llm`** (the default), a hosted chat model (`reranker_model`) that rates each chunk from 0 (unrelated) to 9 (fully answers it), asked in parallel (`rerank_workers`), which costs about `fetch_k` (20) small model calls per question; or **`cross_encoder`**, a rerank API (`cross_encoder_model`, e.g. Cohere `rerank-v3.5`) that reads the question and every chunk together and scores all of them in a single call. If the rerank API fails, the fused search order is kept. A rate-limited key can be paced with `rerank_calls_per_minute`. The score is stored in the chunk metadata as `rerank_score`. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
+Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then a **reranker** scores each (query, chunk) pair and re-orders them. The reranker is one of two kinds (`reranker_type`): **`llm`** (the default), a hosted chat model (`reranker_model`) that rates each chunk from 0 (unrelated) to 9 (fully answers it), asked in parallel (`rerank_workers`), which costs about `fetch_k` (30) small model calls per question; or **`cross_encoder`**, a rerank API (`cross_encoder_model`, e.g. Cohere `rerank-v3.5`) that reads the question and every chunk together and scores all of them in a single call. If the rerank API fails, the fused search order is kept. A rate-limited key can be paced with `rerank_calls_per_minute`. The score is stored in the chunk metadata as `rerank_score`. The top `k` are returned. This is the default (`default_method = "hybrid_rerank"`).
 
 ### Why it helps
 
@@ -117,8 +117,8 @@ Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then 
 |---|---|---|---|---|
 | `dense` | meaning | top k | vector similarity | low |
 | `bm25` | keywords | top k | BM25 score | low |
-| `hybrid` | meaning + keywords | 20 + 20 | RRF rank | medium |
-| `hybrid_rerank` | meaning + keywords | 20 + 20 merged | reranker | high |
+| `hybrid` | meaning + keywords | 30 + 30 | RRF rank | medium |
+| `hybrid_rerank` | meaning + keywords | 30 + 30 merged | reranker | high |
 | `multi_query_hybrid_rerank` | the question in 3 more phrasings | 4 hybrid searches, merged | reranker | highest (used for the retry) |
 
 
@@ -129,7 +129,7 @@ Take the `fetch_k` candidates from **hybrid** search (dense + BM25 + RRF), then 
 ```toml
 default_method = "hybrid_rerank"  # used by retrieve() when no method is given
 top_k = 5        # results returned to the caller
-fetch_k = 20     # candidates gathered before fusion / reranking
+fetch_k = 30     # candidates gathered before fusion / reranking
 rrf_k = 60       # RRF constant
 rerank_workers = 4  # chunks the reranker scores at the same time
 reranker_type = "llm"  # llm | cross_encoder
@@ -151,3 +151,12 @@ retriever.retrieve("What rank r does LoRA use?", method="bm25")  # pick one
 On the 45 golden questions (OpenAI models), `multi_query_hybrid_rerank` scored MRR 0.871 and Recall@5 0.933, against
 0.866 and 0.922 for `hybrid_rerank`, but took 7.3 s per query instead of 4.8 s. The difference is within noise, so
 `hybrid_rerank` stays the default and multi-query is used only for the retry after a thumbs down.
+
+### Why `fetch_k` is 30
+
+With 20 candidates, the two passages that state the rank LoRA used for GPT-3 (pages 5 and 10) were not among the
+candidates, so the reranker never saw them and the app answered "1 or 2" (the page-2 sentence about what rank
+*suffices*). Over the 45 golden questions, the fused top 20 contains 95.6% of the golden pages, the top 30 97.8% (and at
+least one for every question) and the top 40 98.9%. With 30 candidates `hybrid_rerank` scored Recall@3 0.922 (was
+0.878), MRR 0.888 (was 0.866) and Hit Rate@5 0.978 (was 0.956), at 6.9 s per query instead of 4.8 s. 40 added time but
+no further gain on the rank question.

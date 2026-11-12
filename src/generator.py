@@ -13,27 +13,31 @@ from models import make_llm
 from retriever import Retriever
 from vectorstore import load_config
 
-ANSWER_PROMPT = """Answer the question using ONLY the passages below. Today's date is {today}: \
-use it when a passage says "present" or "current", or the question is about the time up to now \
-(for example how long someone has worked somewhere), and work such durations out from the dates \
-in the passages.
+ANSWER_PROMPT = """Answer the question using ONLY the passages below. Never use your own knowledge: \
+not even for an easy general question such as a capital city or a famous date. If the passages do \
+not state it, it is not in the documents. Today's date is {today}: use it when a passage says \
+"present" or "current", or the question is about the time up to now (for example how long someone \
+has worked somewhere), and work such durations out from the dates in the passages.
+- If no passage helps answer any part of the question, reply exactly "I can't find that in the \
+documents." and nothing else, with no citation.
+- If the passages answer only part of the question, answer that part, and for each part you \
+cannot find write "The documents do not say <that part>." Never refuse the whole question when \
+any part of it can be answered.
 - Answer the question that was asked, directly and in your own words, in one or two sentences \
 (a list, a formula or several numbers may need more). Stop once the question is answered: add no \
 other facts. Do not copy a passage word for word, and do not mention passages that do not answer \
 the question.
 - Give the exact facts the question asks for: the numbers, names, formulas and every item of a \
 list. If it asks for three things, give three.
+- If passages give different values for the same thing, prefer the value the authors actually \
+used, ran or chose in their experiments over a value they describe as sufficient, possible or \
+recommended.
 - The passages come from PDFs and may have broken lines or stray symbols; write formulas and \
 numbers cleanly.
 - The label in square brackets above each passage names the document and page it comes from. \
 Use it when the question asks which paper or document something is from: the document whose \
 passages describe or introduce a thing ("we introduce ...", "we propose ...") is the paper that \
 introduced it.
-- If the passages answer only part of the question, answer that part, and for each part you \
-cannot find write "The documents do not say <that part>." Do not refuse the whole question \
-because one part is missing.
-- Only if the passages contain none of the answer, reply exactly "I can't find that in the \
-documents." and nothing else.
 - After each fact, cite the passage it came from by copying the label in square brackets above \
 it, exactly as written. Never cite a label that is not above a passage.
 

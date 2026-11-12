@@ -108,8 +108,11 @@ def test_the_answer_prompt_answers_what_it_can_and_names_the_paper_from_the_labe
         "Which paper introduced NF4?", []
     )
     assert (
-        "Do not refuse the whole question" in prompt
+        "Never refuse the whole question when" in prompt
     )  # a missing part must not cause a refusal
+    assert (
+        "Never use your own knowledge" in prompt
+    )  # no general-knowledge answers with a made-up citation
     assert (
         "names the document and page it comes from" in prompt
     )  # "which paper" can use the label

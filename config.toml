@@ -34,7 +34,7 @@ chunk_overlap = 90
 default_method = "hybrid_rerank"  # used by retrieve() when no method is given
 top_k = 5        # results returned to the caller
 rerank_workers = 4  # chunks the reranker scores at the same time (1 = one by one)
-fetch_k = 20     # candidates gathered before fusion / reranking
+fetch_k = 30     # candidates gathered before fusion / reranking (20 missed passages that state the rank used for GPT-3)
 rrf_k = 60       # RRF constant: score = 1 / (rrf_k + rank)
 
 # ---- Input guardrail (src/guardrails.py) ----

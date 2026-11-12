@@ -101,6 +101,15 @@ class Report:
     """Which pages an answer cites."""
 
     @staticmethod
+    def refused(answer: str) -> bool:
+        """True when the answer says the documents do not contain it: the standard refusal, or
+        "The documents do not say ..." with nothing cited (a partial answer cites its passages)."""
+        text = answer.lower().replace("\u2019", "'")
+        if REFUSAL in text:
+            return True
+        return "the documents do not say" in text and not re.search(r"\bp\.\d+", text)
+
+    @staticmethod
     def label(chunk: Document) -> str:
         return f"{chunk.metadata['source']} p.{chunk.metadata['page']}"
 

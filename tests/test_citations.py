@@ -31,3 +31,17 @@ def test_no_matching_tag_falls_back_to_every_retrieved_page():
         "LoRA.pdf p.10",
         "LoRA.pdf p.1",
     ]
+
+
+def test_refused_tells_a_refusal_from_a_partial_answer():
+    assert Report.refused("I can't find that in the documents.")
+    assert Report.refused(
+        "I can\u2019t find that in the documents."
+    )  # curly apostrophe
+    assert Report.refused(
+        "The documents do not say what 17 times 23 is."
+    )  # nothing cited
+    assert not Report.refused(
+        "The documents do not say what LoRA stands for. Its main idea is low-rank updates [LoRA p.2]."
+    )
+    assert not Report.refused("LoRA uses r = 4 [LoRA p.5].")
