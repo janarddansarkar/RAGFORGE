@@ -25,7 +25,7 @@ you choose the provider and the model for each component. Nothing runs on your m
 ## Running it
 
 ```bash
-git clone -b main https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
+git clone -b ragforge_api https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
 # install uv first (https://docs.astral.sh/uv/)
 uv run streamlit run src/app.py   # installs the Python packages on the first run (no model is
                                   # downloaded), then starts the web app at http://localhost:8501

@@ -3,7 +3,7 @@
 ## First time
 
 ```bash
-git clone -b main https://github.com/janarddansarkar/RAGFORGE.git
+git clone -b ragforge_api https://github.com/janarddansarkar/RAGFORGE.git
 cd RAGFORGE
 uv run streamlit run src/app.py   # installs the Python packages on the first run (no model is downloaded)
 ```

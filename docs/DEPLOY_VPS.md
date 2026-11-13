@@ -17,7 +17,7 @@ app itself was tested locally (a real server and a real browser), not on a VPS.
 sudo apt update && sudo apt install -y git curl tesseract-ocr
 curl -LsSf https://astral.sh/uv/install.sh | sh        # installs uv; open a new shell afterwards
 
-git clone -b main https://github.com/janarddansarkar/RAGFORGE.git
+git clone -b ragforge_api https://github.com/janarddansarkar/RAGFORGE.git
 cd RAGFORGE
 uv run streamlit run src/app.py --server.address 127.0.0.1 --server.port 8501
 ```
