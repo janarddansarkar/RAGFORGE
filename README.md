@@ -67,6 +67,8 @@ This page is the entry point. Everything else is reachable from here.
 
 **Suggested reading order**
 
+0. **Short on time?** [docs/GUIDE.md](docs/GUIDE.md) is the whole project on one page, including the RAG workflow diagrams.
+   The same page as a styled web page you can host is [docs/index.html](docs/index.html).
 1. This page, for the context and the branch map.
 2. [docs/BRANCHES.md](docs/BRANCHES.md), for what each branch is for.
 3. [docs/DECISIONS.md](docs/DECISIONS.md), for why things are the way they are.
@@ -77,6 +79,8 @@ This page is the entry point. Everything else is reachable from here.
 
 | Document | What it covers | Read it when |
 |---|---|---|
+| [docs/GUIDE.md](docs/GUIDE.md) | The whole project on one page: branches, RAG workflow diagrams, settings, models, evaluation, decisions, privacy, setup | You want everything in one place |
+| [docs/index.html](docs/index.html) | The same guide as a self-contained web page (host it on GitHub Pages or any static host) | You want to read or share it in a browser |
 | [docs/BRANCHES.md](docs/BRANCHES.md) | Each branch in depth: role, features, decisions, how it helps | You need to pick a branch or understand how they fit together |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | The decision log, with reasoning and trade-offs | You want to know why, or you are about to change something |
 | [docs/EVALUATION.md](docs/EVALUATION.md) | How quality was measured and what the numbers say, in plain language | You want the evidence behind the defaults |

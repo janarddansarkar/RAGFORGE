@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}</style>
+<title>RAGForge Guide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky contents rail beside one reading column; diagrams and tables scroll inside their own boxes. */
+:root {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --fg: #172033;
+  --muted: #5b6678;
+  --line: #dde3ea;
+  --accent: #0b7f8c;
+  --accent-soft: #dff3f5;
+  --api: #0b7f8c;
+  --dev: #6a5acd;
+  --lab: #b7791f;
+  --docs: #475569;
+  --api-soft: #dff3f5;
+  --dev-soft: #ebe8fa;
+  --lab-soft: #f8ecd3;
+  --docs-soft: #e7ebf0;
+  --warn-soft: #fbeedd;
+  --warn: #9a5b0c;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1520; --surface: #161e2c; --fg: #e6ebf2; --muted: #9aa6b8; --line: #2a3446;
+    --accent: #45c0cd; --accent-soft: #123a40;
+    --api: #45c0cd; --dev: #a89cf2; --lab: #e0b04f; --docs: #9aa6b8;
+    --api-soft: #123a40; --dev-soft: #29244a; --lab-soft: #3a2f14; --docs-soft: #232c3b;
+    --warn-soft: #3a2a12; --warn: #e6b565;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1520; --surface: #161e2c; --fg: #e6ebf2; --muted: #9aa6b8; --line: #2a3446;
+  --accent: #45c0cd; --accent-soft: #123a40;
+  --api: #45c0cd; --dev: #a89cf2; --lab: #e0b04f; --docs: #9aa6b8;
+  --api-soft: #123a40; --dev-soft: #29244a; --lab-soft: #3a2f14; --docs-soft: #232c3b;
+  --warn-soft: #3a2a12; --warn: #e6b565;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.65;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3 { font-family: var(--font-head); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; scroll-margin-top: 24px; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--docs-soft); padding: 1px 6px; border-radius: 4px; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+.shell { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px; }
+nav.toc { position: sticky; top: 24px; align-self: start; display: flex; flex-direction: column; gap: 2px; font-size: 0.88rem; }
+nav.toc .eyebrow { margin-bottom: 8px; }
+nav.toc a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-left: 2px solid var(--line); }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); border-left-color: var(--accent); outline: none; }
+
+main { display: flex; flex-direction: column; gap: 52px; min-width: 0; }
+header { display: flex; flex-direction: column; gap: 14px; }
+header .lead { max-width: 66ch; color: var(--muted); font-size: 1.05rem; }
+section { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.sub { color: var(--muted); max-width: 70ch; }
+.prose { max-width: 70ch; display: flex; flex-direction: column; gap: 10px; }
+ul.plain { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.card.b { border-top: 4px solid var(--c); }
+.card .name { font-family: var(--font-mono); font-weight: 500; color: var(--c); }
+.card .tag { align-self: flex-start; font-size: 0.7rem; font-weight: 600; background: var(--s); color: var(--c); padding: 2px 8px; border-radius: 999px; }
+.card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 0.88rem; }
+.lab { --c: var(--lab); --s: var(--lab-soft); }
+.dev { --c: var(--dev); --s: var(--dev-soft); }
+.api { --c: var(--api); --s: var(--api-soft); }
+
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; overflow-x: auto; }
+.diagram pre.mermaid { margin: 0; display: flex; justify-content: center; }
+.cap { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+
+.tbl { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; min-width: 520px; }
+th, td { text-align: left; padding: 9px 16px; border-top: 1px solid var(--line); vertical-align: top; }
+thead th { border-top: 0; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--bg); }
+td:first-child { font-weight: 500; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.best td { background: var(--accent-soft); }
+.pill { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; font-family: var(--font-mono); white-space: nowrap; background: var(--s); color: var(--c); }
+.pill.all { --s: var(--docs-soft); --c: var(--docs); }
+
+.callout { background: var(--warn-soft); color: var(--fg); border-radius: 10px; padding: 12px 16px; font-size: 0.9rem; border-left: 4px solid var(--warn); }
+.callout b { color: var(--warn); }
+.callout.info { background: var(--accent-soft); border-left-color: var(--accent); }
+.callout.info b { color: var(--accent); }
+pre.cmd { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.55; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; min-width: 0; }
+.stat .big { font-family: var(--font-head); font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; display: block; }
+.stat .c { color: var(--muted); font-size: 0.82rem; display: block; }
+footer { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 960px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  nav.toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  nav.toc .eyebrow { width: 100%; margin-bottom: 0; }
+  nav.toc a { border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; background: var(--surface); }
+  .grid3, .grid2 { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 1.9rem; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="toc" aria-label="Contents">
+  <span class="eyebrow">Contents</span>
+  <a href="#overview">Overview</a>
+  <a href="#branches">Branches</a>
+  <a href="#workflow">RAG workflow</a>
+  <a href="#stages">Stage details</a>
+  <a href="#settings">Settings</a>
+  <a href="#models">Models</a>
+  <a href="#evaluation">Evaluation</a>
+  <a href="#decisions">Decisions</a>
+  <a href="#privacy">Privacy and safety</a>
+  <a href="#setup">Setup</a>
+  <a href="#limits">Limits</a>
+</nav>
+
+<main>
+  <header>
+    <span class="eyebrow">Project guide</span>
+    <h1>RAGForge</h1>
+    <p class="lead">RAGForge answers questions about PDF documents and shows its work: page citations, the passages each answer came from, a live quality score and, in the hosted version, what the answer cost. This page covers the whole project: the branches, the workflow, the settings, the evaluation, the decisions and how to run it.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Overview</h2>
+    <div class="prose">
+      <p>RAGForge started as a learning project with two goals: build a retrieval-augmented generation (RAG) system, and learn how to evaluate one properly. It produced three kinds of work, kept on separate branches: a lab that measured components against a hand-built test set, a local free product, and a hosted bring-your-own-key product.</p>
+      <p><b>Every version does the following.</b></p>
+      <ul class="plain">
+        <li>Answers questions about uploaded PDFs, including scanned pages (read with OCR), with page citations.</li>
+        <li>Searches two ways at once, by meaning (vectors) and by keywords (BM25), fuses the results, then re-sorts the best candidates with a reranker before an answer model writes the response.</li>
+        <li>Shows the evidence: the retrieved passages and their scores sit next to each answer.</li>
+        <li>Scores itself with the RAG triad (is the retrieved text on topic, is the answer backed by it, does it answer the question). This needs no reference answers, so it works on any document.</li>
+        <li>Screens every question for prompt injection, and refuses rather than invents.</li>
+        <li>Remembers the last few turns to handle follow-ups, and answers repeated questions from a private session cache.</li>
+        <li>Takes thumbs up or down on every answer. A thumbs down asks what was wrong and offers a better second try.</li>
+      </ul>
+      <p>The hosted version adds usage and cost tracking, a choice of provider and model per component, upload limits and privacy handling for a public server.</p>
+    </div>
+  </section>
+
+  <section id="branches">
+    <h2>Branches</h2>
+    <p class="sub">Work flows one way: experiments in the lab, the winners into the local product, then a rebuild on hosted models. The branches are not merged; changes are carried across by hand because each one swaps the models underneath the same pipeline.</p>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+  lab["offline-eval<br/>the lab"] -->|"winning settings and code, copied by hand"| dev["dev<br/>local, free product"]
+  dev -->|"rebuilt on hosted models"| api["ragforge_api<br/>hosted, bring-your-own-key"]
+  main["main<br/>documentation only"] -.->|"describes"| lab
+  main -.-> dev
+  main -.-> api
+      </pre>
+    </div>
+    <div class="grid3">
+      <div class="card b lab">
+        <span class="tag">THE LAB</span><span class="name">offline-eval</span>
+        <b>Finds the best settings</b>
+        <ul>
+          <li>45-question golden set over three papers</li>
+          <li>Evaluation scripts for retriever, reranker, chunking and generator</li>
+          <li>A settings search that writes the winning config</li>
+          <li>Local models; frozen since late October</li>
+        </ul>
+      </div>
+      <div class="card b dev">
+        <span class="tag">LOCAL, FREE</span><span class="name">dev</span>
+        <b>Runs on your machine</b>
+        <ul>
+          <li>Ollama models, no keys, works offline after download</li>
+          <li>Guard, cache, feedback retry, date clock, RAG triad, voice input</li>
+          <li>One-command setup scripts</li>
+          <li>Documents never leave the computer</li>
+        </ul>
+      </div>
+      <div class="card b api">
+        <span class="tag">HOSTED, BYOK</span><span class="name">ragforge_api</span>
+        <b>The shareable product</b>
+        <ul>
+          <li>OpenAI, Anthropic, Gemini and Cohere through one gateway (LiteLLM)</li>
+          <li>Per-answer cost, 20-page limit, timeouts and retries</li>
+          <li>Private uploads that are deleted; server deployment guide</li>
+          <li>Current and most advanced</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th></th><th>offline-eval</th><th>dev</th><th>ragforge_api</th></tr></thead>
+        <tbody>
+          <tr><td>Purpose</td><td>Find the best settings</td><td>Free, private product</td><td>Shareable hosted product</td></tr>
+          <tr><td>Models</td><td>Local</td><td>Local</td><td>Hosted, user's own key</td></tr>
+          <tr><td>Costs the user</td><td>Nothing</td><td>Nothing</td><td>API usage, shown per answer</td></tr>
+          <tr><td>Documents leave the machine</td><td>No</td><td>No</td><td>Yes, to the chosen provider</td></tr>
+          <tr><td>Web app</td><td>Basic</td><td>Full</td><td>Full, with provider choice and cost</td></tr>
+          <tr><td>Guard, cache, feedback</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>Hardware</td><td>Large</td><td>About 24 GB RAM by default</td><td>Small server (about 2 GB)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout info"><b>About main.</b> It holds no code. The hosted code that used to live there continues on <code>ragforge_api</code>, and the last code commit on <code>main</code> was <code>c81f5d4</code>.</div>
+  </section>
+
+  <section id="workflow">
+    <h2>RAG workflow</h2>
+    <p class="sub">Two paths. Indexing runs once per document set. Answering runs on every question. The numbers shown are the hosted defaults.</p>
+
+    <h3>1. Indexing</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+  pdf["PDF upload<br/>max 20 pages in total"] --> pages["Pages<br/>OCR for scanned pages"]
+  pages --> chunks["Chunks<br/>600 characters, 90 overlap"]
+  chunks --> notes["Context note per chunk<br/>written by the answer model"]
+  notes --> emb["Embeddings<br/>hosted embedding model"]
+  emb --> store[("Chroma vector store<br/>private per session")]
+  pdf -.->|"deleted right after indexing"| gone["PDF removed"]
+      </pre>
+    </div>
+
+    <h3>2. Answering</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart TD
+  q["Question"] --> guard{"Input guard<br/>rules plus guard model"}
+  guard -->|"blocked"| blocked["Question blocked"]
+  guard -->|"allowed"| rewrite["Rewrite follow-ups into a standalone question<br/>uses the last 3 turns"]
+  rewrite --> cache{"Similar question in the session cache?<br/>cosine similarity 0.95 or higher"}
+  cache -->|"yes"| cached["Reuse the cached answer"]
+  cache -->|"no"| dense["Dense search<br/>by meaning"]
+  cache -->|"no"| bm25["BM25 search<br/>by keywords"]
+  dense --> rrf["Fuse with RRF<br/>30 candidates"]
+  bm25 --> rrf
+  rrf --> rerank["Reranker<br/>LLM scores each chunk 0 to 10, or Cohere cross-encoder"]
+  rerank --> top["Top 5 chunks"]
+  top --> gen["Answer model, streamed<br/>today's date in the prompt"]
+  gen --> ans["Answer with page citations<br/>and the chunks behind it"]
+  ans --> triad["RAG triad scored by the judge model<br/>context relevance, groundedness, answer relevance"]
+  ans --> fb{"Thumbs"}
+  fb -->|"down"| why["Ask what was wrong"]
+  why --> retry["Second try<br/>same evidence, reason-specific instruction"]
+  retry --> ans
+      </pre>
+    </div>
+    <p class="cap">The triad runs in the background so the answer appears first. A thumbs-down retry reuses the retrieved chunks, or searches wider if the reason points at missing sources.</p>
+
+    <h3>3. How the offline evaluation feeds the product</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+  golden["Golden set<br/>45 questions"] --> s1["1 Chunking"]
+  s1 --> s2["2 Embedder"]
+  s2 --> s3["3 Retrieval method"]
+  s3 --> s4["4 Reranker"]
+  s4 --> s5["5 Chunk size and top-k"]
+  s5 --> s6["6 Answer model<br/>oracle mode"]
+  s6 --> best["best_config.json"]
+  best -->|"laid over config.toml"| prod["dev pipeline"]
+  s4 -.->|"checked on the held-out third"| hold["Keep current settings<br/>if the pick scores lower"]
+      </pre>
+    </div>
+    <p class="cap">Each stage's winner carries forward to the next. Stages 1 to 5 rank on two of every three golden questions; the retrieval pick is then checked on the held-out third.</p>
+  </section>
+
+  <section id="stages">
+    <h2>Stage details</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Stage</th><th>What it does</th><th>Why it is there</th></tr></thead>
+        <tbody>
+          <tr><td>Page reading</td><td>Extracts text from each page. Scanned pages go through OCR (needs Tesseract).</td><td>Scanned papers and forms still work. Only PDFs are accepted; standalone images are not.</td></tr>
+          <tr><td>Chunking</td><td>Splits pages into recursive chunks of 600 characters with 90 overlap. Each chunk gets a short AI-written context note.</td><td>Small chunks keep answers precise. The note helps single searches find a chunk. Answers and citations always use the chunk's own text, never the note.</td></tr>
+          <tr><td>Embeddings</td><td>Turns each chunk into a vector. Each embedding model gets its own store.</td><td>Search by meaning.</td></tr>
+          <tr><td>Input guard</td><td>Rules plus a small guard model check each question. Questions over 1,000 characters are blocked.</td><td>Stops prompt injection and other malicious input before anything is retrieved.</td></tr>
+          <tr><td>Follow-up rewrite</td><td>Rewrites a follow-up ("which paper introduced it?") into a standalone question using the last 3 turns.</td><td>Search needs a self-contained query.</td></tr>
+          <tr><td>Session cache</td><td>Reuses the answer to a question 0.95 or more similar to an earlier one in the same conversation.</td><td>Saves a full pipeline run. Lives in a private folder and is deleted with the session.</td></tr>
+          <tr><td>Hybrid search</td><td>Dense and BM25 results are fused with reciprocal rank fusion (constant 60) into 30 candidates.</td><td>Each search alone misses things the other finds.</td></tr>
+          <tr><td>Reranker</td><td>Re-scores the 30 candidates against the question and keeps the best 5. Either an LLM rates each chunk 0 to 10 (about 30 calls), or Cohere's cross-encoder scores all in one call.</td><td>The biggest retrieval gain: the right page was usually retrieved but not first. If Cohere fails, the plain search order is kept and the failure is logged.</td></tr>
+          <tr><td>Answer model</td><td>Writes a cited answer from the top 5 chunks, streamed. Gets today's date.</td><td>Answers the supported parts of a question and says plainly what the documents do not cover. It replies "I can't find that in the documents." only when none of the question can be answered.</td></tr>
+          <tr><td>RAG triad</td><td>A judge model scores three links with DeepEval, each 0 to 1 with reasons.</td><td>Live quality signal without reference answers. The judge should differ from the answer model.</td></tr>
+          <tr><td>Feedback and retry</td><td>Thumbs up or down. A thumbs down offers reasons (wrong or missing source, wrong citation, made something up, incomplete, too long) and a second try.</td><td>Lets a user recover a bad answer. Ratings are stored with the session and deleted with it.</td></tr>
+          <tr><td>Usage tracking</td><td>Counts every model call, its tokens and an estimated cost, per component, per turn and per session. Ingest cost is shown after Ingest.</td><td>Bring-your-own-key users should see what they spend. A model missing from the price list is counted as an unpriced call.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>RAG triad score</th><th>Link it checks</th><th>Points at</th></tr></thead>
+        <tbody>
+          <tr><td>Context relevance</td><td>Question to retrieved chunks: how much of the retrieved text is on topic</td><td>Retriever and reranker</td></tr>
+          <tr><td>Groundedness</td><td>Chunks to answer: are the answer's claims supported by the retrieved text</td><td>Generator</td></tr>
+          <tr><td>Answer relevance</td><td>Question to answer: does the answer address the question</td><td>Generator and prompt</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">Low context relevance with high groundedness means search brought noisy passages and the answer stayed faithful to them. High context relevance with low groundedness means the model added claims its sources do not support.</p>
+  </section>
+
+  <section id="settings">
+    <h2>Settings</h2>
+    <p class="sub">One config file holds every setting. In the hosted web app, the sidebar's model choices override the model settings for that session. In the local version, a file written by the evaluation (<code>best_config.json</code>) is laid over the config file.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Setting</th><th class="num">Default</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>Chunk size and overlap</td><td class="num">600 / 90</td><td>Characters per chunk and overlap between neighbours</td></tr>
+          <tr><td>Context notes</td><td class="num">on</td><td>An LLM adds a note to every chunk (slow to build, one call per chunk)</td></tr>
+          <tr><td>Candidates before rerank</td><td class="num">30</td><td>Raised from 20 after a wrong answer traced to a passage that never reached the reranker</td></tr>
+          <tr><td>Chunks returned</td><td class="num">5</td><td>Top results given to the answer model</td></tr>
+          <tr><td>RRF constant</td><td class="num">60</td><td>Score is 1 divided by (constant plus rank)</td></tr>
+          <tr><td>Default method</td><td class="num">hybrid + rerank</td><td>Other methods: dense, BM25, hybrid, multi-query hybrid + rerank</td></tr>
+          <tr><td>Answer length</td><td class="num">256 tokens</td><td>Longest reply the answer model writes</td></tr>
+          <tr><td>Memory</td><td class="num">3 turns</td><td>Past question and answer pairs remembered</td></tr>
+          <tr><td>Cache threshold</td><td class="num">0.95</td><td>Cosine similarity needed to reuse an answer</td></tr>
+          <tr><td>Guard length limit</td><td class="num">1,000 chars</td><td>Longer questions are blocked</td></tr>
+          <tr><td>Reranker type</td><td class="num">llm</td><td>An LLM scores each chunk, or switch to Cohere's cross-encoder</td></tr>
+          <tr><td>Request timeout and retries</td><td class="num">60 s / 2</td><td>One stalled call cannot freeze the page</td></tr>
+          <tr><td>Rerank rate limit</td><td class="num">off</td><td>Set to 9 calls a minute for a Cohere trial key (limit 10)</td></tr>
+          <tr><td>Page limit</td><td class="num">20 pages</td><td>Total across all uploads; checked on the page and again before indexing</td></tr>
+          <tr><td>File size</td><td class="num">25 MB</td><td>Per uploaded file</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="models">
+    <h2>Models</h2>
+    <h3>Hosted version: choose a provider and model per component</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Component</th><th>OpenAI</th><th>Anthropic</th><th>Gemini</th></tr></thead>
+        <tbody>
+          <tr><td>Answers, retries, chunk notes</td><td><code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>gpt-4.1</code>, <code>gpt-4.1-mini</code></td><td><code>claude-sonnet-5-5</code>, <code>claude-opus-5-5</code>, <code>claude-haiku-5-5</code></td><td><code>gemini-3.5-flash</code>, <code>gemini-3.5-flash-lite</code>, <code>gemini-3.6-flash</code>, <code>gemini-3.1-flash-lite</code></td></tr>
+          <tr><td>Input guard, judge</td><td colspan="3">The same chat models as above</td></tr>
+          <tr><td>Reranker</td><td colspan="3">The same chat models, scoring each chunk 0 to 10; or Cohere's cross-encoder (<code>rerank-v3.5</code>, <code>rerank-v4.0-pro</code>, <code>rerank-v4.0-fast</code>) with a Cohere key</td></tr>
+          <tr><td>Embeddings</td><td><code>text-embedding-3-small</code>, <code>-3-large</code></td><td>Not offered</td><td><code>gemini-embedding-001</code>, <code>gemini-embedding-2</code></td></tr>
+          <tr><td>Voice input (optional)</td><td><code>whisper-1</code>, <code>gpt-4o-transcribe</code></td><td>Not offered</td><td>Not offered</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">"Custom" lets you type any other model name. Defaults are all OpenAI, so one key is enough to start. Anthropic is chat-only, so pair it with OpenAI or Gemini for embeddings. Cohere's cross-encoder is an extra reranker option in the app and needs its own key.</p>
+    <h3>Local version: default models</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Job</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr><td>Answers and second try</td><td><code>qwen3:14b</code> (or <code>gemma3:4b</code> on a smaller machine)</td></tr>
+          <tr><td>Input guard and judge</td><td><code>mistral:7b</code>, kept different from the answer model</td></tr>
+          <tr><td>Embeddings</td><td><code>all-minilm</code></td></tr>
+          <tr><td>Reranker</td><td><code>mxbai-rerank-base-v1</code> cross-encoder (about 1 GB, downloaded on first question)</td></tr>
+          <tr><td>Speech to text</td><td>faster-whisper on the CPU</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="evaluation">
+    <h2>Evaluation</h2>
+    <p class="sub">A RAG system can fail by retrieving the wrong passages or by writing a poor answer from good ones. Evaluation exists to tell those apart.</p>
+    <div class="grid2">
+      <div class="card"><h3>Component evaluation</h3><p class="muted">Against a golden set of 45 questions over three papers (LoRA, QLoRA, "Attention Is All You Need"). Each question has a reference answer and the pages that contain it. Compares versions of each part. Offline, on demand.</p></div>
+      <div class="card"><h3>RAG triad</h3><p class="muted">Needs no reference answers. Scores every live answer for relevance, grounding and on-topic retrieval, so it works on any uploaded document.</p></div>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Stage</th><th>Question it answers</th><th>Metrics</th></tr></thead>
+        <tbody>
+          <tr><td>Retriever</td><td>Does search find the right pages, and near the top?</td><td>Recall@K, Precision@K, Hit Rate@K, MRR</td></tr>
+          <tr><td>Reranker</td><td>Does re-sorting move the right page up?</td><td>The same four, with and without</td></tr>
+          <tr><td>Chunking</td><td>Do context notes help?</td><td>The same four, per method</td></tr>
+          <tr><td>Generator</td><td>Is the answer faithful, relevant and correct?</td><td>Faithfulness, answer relevancy, correctness, similarity, context recall</td></tr>
+          <tr><td>Generator, oracle</td><td>Same, handed the right pages</td><td>The same five; isolates the answer model from search</td></tr>
+          <tr><td>RAG triad</td><td>Does the whole pipeline hang together?</td><td>Context relevance, groundedness, answer relevance</td></tr>
+          <tr><td>Latency</td><td>Where does the time go?</td><td>Seconds per stage</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p><b>Safeguards in the method.</b></p>
+      <ul class="plain">
+        <li>A different model judges than answers, so no model grades itself. The same answers scored 0.97 for correctness under a lenient judge and 0.80 under a stricter one, so only compare runs that used the same judge.</li>
+        <li>Relevance is judged by page, so chunking strategies can be compared on equal terms. Scores are slightly generous as a result.</li>
+        <li>Settings were tuned on two thirds of the questions and checked on the rest. Near-ties (within 0.01 MRR) go to the faster option.</li>
+        <li>With 45 questions, one question moves a score by about 0.02, so gaps of a few hundredths are noise.</li>
+      </ul>
+    </div>
+
+    <h3>Hosted results (OpenAI, all 45 questions)</h3>
+    <p class="sub"><code>gpt-4o</code> answers; <code>gpt-4o-mini</code> is guard, judge and reranker; <code>text-embedding-3-small</code> embeds.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Retrieval method</th><th class="num">Recall@1</th><th class="num">Recall@5</th><th class="num">MRR</th><th class="num">Hit Rate@5</th></tr></thead>
+        <tbody>
+          <tr><td>Dense</td><td class="num">0.49</td><td class="num">0.82</td><td class="num">0.71</td><td class="num">0.89</td></tr>
+          <tr><td>BM25</td><td class="num">0.57</td><td class="num">0.82</td><td class="num">0.74</td><td class="num">0.91</td></tr>
+          <tr><td>Hybrid</td><td class="num">0.62</td><td class="num">0.89</td><td class="num">0.79</td><td class="num">0.93</td></tr>
+          <tr class="best"><td>Hybrid + rerank</td><td class="num">0.72</td><td class="num">0.92</td><td class="num">0.88</td><td class="num">0.96</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="big">0.98</span><span class="c">answer correctness</span></div>
+      <div class="stat"><span class="big">0.92</span><span class="c">context recall</span></div>
+      <div class="stat"><span class="big">0.71 → 0.94</span><span class="c">faithfulness, retrieved chunks vs golden pages</span></div>
+      <div class="stat"><span class="big">0.41 / 0.72 / 0.94</span><span class="c">triad: context relevance / groundedness / answer relevance</span></div>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Latency stage</th><th class="num">Seconds per question</th></tr></thead>
+        <tbody>
+          <tr><td>Input guard</td><td class="num">0.8</td></tr>
+          <tr><td>Search</td><td class="num">0.8</td></tr>
+          <tr><td>Rerank</td><td class="num">3.8</td></tr>
+          <tr><td>Answer</td><td class="num">1.3</td></tr>
+          <tr class="best"><td>Triad scoring</td><td class="num">39</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">The triad is the slowest part of a turn and a large share of its cost, because each metric makes several judge calls. A full run on OpenAI cost about $1.3 for the stages plus about $0.7 once to build the index, and took about 100 minutes. Results are saved so they never need to be paid for again.</p>
+
+    <h3>What else was found</h3>
+    <ul class="plain">
+      <li><b>A reranker is the biggest single gain.</b> Locally, hybrid MRR went from 0.74 to 0.92; the right page was usually already retrieved, just not first.</li>
+      <li><b>A purpose-built cross-encoder beat a small chat model as reranker.</b> Chat-model rerankers made local retrieval worse than no reranker at all.</li>
+      <li><b>Bigger rerankers were not better.</b> Hosted <code>gpt-4o</code> reached MRR 0.89 against 0.86 for <code>gpt-4o-mini</code>, at far higher cost.</li>
+      <li><b>Context notes helped single searches but not the reranked pipeline.</b> Plain chunks scored MRR 0.91 against 0.87 with notes, and the notes add a one-time indexing cost. They are still on by default.</li>
+      <li><b>Most of the faithfulness gap is retrieval.</b> Faithfulness was 0.71 with retrieved chunks and 0.94 with the golden pages.</li>
+    </ul>
+
+    <h3>Fixes made after the full run</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Check</th><th>Finding</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td>15 questions through the real app</td><td>9 of 11 answerable correct; both out-of-scope refused; injection blocked; repeat served from cache; about 39 calls and $0.007 a turn. Two answerable questions wrongly refused (a two-part question and a follow-up).</td><td>Answer prompt now answers the supported parts and says which part the documents do not cover</td></tr>
+          <tr><td>"What rank did the GPT-3 experiments use?"</td><td>The right passage was never among the 20 candidates</td><td>30 candidates. Whole set: Recall@3 0.878 to 0.922, MRR 0.866 to 0.888, about 2 s slower per query</td></tr>
+          <tr><td>Stricter answer prompt</td><td>Faithfulness 0.71 to 0.93, correctness unchanged, out-of-scope still refused</td><td>Adopted</td></tr>
+          <tr><td>Multi-query retry search</td><td>MRR 0.871 against 0.866 for about 50% more time; within noise</td><td>Not made the default</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><b>Not measured.</b> Quality for Gemini, Cohere and Anthropic on the full golden set (Anthropic ran 7 questions end to end with no errors at about $0.011 a question against about $0.007 on OpenAI). Local-version latency. Documents other than three research papers. A vague question like "what rank r does LoRA use?" stays unreliable because the paper uses different ranks in different places.</div>
+  </section>
+
+  <section id="decisions">
+    <h2>Decisions</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Decision</th><th>Why</th><th>Trade-off</th><th>Branch</th></tr></thead>
+        <tbody>
+          <tr><td>Build the evaluation as a first-class part</td><td>A system you cannot measure cannot be improved</td><td>Slower to a first demo</td><td><span class="pill all">all</span></td></tr>
+          <tr><td>Separate branches for lab, local and hosted</td><td>Each answers a different question and swaps the models under the same pipeline</td><td>Changes are carried by hand</td><td><span class="pill all">all</span></td></tr>
+          <tr><td>Plain, readable classes over heavy frameworks</td><td>The code must stay understandable later</td><td>Some things written by hand</td><td><span class="pill all">all</span></td></tr>
+          <tr><td>Vectors in a local folder; no database server, no containers</td><td>Tens of pages, simplest to run; a Postgres and Docker design was deferred</td><td>Not built for many concurrent users</td><td><span class="pill all">all</span></td></tr>
+          <tr><td>Hybrid search, then always rerank</td><td>Combined search finds more; the reranker puts the right page first</td><td>Extra latency, and cost when the reranker is an LLM</td><td><span class="pill all">all</span></td></tr>
+          <tr><td>Cross-encoder reranker, not a chat model</td><td>A small chat model made retrieval worse than none</td><td>A one-time model download</td><td><span class="pill dev">dev</span></td></tr>
+          <tr><td>Reranker is the user's choice: LLM or Cohere</td><td>LLM scoring costs about 30 calls a question; a cross-encoder is one</td><td>Cohere trial keys are rate-limited</td><td><span class="pill api">ragforge_api</span></td></tr>
+          <tr><td>Score relevance by page</td><td>Lets chunking strategies be compared fairly</td><td>Slightly generous scores</td><td><span class="pill lab">offline-eval</span></td></tr>
+          <tr><td>Tune on two thirds, check on one third</td><td>Guards against settings that only fit the tuning questions</td><td>Fewer tuning questions</td><td><span class="pill lab">offline-eval</span></td></tr>
+          <tr><td>Rank 30 candidates, not 20</td><td>A real wrong answer traced to a passage that never reached the reranker</td><td>About 2 s more a query</td><td><span class="pill api">ragforge_api</span></td></tr>
+          <tr><td>Answers use the original passage, not the AI note</td><td>The note helps search, but should not be what users read or what is cited</td><td>None</td><td><span class="pill all">dev, api</span></td></tr>
+          <tr><td>Bring your own key</td><td>The operator pays nothing and holds no secrets; users see their spend</td><td>Every user needs a provider account; uploads go to that provider</td><td><span class="pill api">ragforge_api</span></td></tr>
+          <tr><td>One gateway for every provider</td><td>A new provider is configuration, and cost tracking comes with it</td><td>Depends on the gateway's price list</td><td><span class="pill api">ragforge_api</span></td></tr>
+          <tr><td>No local models in the hosted version</td><td>One-command install, small server</td><td>Everything uploaded goes to the provider</td><td><span class="pill api">ragforge_api</span></td></tr>
+          <tr><td>Plain server with a proxy for HTTPS; no Docker</td><td>Fewest moving parts at this scale</td><td>No automatic scaling</td><td><span class="pill api">ragforge_api</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p><b>Deliberately not done:</b> no cloud database, containers or job queue (designed, deferred as unnecessary at this scale); no long-term user memory or accounts, only short-term conversation memory; no measured quality for providers other than OpenAI; no standalone image upload.</p>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <h2>Privacy and safety</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Concern</th><th>How it is handled</th></tr></thead>
+        <tbody>
+          <tr><td>API keys</td><td>Held in session memory only. Never written to disk or logged.</td></tr>
+          <tr><td>Uploaded PDFs</td><td>Deleted as soon as they are indexed.</td></tr>
+          <tr><td>Index and answer cache</td><td>Live in a private per-session folder in the system temp directory. Removed when documents are replaced, when the session ends (reload, closed tab, new session) and on every server restart.</td></tr>
+          <tr><td>Ratings</td><td>Stored with the session cache and deleted with it. Nothing about a user persists.</td></tr>
+          <tr><td>Prompt injection</td><td>Every question passes the input guard before anything is retrieved.</td></tr>
+          <tr><td>Invented answers</td><td>The answer prompt refuses rather than invents and never uses outside knowledge.</td></tr>
+          <tr><td>Oversized uploads</td><td>20-page total and 25 MB per file, checked on the page and again before indexing, so an oversized file never reaches a model.</td></tr>
+          <tr><td>Stalled providers</td><td>Every model request has a 60 second timeout and is retried twice.</td></tr>
+          <tr><td>Where documents go</td><td>Hosted: to the providers the user chose, who also bill them. Local: nowhere.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><b>No login or rate limit.</b> Costs fall on each user's own key, but anyone who can reach the page can use the server's CPU and memory. If it is not meant to be public, put it behind a login (for example Caddy <code>basic_auth</code>), a VPN or an IP allow-list.</div>
+  </section>
+
+  <section id="setup">
+    <h2>Setup</h2>
+    <p class="sub">The <code>main</code> branch has no code, so clone one of the code branches. Common to all: install <a href="https://docs.astral.sh/uv/">uv</a>. Scanned PDFs also need Tesseract (<code>brew install tesseract</code> or <code>apt install tesseract-ocr</code>). The web app opens at <code>localhost:8501</code>.</p>
+
+    <h3>Hosted version <span class="pill api">ragforge_api</span></h3>
+    <pre class="cmd">git clone -b ragforge_api https://github.com/janarddansarkar/RAGFORGE.git &amp;&amp; cd RAGFORGE
+uv run streamlit run src/app.py</pre>
+    <ul class="plain">
+      <li>The first run installs the packages. No model is downloaded.</li>
+      <li>Pick a provider and model for each component in the sidebar and paste a key for each provider you chose. One OpenAI key is enough to start.</li>
+      <li>Upload PDFs (20 pages in total) and click Ingest. The first ingest is slow because every chunk gets a context note.</li>
+      <li>Changing a provider or model resets the documents; click Ingest again.</li>
+      <li>One question from the command line: <code>uv run python src/triad.py your.pdf "your question"</code>.</li>
+    </ul>
+
+    <h3>Local version <span class="pill dev">dev</span></h3>
+    <pre class="cmd">git clone -b dev https://github.com/janarddansarkar/RAGFORGE.git &amp;&amp; cd RAGFORGE
+./setup.sh    # installs Ollama if needed, the packages and the models
+./run.sh      # starts the web app</pre>
+    <ul class="plain">
+      <li>Default models are about 14 GB and want about 24 GB of RAM. On a smaller machine switch the answer model to <code>gemma3:4b</code> (about 8 GB of models, 16 GB of RAM) in the two config files and run setup again.</li>
+      <li>The first question downloads the reranker (about 1 GB). After that it works offline.</li>
+      <li>Command line: <code>uv run python src/rag.py documents/LoRA.pdf "What rank r does LoRA use?"</code></li>
+    </ul>
+
+    <h3>Evaluation lab <span class="pill lab">offline-eval</span></h3>
+    <pre class="cmd">git clone -b offline-eval https://github.com/janarddansarkar/RAGFORGE.git &amp;&amp; cd RAGFORGE
+ollama pull bge-m3 qwen2.5:3b mistral:7b
+uv sync
+uv run python eval/find_best.py --limit 5 --no-save    # quick smoke test, writes nothing</pre>
+    <ul class="plain">
+      <li>The full search takes hours. <code>--stages</code> runs only some stages, <code>--no-save</code> writes nothing, <code>--skip-missing</code> leaves out models you have not pulled.</li>
+      <li>It checks every needed model is downloaded first and prints the exact commands for any that are not.</li>
+    </ul>
+
+    <h3>Running the hosted evaluation</h3>
+    <pre class="cmd">uv run python eval/run_provider_eval.py openai --limit 10   # cheaper trial
+uv run python eval/run_provider_eval.py openai              # everything, about 100 minutes
+uv run python eval/make_report.py                           # rebuild the report from saved data, free</pre>
+    <p class="cap">It costs real money, so read the saved results first. A free-tier Gemini key (5 requests a minute) cannot complete it. Unit tests need no keys: <code>uv run pytest</code>.</p>
+
+    <h3>Deploying the hosted version on a server</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Step</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td>Needs</td><td>About 2 GB RAM (around 560 MB for one user, plus about 160 MB for the scoring library; 1 GB works only with swap), about 1 GB disk, <code>git</code>, <code>curl</code>, <code>tesseract-ocr</code>, and a domain name for HTTPS.</td></tr>
+          <tr><td>1. Install and run</td><td>Clone the branch and start the app listening only on <code>127.0.0.1</code>, so it is not directly reachable from outside.</td></tr>
+          <tr><td>2. Keep it running</td><td>A systemd service with <code>Restart=always</code> and <code>PrivateTmp=true</code>. The private temp folder is deleted when the service stops, a second guarantee that no upload survives a restart.</td></tr>
+          <tr><td>3. HTTPS</td><td>A reverse proxy such as Caddy gets and renews a certificate and passes the WebSocket Streamlit needs. Open only SSH, 80 and 443; keep 8501 closed. Users type API keys into the page, so never serve it over plain HTTP.</td></tr>
+          <tr><td>4. Update</td><td><code>git pull</code> and restart the service.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">Full commands and the service file are in <code>docs/DEPLOY_VPS.md</code> on the <code>ragforge_api</code> branch. It was tested locally with a real server and browser, not on a VPS. Scanned PDFs are slow on a small server because OCR runs on the CPU.</p>
+  </section>
+
+  <section id="limits">
+    <h2>Known limits</h2>
+    <ul class="plain">
+      <li>The golden set is small: 45 questions over three research papers.</li>
+      <li>Hosted quality was measured with OpenAI only. Gemini, Cohere and Anthropic were exercised end to end but not scored on the full set.</li>
+      <li>Costs shown are estimates from a price list; the provider's bill is the truth.</li>
+      <li>No login or rate limit in the hosted app.</li>
+      <li>Only PDFs are accepted; standalone images are not.</li>
+      <li>If a connection drops and the private session folder is cleaned up meanwhile, the app asks the user to upload again.</li>
+      <li>Claude models "think" before answering and the thinking counts against the token limit. The app asks for minimal thinking and adds 512 tokens of headroom; otherwise some answers came back empty.</li>
+    </ul>
+  </section>
+
+  <footer>Source: the documentation on the <code>main</code> branch of the RAGForge repository, checked against the <code>ragforge_api</code> configuration. Diagrams are Mermaid.</footer>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  // Diagrams follow the visitor's light or dark setting.
+  var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "default", securityLevel: "strict", flowchart: { useMaxWidth: true, htmlLabels: true } });
+</script>
+</body>
+</html>
