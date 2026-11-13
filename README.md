@@ -61,18 +61,41 @@ Details per branch are in [docs/BRANCHES.md](docs/BRANCHES.md).
 The hosted version adds usage and cost tracking, a choice of provider and model per component, upload limits and
 privacy handling for a public server.
 
-## Documentation
+## Documentation map
 
-| Document | What it covers |
-|---|---|
-| [docs/BRANCHES.md](docs/BRANCHES.md) | Each branch in depth: role, features, decisions, how it helps |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | The decision log across the project, with the reasoning and trade-offs |
-| [docs/SETUP.md](docs/SETUP.md) | How to set up and run each branch, and how to deploy the hosted one |
-| [docs/EVALUATION.md](docs/EVALUATION.md) | How quality was measured and what the numbers say, in plain language |
-| [docs/RAG_EVALUATION.md](docs/RAG_EVALUATION.md) | Detailed evaluation write-up from the hosted version (reference) |
-| [docs/EVALUATION_RESULTS.md](docs/EVALUATION_RESULTS.md) | Full tables of the saved OpenAI evaluation run (reference) |
+This page is the entry point. Everything else is reachable from here.
 
-The two reference documents were written next to the code and mention file names; read them with the
+**Suggested reading order**
+
+1. This page, for the context and the branch map.
+2. [docs/BRANCHES.md](docs/BRANCHES.md), for what each branch is for.
+3. [docs/DECISIONS.md](docs/DECISIONS.md), for why things are the way they are.
+4. [docs/EVALUATION.md](docs/EVALUATION.md), for how quality was measured and what was found.
+5. [docs/SETUP.md](docs/SETUP.md), when you are ready to run something.
+
+**On this branch (`main`)**
+
+| Document | What it covers | Read it when |
+|---|---|---|
+| [docs/BRANCHES.md](docs/BRANCHES.md) | Each branch in depth: role, features, decisions, how it helps | You need to pick a branch or understand how they fit together |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | The decision log, with reasoning and trade-offs | You want to know why, or you are about to change something |
+| [docs/EVALUATION.md](docs/EVALUATION.md) | How quality was measured and what the numbers say, in plain language | You want the evidence behind the defaults |
+| [docs/SETUP.md](docs/SETUP.md) | Setup for each branch, and deploying the hosted one | You want to run it |
+| [docs/RAG_EVALUATION.md](docs/RAG_EVALUATION.md) | The detailed evaluation write-up from the hosted version (reference) | You need metric definitions and per-stage detail |
+| [docs/EVALUATION_RESULTS.md](docs/EVALUATION_RESULTS.md) | Full tables of the saved OpenAI evaluation run (reference) | You need the exact numbers |
+
+**On the code branches** (these sit next to the code they describe)
+
+| Document | Branch | What it covers |
+|---|---|---|
+| `README.md` | each branch | Quick start and file-by-file guide for that branch |
+| `docs/DEPLOY_VPS.md` | `ragforge_api` | The full server deployment commands and service file |
+| `docs/HOW_TO_USE_RAGFORGE.md` | `ragforge_api`, `dev` | Day-to-day commands |
+| `specs_md/` | `ragforge_api`, `dev`, `offline-eval` | How each evaluation metric and retrieval method is calculated (the thumbs up/down spec is on `ragforge_api` and `dev` only) |
+| `docs/RAG_EVALUATION.md` | `dev` | The local version's evaluation write-up, with its own results |
+| `RAGForge_RAG_Pipeline_Design.md`, `RAGForge_Tasks.md` | `dev`, `offline-eval` | An early, larger production design (Postgres, Docker); mostly deferred |
+
+The two reference documents on this branch were written next to the code and mention file names; read them with the
 `ragforge_api` branch checked out if you want to follow along.
 
 ## Known limits (stated up front)
