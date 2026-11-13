@@ -42,8 +42,11 @@ class SessionCache:
         self.config = config or load_config()
         self.threshold = self.config["cache_threshold"]
         self.embeddings = make_embeddings(self.config)
+        # config["cache_file"]: inside the session's private folder, so it goes with the documents
         self.file = (
-            file or Path(tempfile.mkdtemp(prefix="ragforge_cache_")) / "cache.json"
+            file
+            or self.config.get("cache_file")
+            or Path(tempfile.mkdtemp(prefix="ragforge_cache_")) / "cache.json"
         )
         self.entries: list[dict] = []
         atexit.register(self.destroy)

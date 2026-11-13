@@ -37,6 +37,9 @@ rerank_workers = 4  # chunks the reranker scores at the same time (1 = one by on
 fetch_k = 30     # candidates gathered before fusion / reranking (20 missed passages that state the rank used for GPT-3)
 rrf_k = 60       # RRF constant: score = 1 / (rrf_k + rank)
 
+# ---- Limits (the web app) ----
+max_pages = 20          # the uploaded PDFs together may have at most this many pages (0 = no limit)
+
 # ---- Input guardrail (src/guardrails.py) ----
 input_guard = true      # false: skip the check 
 guard_max_chars = 1000  # longer questions are blocked

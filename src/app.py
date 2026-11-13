@@ -13,6 +13,7 @@ from itertools import chain
 from pathlib import Path
 
 import streamlit as st
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 from chunking import chunk_body, chunk_note
 from guardrails import InputBlocked
@@ -26,14 +27,22 @@ from providers import (
     providers_for,
     settings_for,
 )
-from rag import DocumentRAG, Report
+from rag import DocumentRAG, PageLimitExceeded, Report
 from usage import ROLE_NAMES, UsageTracker, summarize
+from vectorstore import load_config
 from voice import SpeechToText
+from workspace import Workspaces, connected_sessions
 
 st.set_page_config(
     page_title="RAGForge", page_icon="📄", initial_sidebar_state="expanded"
 )
 st.title("RAGForge")
+
+# What a user uploads lives in a private folder that is deleted when their session ends. The moment
+# a session starts or reruns (before anything else, even before a key is typed), the folders of
+# sessions that are no longer connected - a closed tab, a reload - are deleted.
+workspaces = Workspaces()
+workspaces.remove_disconnected(connected_sessions())
 
 # ---- 0. Bring your own key: pick a provider and a model for every component ----
 # The keys live in this browser session's memory only: never saved to disk, never logged,
@@ -97,33 +106,52 @@ with st.sidebar:
     settings["usage_tracker"] = tracker
 
 # ---- 1. Upload + ingest ----
+# This session's private folder (see src/workspace.py).
+workspace = workspaces.folder_for(get_script_run_ctx().session_id)
+
+SESSION_KEYS = (  # what a session keeps about its ingested documents
+    "rag",
+    "ingested",
+    "messages",
+    "spoken",
+    "heard",
+    "triad",
+    "stt",
+    "ingest_calls",
+)
+MAX_PAGES = load_config().get("max_pages", 0)
 uploaded = st.file_uploader(
-    "Upload PDFs",
+    "Upload PDFs" + (f" (at most {MAX_PAGES} pages in total)" if MAX_PAGES else ""),
     type=[suffix.removeprefix(".") for suffix in DocumentRAG.SUFFIXES],
     accept_multiple_files=True,
 )
+pages, unreadable = 0, []
+for file in uploaded:
+    try:
+        pages += DocumentRAG.page_count(file.getvalue())
+    except Exception:  # noqa: BLE001 - not a readable PDF
+        unreadable.append(file.name)
+if unreadable:
+    st.error("Cannot read as a PDF: " + ", ".join(unreadable))
+too_long = bool(MAX_PAGES) and pages > MAX_PAGES
+if uploaded and MAX_PAGES:
+    (st.error if too_long else st.caption)(
+        f"{pages} of {MAX_PAGES} pages"
+        + (" - remove some files or pages to ingest." if too_long else "")
+    )
 
 # A different set of uploads starts fresh: forget the old documents, answer and question.
 # Changing the models does the same: the ingested documents were set up with the old ones.
 files = (*(file.file_id for file in uploaded), repr(settings))
 if files != st.session_state.get("files"):
     if st.session_state.get("rag"):
-        st.session_state.rag.close()  # the old conversation's cache goes with it
-    for key in (
-        "rag",
-        "ingested",
-        "messages",
-        "spoken",
-        "heard",
-        "triad",
-        "stt",
-        "ingest_calls",
-    ):
+        st.session_state.rag.close()  # the old cache and index go with it
+    for key in SESSION_KEYS:
         st.session_state.pop(key, None)
     st.session_state.fresh = st.session_state.get("fresh", 0) + 1  # new recorder, empty
     st.session_state.files = files
 
-if uploaded and st.button("Ingest"):
+if uploaded and not too_long and not unreadable and st.button("Ingest"):
     # DocumentRAG wants real file paths; keep the original names so citations read well.
     # A name uploaded twice is dropped (the first one wins).
     if st.session_state.get("rag"):
@@ -138,13 +166,29 @@ if uploaded and st.button("Ingest"):
         with st.spinner(
             "Preparing the vector store (a minute or so the first time)..."
         ):
-            st.session_state.rag = DocumentRAG(list(paths.values()), settings=settings)
+            try:
+                st.session_state.rag = DocumentRAG(
+                    list(paths.values()), settings=settings, workspace=workspace
+                )
+            except (
+                PageLimitExceeded
+            ) as error:  # also checked above; this is the backstop
+                st.error(str(error))
+                st.stop()
             st.session_state.ingest_calls = tracker.calls[ingest_start:]
             st.session_state.ingested = ", ".join(paths)
             st.session_state.messages = []
             st.session_state.conversation_id = uuid.uuid4().hex  # ties ratings together
 
 rag = st.session_state.get("rag")
+if rag is not None and not rag.is_available():  # its private folder was cleaned up
+    for key in SESSION_KEYS:
+        st.session_state.pop(key, None)
+    rag = None
+    st.warning(
+        "Your documents were removed from the server because your session ended. "
+        "Upload them and click Ingest again."
+    )
 if rag is None:
     st.info("Upload one or more PDFs and click Ingest to begin.")
     st.stop()

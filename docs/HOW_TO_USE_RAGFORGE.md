@@ -16,8 +16,10 @@ Open http://localhost:8501
 1. In the sidebar, pick a **provider** (OpenAI, Anthropic or Google Gemini) and a **model** for each component:
    answers, input guard, judge, reranker, embeddings, and optional voice input. The defaults are all OpenAI.
 2. Paste an API key for each provider you picked. Keys stay in this session's memory only.
-3. Upload one or more PDFs and click **Ingest**. The first time is slow, because every chunk gets a context note
-   from the answer model.
+3. Upload one or more PDFs (**at most 20 pages in total**; the page counter shows how many you have) and click
+   **Ingest**. The first time is slow, because every chunk gets a context note from the answer model. Your PDFs are
+   deleted from the server as soon as they are indexed, and the index is deleted when you replace the documents or your
+   session ends, so you upload them again next time.
 4. Ask questions. Each answer shows its citations, the chunks behind it, and the RAG triad scores.
 5. Watch your cost. Under each answer, **This turn** shows the model calls, tokens and estimated cost, with a breakdown
    by component (guard, embeddings, reranker, answer, judge). The sidebar's **Your usage** shows the session total, and

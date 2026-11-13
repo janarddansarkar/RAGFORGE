@@ -5,7 +5,8 @@ Ask questions about your PDFs and get answers with **citations**, the **chunks t
 classes. It is **bring-your-own-key**: every model is hosted and called through [LiteLLM](https://docs.litellm.ai/), and
 you choose the provider and the model for each component. Nothing runs on your machine except the app itself.
 
-- Upload one or more PDFs (scanned pages are read with OCR), click Ingest, then ask by typing (or by voice, with OpenAI).
+- Upload one or more PDFs (at most **20 pages in total**; scanned pages are read with OCR), click Ingest, then ask by
+  typing (or by voice, with OpenAI).
 - Hybrid search (vectors + BM25 keywords, fused with RRF), then a **reranker** (an LLM, or Cohere's cross-encoder),
   then an answer model.
 - Every answer shows the pages it cites, the retrieved and reranked chunks with their scores, and the **RAG triad**
@@ -15,6 +16,9 @@ you choose the provider and the model for each component. Nothing runs on your m
 - Thumbs up/down on every answer; a thumbs down asks what was wrong and offers a second try.
 - A question like an earlier one in the same conversation is answered from a private session cache.
 - An input guard checks every question for prompt injection and other malicious input.
+- **Uploads are private and short-lived:** each browser session gets its own folder, the PDFs are deleted as soon as they
+  are indexed, and the index is deleted when the documents are replaced or the session ends (a reload, a closed tab or
+  a new session).
 - An offline evaluation on a 45-question golden dataset measures each component (retriever, reranker, chunking,
   generator) and the whole pipeline. The saved results are in `docs/EVALUATION_RESULTS.md`.
 
@@ -27,7 +31,8 @@ uv run streamlit run src/app.py   # installs the Python packages on the first ru
                                   # downloaded), then starts the web app at http://localhost:8501
 ```
 
-Scanned pages need Tesseract (`brew install tesseract`).
+Scanned pages need Tesseract (`brew install tesseract`, or `apt install tesseract-ocr` on a server). To run it on a
+server (no Docker), see `docs/DEPLOY_VPS.md`.
 
 In the web app's sidebar, pick a **provider and a model for each component**, then paste a key for each provider you
 chose. Keys stay in the session's memory only: they are never written to disk or logged.
@@ -73,11 +78,13 @@ question -> input guard -> (rewrite follow-ups) -> cache check
 | `src/generator.py` | answers a question from chunks, citing the pages used; the retry after a thumbs down |
 | `src/guardrails.py` | the input guard (rules plus a guard model) |
 | `src/cache.py` | the per-conversation session cache |
+| `src/workspace.py` | the private, short-lived folders for each session's uploads and their cleanup |
 | `src/memory.py` | short-term memory: the last few turns, follow-ups rewritten into standalone questions |
 | `src/clock.py` | today's date for the prompt |
 | `src/voice.py` | speech to text (a hosted API) |
 | `src/triad.py` | the RAG triad, scored with DeepEval and a judge model |
 | `config.toml` | all settings (the defaults when no sidebar choice overrides them) |
+| `.streamlit/config.toml` | Streamlit's server settings (headless, a 25 MB upload cap per file) |
 | `eval/`, `metrics/`, `golden_data/`, `documents/` | the offline evaluation (see below) |
 | `docs/`, `specs_md/` | the documentation |
 
@@ -121,13 +128,23 @@ in `specs_md/retriever_eval.md` and `specs_md/generator_eval.md`.
 - Each answer has a thumbs up/down; the ratings live in the session cache and disappear with it (details in
   `specs_md/user_feedback.md`).
 - Only PDFs are accepted (scanned pages are read with OCR); standalone images are not supported.
-- Uploaded documents are indexed in `vs_docs/`, named by a hash of the files and the embedding model; the session cache
-  lives in its own temporary folder and is deleted when the documents are replaced or the program exits.
+- Nothing a user uploads is kept: the PDFs are deleted right after indexing, and the index and the answer cache live in
+  the session's private folder in the system temp directory, which is deleted when the documents are replaced, and
+  whenever any session starts or reruns for sessions that are no longer connected. A server restart removes whatever an
+  earlier run left behind. If a connection drops and the folder is cleaned up meanwhile, the app asks the user to upload
+  again. (The command line, `src/triad.py`, keeps its index in `vs_docs/`, and the offline evaluation reads `documents/`
+  directly; neither has the 20-page limit.)
+- The 20-page limit (`max_pages` in `config.toml`) counts all uploaded PDFs together. It is checked on the page and again
+  before indexing, so a file over the limit never reaches a model.
 - Changing a provider or model in the sidebar resets the ingested documents: click Ingest again.
 - Costs are **estimates**: LiteLLM multiplies the tokens by its price list. A model missing from that list is counted as
   an "unpriced call" and left out of the cost, so your provider's bill is the truth.
-- The offline evaluation has been run with OpenAI only. Gemini and Cohere were checked with a few live calls, and
-  Anthropic has not been called live; none of their quality has been measured. A free-tier Gemini key (5 requests a
-  minute) cannot complete the evaluation.
-- Deploying it for other people still needs HTTPS, a login or rate limit, cleanup of stored uploads, and a container
-  setup.
+- The offline evaluation has been run with OpenAI only. Gemini and Cohere were checked with a few live calls. Anthropic
+  was tested end to end in the app (Claude Sonnet for answers, Claude Haiku for guard, judge and reranker, OpenAI
+  embeddings): 7 questions, no errors, about $0.011 per question against about $0.007 with OpenAI. None of their
+  quality has been measured on the golden set. A free-tier Gemini key (5 requests a minute) cannot complete the
+  evaluation.
+- Claude models "think" before answering and the thinking counts against the token limit, so the app asks for minimal
+  thinking and adds 512 tokens of headroom for Claude (otherwise some answers came back empty).
+- Deploying it for other people still needs HTTPS (see `docs/DEPLOY_VPS.md`) and, if it is public, a login or rate
+  limit.

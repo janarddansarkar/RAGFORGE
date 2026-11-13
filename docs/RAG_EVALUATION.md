@@ -125,6 +125,14 @@ Two things were checked after the saved run, outside `eval/results/`:
   context recall 0.90 (0.92), 8.3 s per answer. Out-of-scope questions (a capital city, a sports result, an
   unrelated paper) were refused 3 of 3 times each. A vague phrasing ("what rank r does LoRA use?") is still unreliable:
   the paper uses different ranks in different places and the reranker ranks tangential passages highly.
+- **Claude through the app (Sonnet for answers, Haiku for guard, judge and reranker, OpenAI embeddings):** 7 questions
+  through the real app code. The first run had two answers come back empty: Claude thinks before it answers and the
+  thinking used up the 256-token limit. Asking for minimal thinking and adding 512 tokens of headroom fixed it (no empty
+  answers in the second run). Then the follow-up ("which paper introduced it?"), the two-part question and the
+  out-of-scope question behaved like the OpenAI ones, and the prompt injection was blocked. One difference: the GPT-3
+  rank question was refused once and answered correctly (r=8 or 4) on a replay with the same history. Claude as
+  reranker returns whole-number scores 0-9 with no probabilities, so its top 5 varies a little from run to run, while
+  OpenAI's probability-weighted scores are steadier. A typical turn cost about $0.011.
 - **Multi-query search (the retry's wider search) against the default on the 45 golden questions:** MRR 0.871 against
   0.866 and Recall@5 0.933 against 0.922, at 7.3 s against 4.8 s per query. The gain is within noise, so the default
   stays plain hybrid search + rerank.

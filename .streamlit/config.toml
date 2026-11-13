@@ -1,0 +1,7 @@
+# Streamlit settings for running RAGForge on a server (read when you start the app from this folder).
+[server]
+headless = true        # do not try to open a browser
+maxUploadSize = 25     # MB per uploaded file (the app also limits the pages in total)
+
+[browser]
+gatherUsageStats = false

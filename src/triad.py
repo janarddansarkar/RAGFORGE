@@ -136,7 +136,9 @@ if __name__ == "__main__":
     from rag import DocumentRAG
 
     question = " ".join(args.question)
-    rag = DocumentRAG(args.pdf)
+    rag = DocumentRAG(
+        args.pdf, settings={"max_pages": 0}
+    )  # the command line has no page limit
     answer = "".join(rag.ask_stream(question)).strip()
     print(f"\nQ: {question}\nA: {answer}\n")
     judge = TriadEvaluator(args.judge, config=rag.config)

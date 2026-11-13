@@ -27,6 +27,9 @@ API_PROVIDERS = (
 )  # fmt: skip
 
 
+CLAUDE_THINKING_ROOM = (
+    512  # extra tokens so Claude's thinking cannot use up the answer's limit
+)
 DEFAULT_TIMEOUT = (
     60  # seconds one model request may take before it fails (and is retried)
 )
@@ -118,15 +121,23 @@ class LiteLLMChat:
         litellm.drop_params = (
             True  # skip settings a provider does not support (e.g. logprobs)
         )
+        limit = max_new_tokens or self.max_new_tokens
         if self.model.startswith("gemini/"):
             # Gemini "thinks" first by default, and the thinking uses up the small token limits
             # (a 256-token answer, a 1-token rerank score), leaving an empty reply.
             extra.setdefault("reasoning_effort", "disable")
+        elif self.model.startswith("anthropic/"):
+            # Claude thinks before it answers too, and the thinking counts against max_tokens: with
+            # a 256-token limit it sometimes used all of it and the reply came back empty. Ask for
+            # minimal thinking, and leave room for it in the limit (the prompt, not the limit,
+            # keeps the answers short).
+            extra.setdefault("reasoning_effort", "minimal")
+            limit += CLAUDE_THINKING_ROOM
         return litellm.completion(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
-            max_tokens=max_new_tokens or self.max_new_tokens,
+            max_tokens=limit,
             api_key=self.api_key,
             **extra,
         )

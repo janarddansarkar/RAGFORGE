@@ -192,9 +192,9 @@ def test_litellm_chat_sends_the_prompt_and_returns_the_reply(monkeypatch):
         )
 
     monkeypatch.setattr(litellm, "completion", fake_completion)
-    chat = LiteLLMChat("anthropic/x", max_new_tokens=50)
+    chat = LiteLLMChat("mistral/x", max_new_tokens=50)
     assert chat.invoke("hi").content == "hello"
-    assert sent["model"] == "anthropic/x" and sent["max_tokens"] == 50
+    assert sent["model"] == "mistral/x" and sent["max_tokens"] == 50
     assert chat.digit_score("hi") == 0.0  # "hello" is no digit
 
 
@@ -365,3 +365,23 @@ def test_every_model_request_gets_a_timeout_and_retries_from_the_config(monkeypa
         }
     )
     assert (litellm.request_timeout, litellm.num_retries) == (15, 1)  # config.toml wins
+
+
+def test_claude_gets_minimal_thinking_and_room_in_the_token_limit(monkeypatch):
+    import litellm
+
+    from models import CLAUDE_THINKING_ROOM, LiteLLMChat
+
+    sent = {}
+    monkeypatch.setattr(
+        litellm, "completion", lambda **kw: sent.update(kw) or fake_reply()
+    )
+    LiteLLMChat("anthropic/claude-sonnet-5-5", max_new_tokens=256).invoke("x")
+    # Claude's thinking counts against max_tokens: without room, a 256-token limit gave empty replies
+    assert sent["reasoning_effort"] == "minimal"
+    assert sent["max_tokens"] == 256 + CLAUDE_THINKING_ROOM
+    sent.clear()
+    LiteLLMChat("openai/gpt-4o", max_new_tokens=256).invoke("x")
+    assert (
+        sent["max_tokens"] == 256 and "reasoning_effort" not in sent
+    )  # other providers unchanged
