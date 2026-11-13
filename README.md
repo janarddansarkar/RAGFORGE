@@ -1,133 +1,85 @@
 # RAGForge
 
-Ask questions about your PDFs and get answers with **citations**, the **chunks they came from**, **live quality scores** and
-**what each answer cost**. RAGForge is a small, readable retrieval-augmented generation (RAG) system built with plain
-classes. It is **bring-your-own-key**: every model is hosted and called through [LiteLLM](https://docs.litellm.ai/), and
-you choose the provider and the model for each component. Nothing runs on your machine except the app itself.
+RAGForge answers questions about PDF documents and shows its work: every answer comes with page citations, the passages it
+was written from, a live quality score, and (in the hosted version) what the answer cost.
 
-- Upload one or more PDFs (scanned pages are read with OCR), click Ingest, then ask by typing (or by voice, with OpenAI).
-- Hybrid search (vectors + BM25 keywords, fused with RRF), then a **reranker** (an LLM, or Cohere's cross-encoder),
-  then an answer model.
-- Every answer shows the pages it cites, the retrieved and reranked chunks with their scores, and the **RAG triad**
-  (context relevance, groundedness, answer relevance) scored by a judge model. The triad needs no reference answers.
-- **Your usage:** every model call made with your key is counted. Each turn shows its calls, tokens and estimated cost with
-  a breakdown by component, the sidebar shows the session total, and the ingest cost is shown after you click Ingest.
-- Thumbs up/down on every answer; a thumbs down asks what was wrong and offers a second try.
-- A question like an earlier one in the same conversation is answered from a private session cache.
-- An input guard checks every question for prompt injection and other malicious input.
-- An offline evaluation on a 45-question golden dataset measures each component (retriever, reranker, chunking,
-  generator) and the whole pipeline. The saved results are in `docs/EVALUATION_RESULTS.md`.
+This branch, `main`, holds **no code**. It is the project's front page: what was built, how the work is split across
+branches, why each major decision was made, and how to run each version. The code lives on the branches below.
 
-## Running it
+## The project in one paragraph
 
-```bash
-git clone -b main https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
-# install uv first (https://docs.astral.sh/uv/)
-uv run streamlit run src/app.py   # installs the Python packages on the first run (no model is
-                                  # downloaded), then starts the web app at http://localhost:8501
-```
+RAGForge started as a learning project with a clear goal: build a retrieval-augmented generation (RAG) system *and* learn
+how to evaluate one properly. That produced three kinds of work that are deliberately kept apart: a **lab** where
+components were measured against a hand-built test set, a **local, free product** that runs entirely on the developer's
+machine, and a **hosted, bring-your-own-key product** that other people can use with their own API keys. Each lives on its
+own branch.
 
-Scanned pages need Tesseract (`brew install tesseract`).
+## Branch map
 
-In the web app's sidebar, pick a **provider and a model for each component**, then paste a key for each provider you
-chose. Keys stay in the session's memory only: they are never written to disk or logged.
-
-| Component | What it does | OpenAI | Anthropic | Google Gemini |
+| Branch | What it is | Models | Status | Read this if you want to... |
 |---|---|---|---|---|
-| Answers | answers, retries, chunk notes | `gpt-4o`, `gpt-4o-mini`, `gpt-4.1`, `gpt-4.1-mini` | `claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-5-5` | `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.1-flash-lite` |
-| Input guard | blocks prompt injection | same chat models | same | same |
-| Judge | scores the RAG triad | same | same | same |
-| Reranker | an LLM rates each chunk 0-10 (about 30 calls), or a cross-encoder scores all chunks in one call | same chat models | same | same, **or Cohere** `rerank-v3.5`, `rerank-v4.0-pro`, `rerank-v4.0-fast` (the cross-encoder; needs a Cohere key) |
-| Embeddings | vectors for the search | `text-embedding-3-small`, `-3-large` | not offered | `gemini-embedding-001`, `gemini-embedding-2` |
-| Voice input (optional) | speech to text | `whisper-1`, `gpt-4o-transcribe` | not offered | not offered |
+| **`ragforge_api`** | The hosted, bring-your-own-key (BYOK) product, ready to deploy on a small server | Hosted (OpenAI, Anthropic, Gemini, Cohere) via LiteLLM | **Current, most advanced** | run or deploy RAGForge for other people |
+| **`dev`** | The local, free product | Local ([Ollama](https://ollama.com)), no keys, works offline | Stable, feature-complete | run it privately at zero cost, or tinker |
+| **`offline-eval`** | The evaluation lab that found the best settings | Local (Ollama) | Frozen (last work late October) | see how components were compared and why the defaults were chosen |
+| **`main`** | This documentation | none | Docs only | understand the whole project |
 
-"Custom..." lets you type any other model name. The defaults are all OpenAI, so one key is enough to start.
-
-Everything you send (questions and document text) goes to the providers you chose, and you pay for the calls. Building
-the index adds one model call per chunk for its context note.
-
-**The Cohere reranker.** Choosing Cohere switches the reranker from the LLM scorer to a cross-encoder: one rerank call
-scores all 30 candidates, and a Cohere key field appears. If the Cohere call fails, the answer keeps the plain search
-order and the failure is logged. A Cohere **trial** key allows 10 calls a minute; set `rerank_calls_per_minute = 9` in
-`config.toml` to stay under it.
-
-## How it works
+How they relate:
 
 ```
-PDF -> pages (OCR for scans) -> chunks (+ optional LLM context note) -> embeddings -> Chroma
-question -> input guard -> (rewrite follow-ups) -> cache check
-         -> hybrid search (dense + BM25, fused) -> reranker (LLM or Cohere) -> top-k chunks
-         -> answer model (streamed) -> answer + citations -> RAG-triad scores
+ offline-eval ──(winning settings and code copied by hand)──▶ dev ──(rebuilt on hosted models)──▶ ragforge_api
+   the lab                                                 local product                            hosted product
+                                                                                                      (main held this
+                                                                                                       code until it
+                                                                                                       became docs-only)
 ```
 
-| file | role |
+Details per branch are in [docs/BRANCHES.md](docs/BRANCHES.md).
+
+## Which branch should I use?
+
+| I want to... | Use |
 |---|---|
-| `src/app.py` | the Streamlit UI, including the provider and model choices |
-| `src/providers.py` | the providers (OpenAI, Anthropic, Gemini, Cohere), their models, and the per-component choices |
-| `src/models.py` | the model wrappers: chat, embeddings and rerank through LiteLLM |
-| `src/usage.py` | counts every model call, its tokens and cost (`UsageTracker`) |
-| `src/rag.py` | `DocumentRAG` for PDFs and the citation helper |
-| `src/chunking.py` | PDFs to chunks (recursive splitting; optional LLM context notes; OCR for scanned pages) |
-| `src/vectorstore.py` | builds and opens the Chroma store; `load_config()` |
-| `src/retriever.py` | dense, BM25, hybrid, reranked and multi-query retrieval |
-| `src/generator.py` | answers a question from chunks, citing the pages used; the retry after a thumbs down |
-| `src/guardrails.py` | the input guard (rules plus a guard model) |
-| `src/cache.py` | the per-conversation session cache |
-| `src/memory.py` | short-term memory: the last few turns, follow-ups rewritten into standalone questions |
-| `src/clock.py` | today's date for the prompt |
-| `src/voice.py` | speech to text (a hosted API) |
-| `src/triad.py` | the RAG triad, scored with DeepEval and a judge model |
-| `config.toml` | all settings (the defaults when no sidebar choice overrides them) |
-| `eval/`, `metrics/`, `golden_data/`, `documents/` | the offline evaluation (see below) |
-| `docs/`, `specs_md/` | the documentation |
+| Try RAGForge on my own documents without paying per call, or keep documents on my machine | `dev` |
+| Host it for others, or use the strongest hosted models | `ragforge_api` |
+| Understand how the settings were chosen, or re-run the experiments | `offline-eval` (and [docs/EVALUATION.md](docs/EVALUATION.md)) |
+| Understand the reasoning behind the project | [docs/DECISIONS.md](docs/DECISIONS.md) |
 
-## Settings
+## What every version does
 
-`config.toml` holds every setting: chunk size, top-k, the cache, the guard, the reranker type and the default models.
-In the web app, the sidebar's model choices override the model settings for that session.
+- **Ask questions about uploaded PDFs**, including scanned pages (read with OCR). Answers cite pages.
+- **Hybrid search**: meaning-based (vector) search and keyword (BM25) search, combined, then a **reranker** that re-sorts the
+  best candidates before an answer model writes the response.
+- **Show the evidence**: the retrieved passages and their scores sit next to each answer.
+- **Score itself live** with the *RAG triad*: is the retrieved text on topic, is the answer backed by it, does it answer the
+  question. No reference answers needed, so it works on any document.
+- **Protect itself**: an input guard screens questions for prompt injection, and the answer prompt is told to refuse
+  rather than invent.
+- **Remember the conversation** just enough to handle follow-up questions, and answer repeated questions from a private
+  session cache.
+- **Learn from feedback**: thumbs up/down on every answer; a thumbs down asks what was wrong and offers a better second try.
 
-Every model request has a timeout (`request_timeout`, 60 seconds) and is retried `request_retries` times (2), so one
-stalled API call cannot freeze the page.
+The hosted version adds usage and cost tracking, a choice of provider and model per component, upload limits and
+privacy handling for a public server.
 
-## Evaluation
+## Documentation
 
-There are two kinds, described in `docs/RAG_EVALUATION.md`:
+| Document | What it covers |
+|---|---|
+| [docs/BRANCHES.md](docs/BRANCHES.md) | Each branch in depth: role, features, decisions, how it helps |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | The decision log across the project, with the reasoning and trade-offs |
+| [docs/SETUP.md](docs/SETUP.md) | How to set up and run each branch, and how to deploy the hosted one |
+| [docs/EVALUATION.md](docs/EVALUATION.md) | How quality was measured and what the numbers say, in plain language |
+| [docs/RAG_EVALUATION.md](docs/RAG_EVALUATION.md) | Detailed evaluation write-up from the hosted version (reference) |
+| [docs/EVALUATION_RESULTS.md](docs/EVALUATION_RESULTS.md) | Full tables of the saved OpenAI evaluation run (reference) |
 
-- **RAG triad (live, no reference answers).** The web app scores every answer with DeepEval and the judge model you
-  chose. `uv run python src/triad.py your.pdf "your question"` scores one question from the command line.
-- **Offline component evaluation (golden dataset).** `golden_data/` holds 45 questions over the three papers in
-  `documents/`, each with its source pages and a reference answer. `eval/run_provider_eval.py` builds the index and runs
-  the retriever, reranker, chunking, generator, oracle-generator, triad and latency stages with one provider's models,
-  then saves the numbers and the cost to `eval/results/`. It costs real API money, so the saved results are kept
-  and `docs/EVALUATION_RESULTS.md` is built from them without any model call.
+The two reference documents were written next to the code and mention file names; read them with the
+`ragforge_api` branch checked out if you want to follow along.
 
-```bash
-uv run python eval/run_provider_eval.py openai                     # everything (about 100 minutes)
-uv run python eval/run_provider_eval.py openai --limit 10          # a quick, cheaper trial
-uv run python eval/run_provider_eval.py openai --stages retriever,generator
-uv run python eval/make_report.py                                   # rebuild docs/EVALUATION_RESULTS.md (free)
-uv run pytest                                                       # unit tests, no API calls
-uv run ruff check .                                                 # lint
-```
+## Known limits (stated up front)
 
-The runner reads `OPENAI_API_KEY` (or `GEMINI_API_KEY`) from the environment or a `.env` file. Metric definitions are
-in `specs_md/retriever_eval.md` and `specs_md/generator_eval.md`.
-
-## Notes
-
-- The judge model should differ from the answer model, so a model never grades its own answers.
-- If the documents answer only part of a question, the app answers that part and writes "The documents do not say ..."
-  for the rest. It replies "I can't find that in the documents." only when none of the question can be answered.
-- Each answer has a thumbs up/down; the ratings live in the session cache and disappear with it (details in
-  `specs_md/user_feedback.md`).
-- Only PDFs are accepted (scanned pages are read with OCR); standalone images are not supported.
-- Uploaded documents are indexed in `vs_docs/`, named by a hash of the files and the embedding model; the session cache
-  lives in its own temporary folder and is deleted when the documents are replaced or the program exits.
-- Changing a provider or model in the sidebar resets the ingested documents: click Ingest again.
-- Costs are **estimates**: LiteLLM multiplies the tokens by its price list. A model missing from that list is counted as
-  an "unpriced call" and left out of the cost, so your provider's bill is the truth.
-- The offline evaluation has been run with OpenAI only. Gemini and Cohere were checked with a few live calls, and
-  Anthropic has not been called live; none of their quality has been measured. A free-tier Gemini key (5 requests a
-  minute) cannot complete the evaluation.
-- Deploying it for other people still needs HTTPS, a login or rate limit, cleanup of stored uploads, and a container
-  setup.
+- The evaluation set is small: 45 questions over three research papers. Differences of a few hundredths between two setups
+  are noise.
+- The hosted version's quality was measured with OpenAI only. Gemini, Cohere and Anthropic were exercised end to end but not
+  scored on the full test set.
+- Costs shown in the hosted version are estimates from a price list; the provider's bill is the truth.
+- The hosted version has no login or rate limit; if it is public, put one in front of it.
