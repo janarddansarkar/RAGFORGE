@@ -68,13 +68,6 @@ def test_a_restart_removes_what_an_earlier_server_process_left_behind(
     assert (tmp_path / "111" / "mine").exists()
 
 
-def test_remove_deletes_one_session(tmp_path):
-    spaces = Workspaces(tmp_path, pid=111)
-    spaces.folder_for("a")
-    spaces.remove("a")
-    assert not (tmp_path / "111" / "a").exists()
-
-
 # ---- the page limit ----
 
 

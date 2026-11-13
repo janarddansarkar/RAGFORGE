@@ -49,9 +49,6 @@ class Workspaces:
         folder.mkdir(parents=True, exist_ok=True)
         return folder
 
-    def remove(self, session_id: str) -> None:
-        shutil.rmtree(self.mine / session_id, ignore_errors=True)
-
     def remove_disconnected(self, connected: set[str] | None) -> list[str]:
         """Delete the folders of sessions that are not connected any more, and everything an
         earlier server process left behind. Returns the names it deleted."""
