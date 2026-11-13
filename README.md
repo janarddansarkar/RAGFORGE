@@ -17,13 +17,14 @@ framework that finds the best settings for it.
 | branch | purpose | models run on | who it is for |
 |---|---|---|---|
 | **`dev`** | The **local, free version** and the day-to-day development branch. Everything runs on your machine with [Ollama](https://ollama.com); no keys, no per-call cost, works offline once models are downloaded. Includes the thumbs up/down and retry, the session cache, the input guard, the date clock and the RAG triad. | Ollama, plus a local cross-encoder and Whisper | developers, local use, demos |
-| **`main`** | Identical to `dev` for now. It is meant to become the bring-your-own-key (BYOK) cloud version later. The earlier BYOK work is kept as the tag `byok-snapshot`. | same as `dev` | same as `dev` |
+| **`ragforge_api`** | The **hosted, bring-your-own-key (BYOK) version**. Every model is hosted and called with the user's own key through LiteLLM; adds cost tracking, upload limits and a deployment guide. | OpenAI, Anthropic, Gemini, Cohere | hosting it for others |
+| **`main`** | Documentation only, with no code: the project overview, the role of each branch, the decisions and the setup. | none | understanding the whole project |
 | **`offline-eval`** | The **evaluation lab**. Holds the full `eval/find_best.py` search (chunking, embedder, retrieval method, reranker, chunk size and top-k, generator) and the chunk-size sweep. Its output, `best_config.json`, is copied to `dev`. It has the core pipeline but not the session cache, input guard or timing script. | Ollama (the judge and candidates), plus Hugging Face cross-encoders | tuning settings, comparing models |
 
-The flow between them: run experiments on `offline-eval`, copy the winning settings and code into `dev`, then update `main` to match.
+The flow between them: run experiments on `offline-eval`, copy the winning settings and code into `dev`, then rebuild on hosted models in `ragforge_api`.
 `dev` and `offline-eval` split from a common commit, so changes between them are cherry-picked by hand rather than merged.
 
-### Running it (`dev`, `main` and `offline-eval`)
+### Running it (`dev` and `offline-eval`)
 
 ```bash
 git clone -b dev https://github.com/janarddansarkar/RAGFORGE.git && cd RAGFORGE
@@ -59,14 +60,13 @@ question -> input guard -> (rewrite follow-ups) -> cache check
 | `src/rag.py` | `DocumentRAG` for PDFs, the citation report and the command line |
 | `src/rag_pipeline.py` | the full pipeline over `documents/` with the best settings |
 | `src/app.py` | the Streamlit UI |
-| `src/models.py` | the model wrappers (`dev`: Ollama; `main`: also OpenAI, Gemini, Anthropic and cost tracking) |
+| `src/models.py` | the model wrappers (Ollama here; the hosted providers and cost tracking are on `ragforge_api`) |
 | `src/guardrails.py` | the input guard (rules plus a guard model) |
 | `src/cache.py` | the per-conversation session cache |
 | `src/memory.py` | short-term memory: the last few turns, follow-ups rewritten into standalone questions |
 | `src/voice.py` | speech to text (faster-whisper on CPU), macOS `say` for reading answers aloud |
 | `config.toml` | all settings |
 | `best_config.json` | settings found best by the evaluation; laid over `config.toml` |
-| `providers.toml` (`main`) | models and prices per cloud provider |
 
 ## Settings
 
@@ -115,8 +115,6 @@ what `best_config.json` uses. On the 15 held-out queries the pick scored MRR 0.7
 - Only PDFs are accepted (scanned PDF pages are read with OCR); standalone images are not supported.
 - Uploaded documents are indexed in `vs_docs/`, named by a hash of the files; the session cache lives in its own temporary
   folder and is deleted when the documents are replaced or the program exits.
-- `main` has not yet been run against live provider APIs (its tests use fake clients), and deploying it still needs
-  HTTPS, a login or rate limit, cleanup of stored uploads, and a container setup. Prices in `providers.toml` are list prices
-  to be checked against each provider's page.
+- The hosted version, its deployment needs and its limits are described on the `ragforge_api` branch.
 - `RAGForge_RAG_Pipeline_Design.md` and `RAGForge_Tasks.md` describe a larger production design (Postgres, Docker).
-  Much of it is deferred; this repo is the free, local version plus a bring-your-own-key variant.
+  Much of it is deferred; this repo is the free, local version the bring-your-own-key variant is on `ragforge_api`.
